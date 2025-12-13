@@ -1,0 +1,280 @@
+[
+  {
+    "id": "1765443726460-puvw4a3hn",
+    "type": "highlight",
+    "content": "ll,aber",
+    "source": {
+      "file": "3.learn/1.language/2.1-Deutsch recite.md",
+      "position": {
+        "start": 239,
+        "end": 250,
+        "line": 7
+      },
+      "heading": "## 连词成句",
+      "anchorLink": "[[2.1-Deutsch recite#^extract-1765443726460-dk25za]]"
+    },
+    "extractRule": {
+      "ruleId": "highlight",
+      "ruleName": "Highlight",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765443726460,
+      "updatedAt": 1765463334413,
+      "tags": [
+        "#flashcards"
+      ]
+    },
+    "flashcardIds": [],
+    "annotationId": "ann-1765463334405-jodoz3u3r"
+  },
+  {
+    "id": "1765504863629-38tjphf8x",
+    "type": "highlight",
+    "content": "儿子",
+    "source": {
+      "file": "3.learn/1.language/2.1-Deutsch recite.md",
+      "position": {
+        "start": 47,
+        "end": 53,
+        "line": 3
+      },
+      "heading": "## 连词成句",
+      "anchorLink": "[[2.1-Deutsch recite#^extract-1765504863629-xiz9fq]]"
+    },
+    "extractRule": {
+      "ruleId": "highlight",
+      "ruleName": "Highlight",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765504863629,
+      "updatedAt": 1765504863629,
+      "tags": [
+        "#flashcards"
+      ]
+    },
+    "flashcardIds": []
+  },
+  {
+    "id": "1765504863630-jj2me3tj2",
+    "type": "highlight",
+    "content": "ll,aber",
+    "source": {
+      "file": "3.learn/1.language/2.1-Deutsch recite.md",
+      "position": {
+        "start": 239,
+        "end": 250,
+        "line": 7
+      },
+      "heading": "## 连词成句",
+      "anchorLink": "[[2.1-Deutsch recite#^extract-1765504863630-xlg3la]]"
+    },
+    "extractRule": {
+      "ruleId": "highlight",
+      "ruleName": "Highlight",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765504863630,
+      "updatedAt": 1765504863630,
+      "tags": [
+        "#flashcards"
+      ]
+    },
+    "flashcardIds": []
+  },
+  {
+    "id": "1765531505999-ti4xl5q43",
+    "type": "highlight",
+    "content": "于以",
+    "source": {
+      "file": "1.Rough/test.md",
+      "position": {
+        "start": 114,
+        "end": 120,
+        "line": 6
+      },
+      "anchorLink": "[[test#^extract-1765531505999-tbrh7s]]"
+    },
+    "extractRule": {
+      "ruleId": "highlight",
+      "ruleName": "Highlight",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765531505999,
+      "updatedAt": 1765552063328,
+      "tags": [
+        "#test"
+      ]
+    },
+    "flashcardIds": [],
+    "annotationId": "ann-1765552063323-4qk7934ro"
+  },
+  {
+    "id": "1765531505999-dq313bxtu",
+    "type": "highlight",
+    "content": "取内容建立锚点",
+    "source": {
+      "file": "1.Rough/test.md",
+      "position": {
+        "start": 200,
+        "end": 211,
+        "line": 11
+      },
+      "anchorLink": "[[test#^extract-1765531505999-a3nfy9]]"
+    },
+    "extractRule": {
+      "ruleId": "highlight",
+      "ruleName": "Highlight",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765531505999,
+      "updatedAt": 1765531505999,
+      "tags": [
+        "#test",
+        "#todo/"
+      ]
+    },
+    "flashcardIds": [
+      "card-1765552069238-bhc9dzdjl"
+    ]
+  },
+  {
+    "id": "1765531505999-o7kawbp4z",
+    "type": "highlight",
+    "content": "角标显示",
+    "source": {
+      "file": "1.Rough/test.md",
+      "position": {
+        "start": 287,
+        "end": 295,
+        "line": 16
+      },
+      "anchorLink": "[[test#^extract-1765531505999-uojekp]]"
+    },
+    "extractRule": {
+      "ruleId": "highlight",
+      "ruleName": "Highlight",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765531505999,
+      "updatedAt": 1765531505999,
+      "tags": [
+        "#test",
+        "#flashcards/Deutsch/recite"
+      ]
+    },
+    "flashcardIds": []
+  },
+  {
+    "id": "1765552179499-r0ovtcgty",
+    "type": "highlight",
+    "content": "风坑",
+    "fullContext": "港==风坑==",
+    "source": {
+      "file": "1.Rough/特色t.md",
+      "position": {
+        "start": 1,
+        "end": 7,
+        "line": 0
+      },
+      "anchorLink": "[[特色t#^extract-1765552179499-m8i5ul]]"
+    },
+    "extractRule": {
+      "ruleId": "highlight",
+      "ruleName": "Highlight",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765552179499,
+      "updatedAt": 1765552393466,
+      "tags": []
+    },
+    "flashcardIds": [],
+    "annotationId": "ann-1765552393461-d70dy4gv5"
+  },
+  {
+    "id": "1765552179499-lgocsqqms",
+    "type": "highlight",
+    "content": "坤高",
+    "fullContext": "发言更帅==坤高==古哭哭",
+    "source": {
+      "file": "1.Rough/特色t.md",
+      "position": {
+        "start": 12,
+        "end": 18,
+        "line": 1
+      },
+      "anchorLink": "[[特色t#^extract-1765552179499-hwwnz3]]"
+    },
+    "extractRule": {
+      "ruleId": "highlight",
+      "ruleName": "Highlight",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765552179499,
+      "updatedAt": 1765552179499,
+      "tags": []
+    },
+    "flashcardIds": [
+      "card-1765552407873-myhqsiai4"
+    ]
+  },
+  {
+    "id": "1765552179499-5pcl4l2dv",
+    "type": "highlight",
+    "content": "肯",
+    "fullContext": "发言方==肯==",
+    "source": {
+      "file": "1.Rough/特色t.md",
+      "position": {
+        "start": 25,
+        "end": 30,
+        "line": 2
+      },
+      "anchorLink": "[[特色t#^extract-1765552179499-gkjkm0]]"
+    },
+    "extractRule": {
+      "ruleId": "highlight",
+      "ruleName": "Highlight",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765552179499,
+      "updatedAt": 1765552179499,
+      "tags": []
+    },
+    "flashcardIds": []
+  },
+  {
+    "id": "1765552179499-rviddpsfr",
+    "type": "highlight",
+    "content": "付出",
+    "fullContext": "发言==付出==",
+    "source": {
+      "file": "1.Rough/特色t.md",
+      "position": {
+        "start": 35,
+        "end": 41,
+        "line": 5
+      },
+      "anchorLink": "[[特色t#^extract-1765552179499-l1hb27]]"
+    },
+    "extractRule": {
+      "ruleId": "highlight",
+      "ruleName": "Highlight",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765552179499,
+      "updatedAt": 1765552179499,
+      "tags": []
+    },
+    "flashcardIds": []
+  }
+]

@@ -1,0 +1,357 @@
+import { Plugin, TFile, WorkspaceLeaf, Notice } from 'obsidian';
+import { SettingsTab } from './ui/SettingsTab';
+import { OverviewView, VIEW_TYPE_OVERVIEW } from './ui/OverviewView';
+import { SidebarOverviewView, VIEW_TYPE_SIDEBAR_OVERVIEW, VIEW_TYPE_MAIN_OVERVIEW  } from './ui/SidebarOverviewView';
+import { ReviewView, VIEW_TYPE_REVIEW } from './ui/ReviewView';
+import { StatsView, VIEW_TYPE_STATS } from './ui/StatsView';
+import { DataManager } from './core/DataManager';
+import { ExtractionEngine } from './core/ExtractionEngine';
+import { AnnotationManager } from './core/AnnotationManager';
+import { FlashcardManager } from './core/FlashcardManager';
+
+interface LearningSystemSettings {
+  extractionEnabled: boolean;
+  autoScan: boolean;
+  defaultDeck: string;
+}
+
+const DEFAULT_SETTINGS: LearningSystemSettings = {
+  extractionEnabled: true,
+  autoScan: false,
+  defaultDeck: 'Default'
+};
+
+export default class LearningSystemPlugin extends Plugin {
+  settings: LearningSystemSettings;
+  dataManager: DataManager;
+  extractionEngine: ExtractionEngine;
+  annotationManager: AnnotationManager;
+  flashcardManager: FlashcardManager;
+
+
+  async onload() {
+    console.log('Loading Learning System Plugin');
+
+    await this.loadSettings();
+
+    // 初始化核心模块
+    this.dataManager = new DataManager(this.app, this);
+    await this.dataManager.initialize();
+
+    this.annotationManager = new AnnotationManager(this.app, this);
+    await this.annotationManager.initialize();
+
+    this.flashcardManager = new FlashcardManager(this.app, this);
+    await this.flashcardManager.initialize();
+
+    this.extractionEngine = new ExtractionEngine(
+      this.app,
+      this.dataManager
+    );
+
+    // 注册视图
+    this.registerView(
+      VIEW_TYPE_OVERVIEW,
+      (leaf) => new OverviewView(leaf, this)
+    );
+
+    this.registerView(
+      VIEW_TYPE_SIDEBAR_OVERVIEW,
+      (leaf) => new SidebarOverviewView(leaf, this, false)
+    );
+    
+    this.registerView(
+      VIEW_TYPE_MAIN_OVERVIEW,
+      (leaf) => new SidebarOverviewView(leaf, this, true)
+    );
+
+    this.registerView(
+      VIEW_TYPE_REVIEW,
+      (leaf) => new ReviewView(leaf, this)
+    );
+
+    this.registerView(
+      VIEW_TYPE_STATS,
+      (leaf) => new StatsView(leaf, this)
+    );
+
+    this.addSettingTab(new SettingsTab(this.app, this));
+    this.addCommands();
+
+    // Ribbon 图标
+    this.addRibbonIcon('layout-list', 'Open Learning Overview', () => {
+      this.activateSidebarOverview();
+    });
+
+    this.addRibbonIcon('layers', 'Start Review', () => {
+      this.activateReview();
+    });
+
+    // 状态栏 - 显示待复习数量
+    this.setupStatusBar();
+
+    console.log('Learning System Plugin loaded');
+  }
+
+  onunload() {
+    console.log('Unloading Learning System Plugin');
+    
+    // 只在插件完全卸载时才清理所有视图
+    // 注意：这里不要删除特定视图类型，让 Obsidian 自己管理
+    // 只清理插件级别的资源
+    
+    const styleEl = document.getElementById('learning-overview-styles');
+    if (styleEl) {
+      styleEl.remove();
+    }
+  }
+
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
+
+  async saveSettings() {
+    await this.saveData(this.settings);
+  }
+
+  private addCommands() {
+    this.addCommand({
+      id: 'scan-current-file',
+      name: 'Scan current file for content',
+      callback: async () => {
+        const activeFile = this.app.workspace.getActiveFile();
+        if (!activeFile) return;
+        await this.extractionEngine.scanFile(activeFile);
+        this.refreshOverview();
+      }
+    });
+
+    this.addCommand({
+      id: 'scan-vault',
+      name: 'Scan entire vault',
+      callback: async () => {
+        await this.extractionEngine.scanVault();
+        this.refreshOverview();
+      }
+    });
+
+    this.addCommand({
+      id: 'open-overview',
+      name: 'Open Learning Overview',
+      callback: () => {
+        this.activateSidebarOverview();
+      }
+    });
+
+    this.addCommand({
+      id: 'open-main-overview',
+      name: 'Open Learning Overview (Main View)',
+      callback: async () => {
+        await this.activateMainView();
+      }
+    });
+
+    this.addCommand({
+      id: 'add-file-annotation',
+      name: 'Add file annotation',
+      callback: async () => {
+        const activeFile = this.app.workspace.getActiveFile();
+        if (!activeFile) return;
+
+        const { FileAnnotationModal } = await import('./ui/AnnotationModal');
+        const modal = new FileAnnotationModal(
+          this.app,
+          this,
+          activeFile.path,
+          () => this.refreshOverview()
+        );
+        modal.open();
+      }
+    });
+
+    this.addCommand({
+      id: 'start-review',
+      name: 'Start flashcard review',
+      callback: () => {
+        this.activateReview();
+      }
+    });
+
+    this.addCommand({
+      id: 'show-stats',
+      name: 'Show flashcard statistics',
+      callback: () => {
+        this.activateStats();
+      }
+    });
+  }
+  
+  async activateMainView() {
+    console.log('[Plugin] activateMainView - START');
+    const { workspace } = this.app;
+
+    // 检查是否已经有主界面视图打开
+    let leaf = workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW)[0];
+    console.log('[Plugin] activateMainView - existing leaf:', leaf ? (leaf as any).id : 'none');
+    
+    if (!leaf) {
+      // 创建新的标签页
+      leaf = workspace.getLeaf('tab');
+      console.log('[Plugin] activateMainView - creating new leaf:', (leaf as any).id);
+      await leaf.setViewState({
+        type: VIEW_TYPE_MAIN_OVERVIEW,
+        active: true,
+      });
+    }
+
+    workspace.revealLeaf(leaf);
+    console.log('[Plugin] activateMainView - END');
+  }
+  
+  async activateSidebarOverview() {
+    console.log('[Plugin] activateSidebarOverview - START');
+    const { workspace } = this.app;
+    
+    let leaf: WorkspaceLeaf | null = null;
+    const leaves = workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR_OVERVIEW);
+    console.log('[Plugin] activateSidebarOverview - existing leaves count:', leaves.length);
+
+    if (leaves.length > 0) {
+      leaf = leaves[0];
+    } else {
+      // 在右侧边栏创建新的视图
+      leaf = workspace.getRightLeaf(false);
+      console.log('[Plugin] activateSidebarOverview - creating new leaf:', (leaf as any).id);
+      await leaf?.setViewState({
+        type: VIEW_TYPE_SIDEBAR_OVERVIEW,
+        active: true
+      });
+    }
+
+    if (leaf) {
+      workspace.revealLeaf(leaf);
+    }
+    console.log('[Plugin] activateSidebarOverview - END');
+  }
+
+  async activateOverview() {
+    const { workspace } = this.app;
+    let leaf: WorkspaceLeaf | null = null;
+    const leaves = workspace.getLeavesOfType(VIEW_TYPE_OVERVIEW);
+
+    if (leaves.length > 0) {
+      leaf = leaves[0];
+    } else {
+      leaf = workspace.getLeaf(`tab`);
+      await leaf?.setViewState({
+        type: VIEW_TYPE_OVERVIEW,
+        active: true
+      });
+    }
+
+    if (leaf) {
+      workspace.revealLeaf(leaf);
+    }
+  }
+
+  async activateReview() {
+    const stats = this.flashcardManager.getStats();
+    
+    if (stats.due === 0) {
+      new Notice('No cards due for review!');
+      return;
+    }
+
+    const { workspace } = this.app;
+    let leaf: WorkspaceLeaf | null = null;
+    const leaves = workspace.getLeavesOfType(VIEW_TYPE_REVIEW);
+
+    if (leaves.length > 0) {
+      leaf = leaves[0];
+    } else {
+      leaf = workspace.getLeaf(true);
+      await leaf?.setViewState({
+        type: VIEW_TYPE_REVIEW,
+        active: true
+      });
+    }
+
+    if (leaf) {
+      workspace.revealLeaf(leaf);
+    }
+  }
+
+  async activateStats() {
+    const { workspace } = this.app;
+    let leaf: WorkspaceLeaf | null = null;
+    const leaves = workspace.getLeavesOfType(VIEW_TYPE_STATS);
+
+    if (leaves.length > 0) {
+      leaf = leaves[0];
+    } else {
+      leaf = workspace.getLeaf('tab');
+      await leaf?.setViewState({
+        type: VIEW_TYPE_STATS,
+        active: true
+      });
+    }
+
+    if (leaf) {
+      workspace.revealLeaf(leaf);
+    }
+  }
+
+  refreshOverview() {
+    console.log('[Plugin] refreshOverview - START');
+    
+    // 刷新旧版 Overview
+    const overviewLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_OVERVIEW);
+    console.log('[Plugin] refreshOverview - VIEW_TYPE_OVERVIEW leaves:', overviewLeaves.length);
+    overviewLeaves.forEach(leaf => {
+      const view = leaf.view as OverviewView;
+      view.refresh();
+    });
+
+    // 刷新侧边栏视图
+    const sidebarLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR_OVERVIEW);
+    console.log('[Plugin] refreshOverview - VIEW_TYPE_SIDEBAR_OVERVIEW leaves:', sidebarLeaves.length);
+    sidebarLeaves.forEach(leaf => {
+      const view = leaf.view as SidebarOverviewView;
+      view.refresh();
+    });
+
+    // 刷新主界面视图
+    const mainLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW);
+    console.log('[Plugin] refreshOverview - VIEW_TYPE_MAIN_OVERVIEW leaves:', mainLeaves.length);
+    mainLeaves.forEach(leaf => {
+      const view = leaf.view as SidebarOverviewView;
+      view.refresh();
+    });
+    
+    console.log('[Plugin] refreshOverview - END');
+  }
+
+  private setupStatusBar() {
+    const statusBarItem = this.addStatusBarItem();
+    statusBarItem.addClass('learning-system-status');
+    
+    const updateStatus = () => {
+      const stats = this.flashcardManager.getStats();
+      statusBarItem.setText(`🃏 ${stats.due} due`);
+      statusBarItem.title = `${stats.due} cards due for review\n${stats.new} new cards`;
+    };
+
+    // 初始更新
+    updateStatus();
+
+    // 每分钟更新一次
+    this.registerInterval(
+      window.setInterval(updateStatus, 60000)
+    );
+
+    // 点击打开复习
+    statusBarItem.addEventListener('click', () => {
+      this.activateReview();
+    });
+  }
+}
