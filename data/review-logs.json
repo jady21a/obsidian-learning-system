@@ -1304,5 +1304,229 @@
       "oldEase": 2.5,
       "newEase": 2.5
     }
+  },
+  {
+    "id": "log-1765643722571",
+    "flashcardId": "card-1765521968025-i4eceevfl",
+    "timestamp": 1765643722567,
+    "response": {
+      "userAnswer": "cf",
+      "timeSpent": 48.738,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1765643729858",
+    "flashcardId": "card-1765521968029-1naxiw63d",
+    "timestamp": 1765643729850,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 7.275,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1765645790645",
+    "flashcardId": "card-1765521968033-xdcuc4u8p",
+    "timestamp": 1765645790638,
+    "response": {
+      "userAnswer": "凝",
+      "timeSpent": 103.246,
+      "ease": "easy"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 4,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1765646375422",
+    "flashcardId": "card-1765521968036-4jivzf583",
+    "timestamp": 1765646375418,
+    "response": {
+      "userAnswer": "bjk",
+      "timeSpent": 117.739,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1765646441545",
+    "flashcardId": "card-1765521968040-rq85xxxzb",
+    "timestamp": 1765646441537,
+    "response": {
+      "userAnswer": "nkbkj",
+      "timeSpent": 66.113,
+      "ease": "again"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.3
+    }
+  },
+  {
+    "id": "log-1765646541972",
+    "flashcardId": "card-1765521968044-szj9lk1vy",
+    "timestamp": 1765646541968,
+    "response": {
+      "userAnswer": "对不上检查本空J\n红醋弹错份额\n否从根手串\n很粗俄政府出",
+      "timeSpent": 100.42,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1765647333823",
+    "flashcardId": "card-1765552069238-bhc9dzdjl",
+    "timestamp": 1765647333819,
+    "response": {
+      "userAnswer": "\nnk\n\n\n\n",
+      "timeSpent": 10.906,
+      "ease": "again"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.3
+    }
+  },
+  {
+    "id": "log-1765647365644",
+    "flashcardId": "card-1765552407873-myhqsiai4",
+    "timestamp": 1765647365639,
+    "response": {
+      "userAnswer": "\n\n",
+      "timeSpent": 31.814,
+      "ease": "again"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.3
+    }
+  },
+  {
+    "id": "log-1765647389607",
+    "flashcardId": "card-1765642403513-3cpn8h3m6",
+    "timestamp": 1765647389604,
+    "response": {
+      "userAnswer": "fe\n \n蜂蜜",
+      "timeSpent": 23.959,
+      "ease": "easy"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 4,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1765648339953",
+    "flashcardId": "card-1765521968040-rq85xxxzb",
+    "timestamp": 1765648339928,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 950.319,
+      "ease": "hard"
+    },
+    "schedulingChange": {
+      "oldInterval": 1,
+      "newInterval": 10,
+      "oldEase": 2.3,
+      "newEase": 2.3
+    }
+  },
+  {
+    "id": "log-1765648424163",
+    "flashcardId": "card-1765552069238-bhc9dzdjl",
+    "timestamp": 1765648424157,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 26.631,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 1,
+      "newInterval": 3,
+      "oldEase": 2.3,
+      "newEase": 2.3
+    }
+  },
+  {
+    "id": "log-1765648424164",
+    "flashcardId": "card-1765552069238-bhc9dzdjl",
+    "timestamp": 1765648424158,
+    "response": {
+      "userAnswer": "j d",
+      "timeSpent": 18.943,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 3,
+      "newInterval": 6.8999999999999995,
+      "oldEase": 2.3,
+      "newEase": 2.4
+    }
+  },
+  {
+    "id": "log-1765673025929",
+    "flashcardId": "card-1765552407873-myhqsiai4",
+    "timestamp": 1765673025924,
+    "response": {
+      "userAnswer": "dv f",
+      "timeSpent": 8.217,
+      "ease": "again"
+    },
+    "schedulingChange": {
+      "oldInterval": 1,
+      "newInterval": 1,
+      "oldEase": 2.3,
+      "newEase": 2.0999999999999996
+    }
+  },
+  {
+    "id": "log-1765673196774",
+    "flashcardId": "card-1765552407873-myhqsiai4",
+    "timestamp": 1765673196768,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 12.749,
+      "ease": "hard"
+    },
+    "schedulingChange": {
+      "oldInterval": 1,
+      "newInterval": 1.2,
+      "oldEase": 2.0999999999999996,
+      "newEase": 1.9499999999999997
+    }
   }
 ]

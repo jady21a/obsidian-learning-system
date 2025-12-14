@@ -1,4 +1,4 @@
-import { Plugin, TFile, WorkspaceLeaf, Notice } from 'obsidian';
+import { Plugin, TFile, WorkspaceLeaf, Notice, MarkdownView } from 'obsidian';
 import { SettingsTab } from './ui/SettingsTab';
 import { OverviewView, VIEW_TYPE_OVERVIEW } from './ui/OverviewView';
 import { SidebarOverviewView, VIEW_TYPE_SIDEBAR_OVERVIEW, VIEW_TYPE_MAIN_OVERVIEW  } from './ui/SidebarOverviewView';
@@ -30,6 +30,7 @@ export default class LearningSystemPlugin extends Plugin {
 
 
   async onload() {
+    //不用删除的console.log
     console.log('Loading Learning System Plugin');
 
     await this.loadSettings();
@@ -75,6 +76,16 @@ export default class LearningSystemPlugin extends Plugin {
       (leaf) => new StatsView(leaf, this)
     );
 
+    this.registerEvent(
+      this.app.workspace.on('editor-menu', (menu, editor, view) => {
+        if (view instanceof MarkdownView) {
+          const file = view.file;
+          if (file) {
+            this.extractionEngine.registerContextMenu(menu, editor, file);
+          }
+        }
+      })
+    );
     this.addSettingTab(new SettingsTab(this.app, this));
     this.addCommands();
 
@@ -90,10 +101,12 @@ export default class LearningSystemPlugin extends Plugin {
     // 状态栏 - 显示待复习数量
     this.setupStatusBar();
 
+    //不用删除的console.log
     console.log('Learning System Plugin loaded');
   }
 
   onunload() {
+        //不用删除的console.log
     console.log('Unloading Learning System Plugin');
     
     // 只在插件完全卸载时才清理所有视图

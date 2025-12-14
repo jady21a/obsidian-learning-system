@@ -3,8 +3,9 @@ import type LearningSystemPlugin from '../main';
 
 export interface ContentUnit {
   id: string;
-  type: 'highlight' | 'bold' | 'tag' | 'custom';
+  type: 'highlight' | 'bold' | 'tag' | 'custom' | 'QA' | 'cloze'|'text'; // 添加 qa 和 cloze 类型
   content: string;
+  answer?: string; // 用于 QA 卡片的答案
   fullContext?: string;
   source: {
     file: string;
@@ -130,6 +131,10 @@ export class DataManager {
   getContentUnitsByFile(filePath: string): ContentUnit[] {
     const ids = this.fileIndex.get(filePath) || [];
     return ids.map(id => this.contentUnits.get(id)).filter(Boolean) as ContentUnit[];
+  }
+
+  getContentUnitsByType(type: ContentUnit['type']): ContentUnit[] {
+    return Array.from(this.contentUnits.values()).filter(unit => unit.type === type);
   }
 
   getAllContentUnits(): ContentUnit[] {

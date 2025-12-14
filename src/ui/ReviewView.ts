@@ -38,6 +38,7 @@ export class ReviewView extends ItemView {
     await this.loadDueCards();
     this.render();
     this.addStyles();
+    this.registerKeyboardHandlers();
   }
 
   async onClose() {}
@@ -46,6 +47,7 @@ export class ReviewView extends ItemView {
     this.dueCards = this.plugin.flashcardManager.getDueCards();
     this.currentCardIndex = 0;
     this.showAnswer = false;
+    document.removeEventListener('keydown', this.keyboardHandler);
   }
 
   private render() {
@@ -81,11 +83,64 @@ export class ReviewView extends ItemView {
     // 卡片区域
     const cardArea = container.createDiv({ cls: 'card-area' });
 
+    // 添加右上角操作按钮
+    this.renderTopActions(cardArea);
+
     if (this.showAnswer) {
       this.renderAnswer(cardArea);
     } else {
       this.renderQuestion(cardArea);
     }
+  }
+
+  private renderTopActions(container: HTMLElement) {
+    const actionsBar = container.createDiv({ cls: 'top-actions-bar' });
+
+    // Jump to source 按钮（只显示图标）
+    const jumpBtn = actionsBar.createEl('button', {
+      cls: 'top-action-btn jump-icon-btn',
+      attr: { 'aria-label': 'Jump to Source' }
+    });
+    jumpBtn.innerHTML = '↗';
+    jumpBtn.addEventListener('click', () => this.jumpToSource());
+
+    // More 菜单
+    const moreBtn = actionsBar.createEl('button', {
+      cls: 'top-action-btn more-btn',
+      attr: { 'aria-label': 'More actions' }
+    });
+    moreBtn.innerHTML = '⋯';
+    
+    // 创建下拉菜单
+    const dropdown = actionsBar.createDiv({ cls: 'more-dropdown' });
+    dropdown.style.display = 'none';
+
+    const deleteOption = dropdown.createEl('div', {
+      cls: 'dropdown-item delete-item'
+    });
+    deleteOption.innerHTML = '🗑️ Delete Card';
+    deleteOption.addEventListener('click', async () => {
+      if (!this.currentCard) return;
+      if (confirm('确定要删除这张闪卡吗？删除后将从复习队列中移除。')) {
+        await this.deleteFlashcard(this.currentCard.id);
+      }
+      dropdown.style.display = 'none';
+    });
+
+    // 切换下拉菜单
+    moreBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // 点击外部关闭菜单
+    document.addEventListener('click', () => {
+      dropdown.style.display = 'none';
+    });
+
+    dropdown.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
   }
 
   private renderNoDueCards(container: Element) {
@@ -117,11 +172,7 @@ export class ReviewView extends ItemView {
       cls: 'progress-text'
     });
 
-    const remaining = this.dueCards.length - this.currentCardIndex - 1;
-    stats.createSpan({ 
-      text: `${remaining} remaining`,
-      cls: 'remaining-text'
-    });
+
 
     const barContainer = progressBar.createDiv({ cls: 'bar-container' });
     const bar = barContainer.createDiv({ cls: 'bar' });
@@ -174,6 +225,10 @@ export class ReviewView extends ItemView {
         input.addEventListener('input', (e) => {
           this.userAnswers[index] = (e.target as HTMLInputElement).value;
         });
+        if (index === 0) {
+          setTimeout(() => input.focus(), 50);
+        }
+      
       });
     }
 
@@ -191,22 +246,17 @@ export class ReviewView extends ItemView {
       textarea.addEventListener('input', (e) => {
         this.userAnswer = (e.target as HTMLTextAreaElement).value;
       });
+      setTimeout(() => textarea.focus(), 50);
     }
 
     // 按钮区域
     const buttonArea = container.createDiv({ cls: 'button-area' });
 
-    // 跳转到源文件
-    const jumpBtn = buttonArea.createEl('button', {
-      text: '↗ Jump to Source',
-      cls: 'jump-btn'
-    });
-    jumpBtn.addEventListener('click', () => this.jumpToSource());
-
     // 显示答案按钮
     const showAnswerBtn = buttonArea.createEl('button', {
       text: 'Show Answer',
-      cls: 'mod-cta show-answer-btn'
+      cls: 'mod-cta show-answer-btn',
+      attr: { title: 'Press Enter' } 
     });
     showAnswerBtn.addEventListener('click', () => {
       this.showAnswer = true;
@@ -238,7 +288,6 @@ export class ReviewView extends ItemView {
 
     // 答案区域
     const answerArea = container.createDiv({ cls: 'answer-area' });
-    answerArea.createEl('h3', { text: 'Answer' });
 
     if (this.currentCard.type === 'cloze' && this.currentCard.cloze) {
       // 显示完整文本
@@ -287,119 +336,76 @@ export class ReviewView extends ItemView {
       // Q&A 答案
       const correctAnswer = this.currentCard.back as string;
       
-      // 显示正确答案
-      const answerText = answerArea.createDiv({ cls: 'answer-text' });
-      answerText.textContent = correctAnswer;
-
-      // 显示用户答案对比
-      if (this.userAnswer.trim()) {
-        const comparison = answerArea.createDiv({ cls: 'answer-comparison qa-comparison' });
-        comparison.createEl('h4', { text: 'Your Answer:' });
-
-        const evaluation = this.scheduler.evaluateAnswer(
-          correctAnswer,
-          this.userAnswer
-        );
-
-        // 详细的调试信息
-        console.log('=== Answer Evaluation Debug ===');
-        console.log('User Answer:', this.userAnswer);
-        console.log('Correct Answer:', correctAnswer);
-        console.log('Evaluation Result:', evaluation);
-        console.log('Correctness:', evaluation.correctness);
-        console.log('Similarity:', evaluation.similarity);
-
-        const userAnswerDiv = comparison.createDiv({ cls: 'comparison-item' });
-        const userAnswerElement = userAnswerDiv.createEl('div', {
-          text: this.userAnswer || '(empty)'
-        });
+      // 创建两列容器（无论是否有用户答案都显示）
+      const comparison = answerArea.createDiv({ cls: 'answer-comparison qa-comparison' });
+      
+      // 如果有用户答案，计算评估结果
+      const evaluation = this.userAnswer.trim() 
+        ? this.scheduler.evaluateAnswer(correctAnswer, this.userAnswer)
+        : null;
+    
+      const columnsContainer = comparison.createDiv({ cls: 'qa-columns-container' });
+      
+      // 左列：Correct Answer（始终显示）
+      const correctColumn = columnsContainer.createDiv({ cls: 'qa-column' });
+      correctColumn.createEl('h4', { text: 'Correct Answer:', cls: 'column-label' });
+      const correctAnswerDiv = correctColumn.createDiv({ cls: 'comparison-item' });
+      correctAnswerDiv.createEl('div', {
+        text: correctAnswer,
+        cls: 'correct-answer qa-correct-answer'
+      });
+    
+      // 右列：Your Answer（始终显示，但可能为空）
+      const userColumn = columnsContainer.createDiv({ cls: 'qa-column' });
+      userColumn.createEl('h4', { text: 'Your Answer:', cls: 'column-label' });
+      const userAnswerDiv = userColumn.createDiv({ cls: 'comparison-item' });
+      const userAnswerElement = userAnswerDiv.createEl('div', {
+        text: this.userAnswer.trim() || '(no answer provided)',
+        cls: 'qa-user-answer'
+      });
+      
+      // 只有在有用户答案时才添加评估样式
+      if (evaluation) {
+        userAnswerElement.classList.add('user-answer', evaluation.correctness);
         
-        // 清除所有可能的类名，然后重新添加
-        userAnswerElement.className = '';
-        userAnswerElement.classList.add('qa-user-answer', 'user-answer', evaluation.correctness);
-        
-        // 验证类名是否正确设置
-        console.log('Applied classes:', userAnswerElement.className);
-        console.log('Has correct class:', userAnswerElement.classList.contains('correct'));
-        console.log('Has partial class:', userAnswerElement.classList.contains('partial'));
-        console.log('Has wrong class:', userAnswerElement.classList.contains('wrong'));
-        
-        // 直接设置样式用于调试
-        if (evaluation.correctness === 'wrong') {
-          userAnswerElement.style.backgroundColor = '#f44336';
-          userAnswerElement.style.color = 'white';
-          console.log('Applied wrong answer styles directly');
-        } else if (evaluation.correctness === 'partial') {
-          userAnswerElement.style.backgroundColor = '#FFC000';
-          userAnswerElement.style.color = 'white';
-          console.log('Applied partial answer styles directly');
-        } else if (evaluation.correctness === 'correct') {
-          userAnswerElement.style.backgroundColor = '#4caf50';
-          userAnswerElement.style.color = 'white';
-          console.log('Applied correct answer styles directly');
-        }
-
-        comparison.createEl('h4', { text: 'Correct Answer:', cls: 'correct-answer-label' });
-        const correctAnswerDiv = comparison.createDiv({ cls: 'comparison-item' });
-        correctAnswerDiv.createEl('div', {
-          text: correctAnswer,
-          cls: 'correct-answer qa-correct-answer'
-        });
-
+        // 相似度信息（只在 partial 时显示）
         if (evaluation.correctness === 'partial') {
           const similarityInfo = comparison.createEl('div', {
             cls: 'similarity-info qa-similarity'
           });
           similarityInfo.textContent = `Similarity: ${Math.round(evaluation.similarity * 100)}%`;
         }
+      } else {
+        // 没有答案时的样式
+        userAnswerElement.classList.add('no-answer');
       }
     }
 
     // 评级按钮
     const ratingArea = container.createDiv({ cls: 'rating-area' });
-    ratingArea.createEl('h4', { text: 'How well did you know this?' });
 
     const buttonGroup = ratingArea.createDiv({ cls: 'rating-buttons' });
 
-    const ratings: { ease: ReviewEase; label: string; color: string }[] = [
-      { ease: 'again', label: 'Again\n< 1 min', color: 'red' },
-      { ease: 'hard', label: 'Hard\n< 10 min', color: 'orange' },
-      { ease: 'good', label: 'Good\n1 day', color: 'blue' },
-      { ease: 'easy', label: 'Easy\n4 days', color: 'green' }
+    const ratings: { ease: ReviewEase; label: string; color: string; key: string}[] = [
+      { ease: 'again', label: 'Again\n < 1 min', color: 'red' , key: '1' },
+      { ease: 'hard', label: 'Hard\n < 10 min', color: 'orange' , key: '2' },
+      { ease: 'good', label: 'Good\n 1 day', color: 'blue' , key: '3' },
+      { ease: 'easy', label: 'Easy\n 4 days', color: 'green', key: '4'  }
     ];
 
-    ratings.forEach(({ ease, label, color }) => {
+    ratings.forEach(({ ease, label, color,key }) => {
       const btn = buttonGroup.createEl('button', {
-        cls: `rating-btn rating-${color}`
+        cls: `rating-btn rating-${color}`,
+        attr: { title: `Press ${key}` } 
       });
       
       const lines = label.split('\n');
       btn.createEl('div', { text: lines[0], cls: 'rating-label' });
       btn.createEl('div', { text: lines[1], cls: 'rating-interval' });
 
+      btn.createEl('div', { text: `(${key})`, cls: 'rating-hotkey' });
+
       btn.addEventListener('click', () => this.submitReview(ease));
-    });
-
-    // 操作按钮组
-    const actionButtons = ratingArea.createDiv({ cls: 'action-buttons' });
-    
-    // 跳转按钮
-    const jumpBtn = actionButtons.createEl('button', {
-      text: '↗ Jump to Source',
-      cls: 'jump-btn-small'
-    });
-    jumpBtn.addEventListener('click', () => this.jumpToSource());
-
-    // 删除按钮
-    const deleteBtn = actionButtons.createEl('button', {
-      text: '🗑️ Delete Card',
-      cls: 'delete-btn-small'
-    });
-    deleteBtn.addEventListener('click', async () => {
-      if (!this.currentCard) return;
-      if (confirm('确定要删除这张闪卡吗？删除后将从复习队列中移除。')) {
-        await this.deleteFlashcard(this.currentCard.id);
-      }
     });
   }
 
@@ -509,11 +515,64 @@ export class ReviewView extends ItemView {
     }
   }
 
+  // 快捷键
+  private keyboardHandler = (e: KeyboardEvent) => {
+    const target = e.target as HTMLElement;
+    const isInInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+    
+    // 在输入框中
+    if (isInInput) {
+      if (e.key === 'Enter' && e.shiftKey) {
+        // Shift+Enter 在 textarea 中换行（默认行为）
+        return;
+      }
+      
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (!this.showAnswer) {
+          this.showAnswer = true;
+          this.render();
+        }
+        return;
+      }
+      
+      // 在输入框中按数字键时不触发评分
+      return;
+    }
+    
+    // 不在输入框时的快捷键
+    if (e.key === 'Enter' && !this.showAnswer) {
+      e.preventDefault();
+      this.showAnswer = true;
+      this.render();
+      return;
+    }
+    
+    // 数字键评分（只在显示答案且不在输入框时有效）
+    if (this.showAnswer) {
+      const ratingMap: { [key: string]: ReviewEase } = {
+        '1': 'again',
+        '2': 'hard',
+        '3': 'good',
+        '4': 'easy'
+      };
+      
+      if (ratingMap[e.key]) {
+        e.preventDefault();
+        this.submitReview(ratingMap[e.key]);
+      }
+    }
+  };
+  
+  private registerKeyboardHandlers() {
+    document.addEventListener('keydown', this.keyboardHandler);
+  }
+
   private addStyles() {
     const styleEl = document.createElement('style');
     styleEl.textContent = `
-      .review-container {
-        padding: 20px;
+    .review-container {
+        padding: 16px;
         max-width: 800px;
         margin: 0 auto;
       }
@@ -521,17 +580,17 @@ export class ReviewView extends ItemView {
       /* 空状态 */
       .empty-state {
         text-align: center;
-        padding: 60px 20px;
+        padding: 40px 20px;
       }
 
       .empty-state h2 {
-        font-size: 2em;
-        margin-bottom: 10px;
+        font-size: 1.8em;
+        margin-bottom: 8px;
       }
 
       .stats-summary {
-        margin: 30px 0;
-        padding: 20px;
+        margin: 20px 0;
+        padding: 16px;
         background: var(--background-secondary);
         border-radius: 8px;
         text-align: left;
@@ -542,28 +601,29 @@ export class ReviewView extends ItemView {
 
       /* 进度条 */
       .progress-bar {
-        margin-bottom: 30px;
+        margin-bottom: 20px;
       }
 
       .progress-stats {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
       }
 
       .progress-text {
         font-weight: 600;
-        font-size: 1.1em;
+        font-size: 1em;
       }
 
       .remaining-text {
         color: var(--text-muted);
+        font-size: 0.9em;
       }
 
       .bar-container {
-        height: 8px;
+        height: 6px;
         background: var(--background-secondary);
-        border-radius: 4px;
+        border-radius: 3px;
         overflow: hidden;
       }
 
@@ -577,68 +637,150 @@ export class ReviewView extends ItemView {
       .card-area {
         background: var(--background-primary);
         border: 2px solid var(--background-modifier-border);
-        border-radius: 12px;
-        padding: 30px;
-        min-height: 400px;
+        border-radius: 10px;
+        padding: 20px;
+        min-height: 350px;
+        position: relative;
+      }
+
+      /* 右上角操作栏 */
+      .top-actions-bar {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        display: flex;
+        gap: 6px;
+        z-index: 10;
+      }
+
+      .top-action-btn {
+        width: 32px;
+        height: 32px;
+        border: 1px solid var(--background-modifier-border);
+        border-radius: 6px;
+        background: var(--background-primary);
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: var(--text-normal);
+        padding: 0;
+      }
+
+      .top-action-btn:hover {
+        background: var(--background-modifier-hover);
+        border-color: var(--interactive-accent);
+      }
+
+      .jump-icon-btn {
+        font-weight: bold;
+      }
+
+      .more-btn {
+        font-weight: bold;
+        letter-spacing: 1px;
+      }
+
+      /* 下拉菜单 */
+      .more-dropdown {
+        position: absolute;
+        top: 38px;
+        right: 0;
+        background: var(--background-primary);
+        border: 1px solid var(--background-modifier-border);
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        min-width: 150px;
+        z-index: 100;
+      }
+
+      .dropdown-item {
+        padding: 8px 14px;
+        cursor: pointer;
+        transition: background 0.2s;
+        white-space: nowrap;
+        font-size: 0.9em;
+      }
+
+      .dropdown-item:hover {
+        background: var(--background-modifier-hover);
+      }
+
+      .dropdown-item:first-child {
+        border-radius: 6px 6px 0 0;
+      }
+
+      .dropdown-item:last-child {
+        border-radius: 0 0 6px 6px;
+      }
+
+      .delete-item:hover {
+        background: var(--background-modifier-error-hover);
+        color: var(--color-red);
       }
 
       .card-info {
         display: flex;
-        gap: 15px;
-        margin-bottom: 25px;
-        padding-bottom: 15px;
+        gap: 10px;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
         border-bottom: 1px solid var(--background-modifier-border);
+        padding-right: 80px;
       }
 
       .card-type, .card-deck {
-        padding: 4px 12px;
+        padding: 3px 10px;
         background: var(--background-secondary);
-        border-radius: 12px;
-        font-size: 0.9em;
+        border-radius: 10px;
+        font-size: 0.85em;
       }
 
       /* 问题区域 */
       .question-area, .answer-area {
-        margin: 25px 0;
+        margin: 16px 0;
       }
 
       .question-area h3, .answer-area h3 {
-        margin-bottom: 15px;
+        margin-bottom: 10px;
         color: var(--text-muted);
+        font-size: 1em;
       }
 
       .question-text, .answer-text {
-        font-size: 1.3em;
-        line-height: 1.6;
-        padding: 20px;
+        font-size: 1.2em;
+        line-height: 1.5;
+        padding: 14px;
         background: var(--background-secondary);
-        border-radius: 8px;
+        border-radius: 6px;
       }
 
       /* 完形填空输入 */
       .cloze-input-area {
-        margin: 25px 0;
+        margin: 16px 0;
       }
 
       .cloze-input-area h4 {
-        margin-bottom: 15px;
+        margin-bottom: 10px;
         color: var(--text-muted);
+        font-size: 0.9em;
       }
 
       .input-group {
         display: flex;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 12px;
+        gap: 8px;
+        margin-bottom: 8px;
       }
 
       .cloze-input {
         flex: 1;
-        padding: 10px 15px;
+        padding: 8px 12px;
         border: 2px solid var(--background-modifier-border);
         border-radius: 6px;
         background: var(--background-primary);
-        font-size: 1em;
+        font-size: 0.95em;
       }
 
       .cloze-input:focus {
@@ -648,25 +790,26 @@ export class ReviewView extends ItemView {
 
       /* QA 卡片输入 */
       .qa-input-area {
-        margin: 25px 0;
+        margin: 16px 0;
       }
 
       .qa-input-area h4 {
-        margin-bottom: 15px;
+        margin-bottom: 10px;
         color: var(--text-muted);
+        font-size: 0.9em;
       }
 
       .qa-input {
         width: 100%;
-        min-height: 120px;
-        padding: 12px 15px;
+        min-height: 100px;
+        padding: 10px 12px;
         border: 2px solid var(--background-modifier-border);
         border-radius: 6px;
         background: var(--background-primary);
-        font-size: 1em;
+        font-size: 0.95em;
         font-family: inherit;
         resize: vertical;
-        line-height: 1.6;
+        line-height: 1.5;
       }
 
       .qa-input:focus {
@@ -676,48 +819,50 @@ export class ReviewView extends ItemView {
 
       /* 答案对比 */
       .question-review {
-        margin-bottom: 20px;
-        padding: 15px;
+        margin-bottom: 12px;
+        padding: 10px;
         background: var(--background-secondary-alt);
-        border-radius: 8px;
+        border-radius: 6px;
       }
 
       .question-review h4 {
-        margin: 0 0 10px 0;
+        margin: 0 0 6px 0;
         color: var(--text-muted);
-        font-size: 0.9em;
+        font-size: 0.85em;
       }
 
       .review-text {
         color: var(--text-muted);
+        font-size: 0.95em;
       }
 
       .full-text {
-        font-size: 1.2em;
-        line-height: 1.6;
-        padding: 20px;
+        font-size: 1.1em;
+        line-height: 1.5;
+        padding: 12px;
         background: var(--background-secondary);
-        border-radius: 8px;
-        margin-bottom: 20px;
+        border-radius: 6px;
+        margin-bottom: 12px;
       }
 
       .answer-comparison {
-        padding: 15px;
+        padding: 10px;
         background: var(--background-secondary-alt);
-        border-radius: 8px;
+        border-radius: 6px;
+        margin-top: 12px;
       }
 
       .answer-comparison h4 {
-        margin: 0 0 15px 0;
+        margin: 0 0 8px 0;
         color: var(--text-muted);
-        font-size: 0.9em;
+        font-size: 0.85em;
       }
 
       .comparison-item {
-        padding: 10px;
-        margin-bottom: 8px;
+        padding: 8px;
+        margin-bottom: 6px;
         background: var(--background-primary);
-        border-radius: 6px;
+        border-radius: 4px;
       }
 
       .user-answer {
@@ -749,22 +894,62 @@ export class ReviewView extends ItemView {
       .similarity-info {
         color: var(--text-muted);
         font-style: italic;
+        font-size: 0.85em;
       }
 
       /* QA 卡片对比样式 */
       .qa-comparison {
-        margin-top: 20px;
+        margin-top: 12px;
       }
 
-      .qa-user-answer {
-        padding: 15px;
-        border-radius: 6px;
-        margin-bottom: 15px;
-        white-space: pre-wrap;
-        word-break: break-word;
-      }
 
-      /* 确保QA卡片的用户答案也能正确显示颜色 - 使用最高优先级 */
+.qa-columns-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.qa-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.column-label {
+  margin: 0 0 8px 0 !important;
+  color: var(--text-muted);
+  font-size: 0.85em;
+}
+
+.qa-user-answer,
+.qa-correct-answer {
+  padding: 12px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.95em;
+  line-height: 1.5;
+  min-height: 60px;
+}
+
+.qa-correct-answer {
+  background: var(--background-secondary);
+}
+
+/* 相似度信息放在两列下方 */
+.qa-similarity {
+  margin-top: 8px;
+  padding: 6px;
+  background: var(--background-secondary);
+  border-radius: 4px;
+  text-align: center;
+  font-size: 0.85em;
+  grid-column: 1 / -1;
+}
+
+
+
+
       .qa-user-answer.correct,
       .user-answer.correct.qa-user-answer,
       div.qa-user-answer.correct,
@@ -799,88 +984,58 @@ export class ReviewView extends ItemView {
         color: white !important;
       }
 
-      .qa-correct-answer {
-        padding: 15px;
-        border-radius: 6px;
-        white-space: pre-wrap;
-        word-break: break-word;
-      }
 
       .correct-answer-label {
-        margin-top: 20px !important;
-        margin-bottom: 10px !important;
+        margin-top: 12px !important;
+        margin-bottom: 6px !important;
       }
 
       .qa-similarity {
-        margin-top: 10px;
-        padding: 8px;
+        margin-top: 8px;
+        padding: 6px;
         background: var(--background-secondary);
         border-radius: 4px;
         text-align: center;
+        font-size: 0.85em;
       }
 
       /* 按钮区域 */
       .button-area {
         display: flex;
-        gap: 15px;
+        gap: 12px;
         justify-content: center;
-        margin-top: 30px;
+        margin-top: 20px;
       }
 
       .show-answer-btn {
-        padding: 12px 40px;
-        font-size: 1.1em;
-      }
-
-      .jump-btn, .jump-btn-small {
-        padding: 10px 20px;
-      }
-
-      .action-buttons {
-        display: flex;
-        gap: 10px;
-        margin-top: 15px;
-        justify-content: center;
-      }
-
-      .delete-btn-small {
-        padding: 8px 16px;
-        border: 1px solid var(--background-modifier-border);
-        border-radius: 6px;
-        background: var(--background-primary);
-        cursor: pointer;
-        transition: all 0.2s;
-        color: var(--text-normal);
-      }
-
-      .delete-btn-small:hover {
-        background: var(--color-red);
-        border-color: var(--color-red);
-        color: white;
+        padding: 10px 32px;
+        font-size: 1em;
       }
 
       /* 评级区域 */
       .rating-area {
-        margin-top: 30px;
+        margin: 15px 0 10px 0;
         text-align: center;
       }
 
       .rating-area h4 {
-        margin-bottom: 20px;
+        margin-bottom: 12px;
         color: var(--text-muted);
+        font-size: 0.9em;
       }
 
       .rating-buttons {
         display: flex;
-        gap: 12px;
+        gap: 20px;
         justify-content: center;
-        margin-bottom: 20px;
+        margin-bottom: 0;
       }
 
       .rating-btn {
         flex: 1;
-        max-width: 150px;
-        padding: 20px;
+        max-width: 120px;
+        hight:100px;
+        padding: 14px 8px;
         border: 2px solid var(--background-modifier-border);
         border-radius: 8px;
         background: var(--background-primary);
@@ -890,7 +1045,7 @@ export class ReviewView extends ItemView {
 
       .rating-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
       }
 
       .rating-red:hover { 
@@ -915,14 +1070,44 @@ export class ReviewView extends ItemView {
 
       .rating-label {
         font-weight: 600;
-        font-size: 1.1em;
-        margin-bottom: 5px;
+        font-size: 1em;
+        margin-bottom: 4px;
       }
 
       .rating-interval {
-        font-size: 0.9em;
+        font-size: 0.85em;
         color: var(--text-muted);
       }
+        /* 快捷键提示 */
+.rating-hotkey {
+  font-size: 0.75em;
+  color: var(--text-muted);
+  margin-top: 4px;
+  opacity: 0.7;
+}
+
+.rating-btn:hover .rating-hotkey {
+  opacity: 1;
+  color: var(--text-normal);
+}
+
+/* Show Answer 按钮 tooltip */
+.show-answer-btn {
+  position: relative;
+}
+  .cloze-input:focus,
+.qa-input:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--interactive-accent-hover);
+}
+  /* 无答案状态 */
+.qa-user-answer.no-answer {
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  font-style: italic;
+  border: 2px dashed var(--background-modifier-border);
+}
     `;
 
     document.head.appendChild(styleEl);

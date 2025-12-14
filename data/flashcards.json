@@ -102,22 +102,23 @@
       "#flashcards"
     ],
     "scheduling": {
-      "interval": 0,
+      "interval": 1,
       "ease": 2.5,
-      "due": 1765521968025,
+      "due": 1765730122567,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "learning"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "difficulty": 0.5
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 48.738,
+      "difficulty": 0.45,
+      "lastReview": 1765643722567
     },
     "metadata": {
       "createdAt": 1765521968025,
-      "updatedAt": 1765521968025
+      "updatedAt": 1765643722567
     }
   },
   {
@@ -133,22 +134,23 @@
       "#flashcards"
     ],
     "scheduling": {
-      "interval": 0,
+      "interval": 1,
       "ease": 2.5,
-      "due": 1765521968029,
+      "due": 1765730129851,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "learning"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "difficulty": 0.5
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 7.275,
+      "difficulty": 0.45,
+      "lastReview": 1765643729850
     },
     "metadata": {
       "createdAt": 1765521968029,
-      "updatedAt": 1765521968029
+      "updatedAt": 1765643729850
     }
   },
   {
@@ -164,22 +166,23 @@
       "#flashcards"
     ],
     "scheduling": {
-      "interval": 0,
+      "interval": 4,
       "ease": 2.5,
-      "due": 1765521968033,
+      "due": 1765991390638,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "review"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "difficulty": 0.5
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 103.246,
+      "difficulty": 0.4,
+      "lastReview": 1765645790638
     },
     "metadata": {
       "createdAt": 1765521968033,
-      "updatedAt": 1765521968033
+      "updatedAt": 1765645790638
     }
   },
   {
@@ -195,22 +198,23 @@
       "#flashcards"
     ],
     "scheduling": {
-      "interval": 0,
+      "interval": 1,
       "ease": 2.5,
-      "due": 1765521968036,
+      "due": 1765732775418,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "learning"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "difficulty": 0.5
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 117.739,
+      "difficulty": 0.45,
+      "lastReview": 1765646375418
     },
     "metadata": {
       "createdAt": 1765521968036,
-      "updatedAt": 1765521968036
+      "updatedAt": 1765646375418
     }
   },
   {
@@ -226,22 +230,23 @@
       "#flashcards"
     ],
     "scheduling": {
-      "interval": 0,
-      "ease": 2.5,
-      "due": 1765521968040,
-      "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "interval": 10,
+      "ease": 2.3,
+      "due": 1765648939928,
+      "lapses": 1,
+      "reps": 2,
+      "state": "learning"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "difficulty": 0.5
+      "totalReviews": 2,
+      "correctCount": 0.5,
+      "averageTime": 508.216,
+      "difficulty": 0.65,
+      "lastReview": 1765648339928
     },
     "metadata": {
       "createdAt": 1765521968040,
-      "updatedAt": 1765521968040
+      "updatedAt": 1765648339928
     }
   },
   {
@@ -257,22 +262,23 @@
       "#flashcards"
     ],
     "scheduling": {
-      "interval": 0,
+      "interval": 1,
       "ease": 2.5,
-      "due": 1765521968044,
+      "due": 1765732941968,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "learning"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "difficulty": 0.5
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 100.42,
+      "difficulty": 0.45,
+      "lastReview": 1765646541968
     },
     "metadata": {
       "createdAt": 1765521968044,
-      "updatedAt": 1765521968044
+      "updatedAt": 1765646541968
     }
   },
   {
@@ -289,22 +295,23 @@
       "#todo/"
     ],
     "scheduling": {
-      "interval": 0,
-      "ease": 2.5,
-      "due": 1765552069238,
-      "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "interval": 6.8999999999999995,
+      "ease": 2.4,
+      "due": 1766244584158,
+      "lapses": 1,
+      "reps": 3,
+      "state": "review"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "difficulty": 0.5
+      "totalReviews": 3,
+      "correctCount": 2,
+      "averageTime": 18.826666666666668,
+      "difficulty": 0.49999999999999994,
+      "lastReview": 1765648424158
     },
     "metadata": {
       "createdAt": 1765552069238,
-      "updatedAt": 1765552069238
+      "updatedAt": 1765648424158
     }
   },
   {
@@ -318,22 +325,53 @@
     "deck": "1.Rough",
     "tags": [],
     "scheduling": {
-      "interval": 0,
-      "ease": 2.5,
-      "due": 1765552407873,
-      "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "interval": 1.2,
+      "ease": 1.9499999999999997,
+      "due": 1765776876768,
+      "lapses": 2,
+      "reps": 3,
+      "state": "review"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "difficulty": 0.5
+      "totalReviews": 3,
+      "correctCount": 0.5,
+      "averageTime": 17.593333333333334,
+      "difficulty": 0.75,
+      "lastReview": 1765673196768
     },
     "metadata": {
       "createdAt": 1765552407873,
-      "updatedAt": 1765552407873
+      "updatedAt": 1765673196768
+    }
+  },
+  {
+    "id": "card-1765642403513-3cpn8h3m6",
+    "type": "qa",
+    "sourceContentId": "1765642345037-lijzqnrpx",
+    "sourceFile": "1.Rough/特色t.md",
+    "anchorLink": "[[特色t#^extract-1765642345037-wbhfua]]",
+    "front": "What is the key point about \"我的学习笔记\"?",
+    "back": "什么是闭包？",
+    "deck": "1.Rough",
+    "tags": [],
+    "scheduling": {
+      "interval": 4,
+      "ease": 2.5,
+      "due": 1765992989604,
+      "lapses": 0,
+      "reps": 1,
+      "state": "review"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 23.959,
+      "difficulty": 0.4,
+      "lastReview": 1765647389604
+    },
+    "metadata": {
+      "createdAt": 1765642403514,
+      "updatedAt": 1765647389604
     }
   }
 ]

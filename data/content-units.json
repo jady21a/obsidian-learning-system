@@ -171,108 +171,169 @@
     "flashcardIds": []
   },
   {
-    "id": "1765552179499-r0ovtcgty",
-    "type": "highlight",
-    "content": "风坑",
-    "fullContext": "港==风坑==",
+    "id": "1765642345037-lijzqnrpx",
+    "type": "QA",
+    "content": "什么是闭包？",
+    "answer": "闭包是指函数可以访问其外部作用域的变量",
+    "fullContext": "什么是闭包？ :: 闭包是指函数可以访问其外部作用域的变量",
     "source": {
       "file": "1.Rough/特色t.md",
       "position": {
-        "start": 1,
-        "end": 7,
-        "line": 0
+        "start": 68,
+        "end": 97,
+        "line": 11
       },
-      "anchorLink": "[[特色t#^extract-1765552179499-m8i5ul]]"
+      "heading": "# 我的学习笔记",
+      "anchorLink": "[[特色t#^extract-1765642345037-wbhfua]]"
     },
     "extractRule": {
-      "ruleId": "highlight",
-      "ruleName": "Highlight",
-      "extractedBy": "auto"
+      "ruleId": "QA-manual",
+      "ruleName": "Manual QA Card",
+      "extractedBy": "manual"
     },
     "metadata": {
-      "createdAt": 1765552179499,
-      "updatedAt": 1765552393466,
-      "tags": []
-    },
-    "flashcardIds": [],
-    "annotationId": "ann-1765552393461-d70dy4gv5"
-  },
-  {
-    "id": "1765552179499-lgocsqqms",
-    "type": "highlight",
-    "content": "坤高",
-    "fullContext": "发言更帅==坤高==古哭哭",
-    "source": {
-      "file": "1.Rough/特色t.md",
-      "position": {
-        "start": 12,
-        "end": 18,
-        "line": 1
-      },
-      "anchorLink": "[[特色t#^extract-1765552179499-hwwnz3]]"
-    },
-    "extractRule": {
-      "ruleId": "highlight",
-      "ruleName": "Highlight",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765552179499,
-      "updatedAt": 1765552179499,
+      "createdAt": 1765642345037,
+      "updatedAt": 1765642345037,
       "tags": []
     },
     "flashcardIds": [
-      "card-1765552407873-myhqsiai4"
+      "card-1765642403513-3cpn8h3m6"
     ]
   },
   {
-    "id": "1765552179499-5pcl4l2dv",
-    "type": "highlight",
-    "content": "肯",
-    "fullContext": "发言方==肯==",
+    "id": "1765642364490-5nth702zm",
+    "type": "text",
+    "content": "什么是闭包？ :: 闭包是指函数可以访问其外部作用域的变量",
+    "fullContext": "什么是闭包？ :: 闭包是指函数可以访问其外部作用域的变量",
     "source": {
       "file": "1.Rough/特色t.md",
       "position": {
-        "start": 25,
-        "end": 30,
-        "line": 2
+        "start": 68,
+        "end": 97,
+        "line": 11
       },
-      "anchorLink": "[[特色t#^extract-1765552179499-gkjkm0]]"
+      "heading": "# 我的学习笔记",
+      "anchorLink": "[[特色t#^extract-1765642364490-sdbyba]]"
     },
     "extractRule": {
-      "ruleId": "highlight",
-      "ruleName": "Highlight",
-      "extractedBy": "auto"
+      "ruleId": "text-manual",
+      "ruleName": "Manual Text Extract",
+      "extractedBy": "manual"
     },
     "metadata": {
-      "createdAt": 1765552179499,
-      "updatedAt": 1765552179499,
+      "createdAt": 1765642364490,
+      "updatedAt": 1765642364490,
       "tags": []
     },
     "flashcardIds": []
   },
   {
-    "id": "1765552179499-rviddpsfr",
-    "type": "highlight",
-    "content": "付出",
-    "fullContext": "发言==付出==",
+    "id": "1765642485802-53m8n8viu",
+    "type": "QA",
+    "content": "用域的变量",
+    "answer": "[Answer needed]",
+    "fullContext": "用域的变量",
     "source": {
       "file": "1.Rough/特色t.md",
       "position": {
-        "start": 35,
-        "end": 41,
-        "line": 5
+        "start": 92,
+        "end": 97,
+        "line": 11
       },
-      "anchorLink": "[[特色t#^extract-1765552179499-l1hb27]]"
+      "heading": "# 我的学习笔记",
+      "anchorLink": "[[特色t#^extract-1765642485802-an4dqg]]"
     },
     "extractRule": {
-      "ruleId": "highlight",
-      "ruleName": "Highlight",
-      "extractedBy": "auto"
+      "ruleId": "QA-manual",
+      "ruleName": "Manual QA Card",
+      "extractedBy": "manual"
     },
     "metadata": {
-      "createdAt": 1765552179499,
-      "updatedAt": 1765552179499,
+      "createdAt": 1765642485802,
+      "updatedAt": 1765642485802,
+      "tags": []
+    },
+    "flashcardIds": []
+  },
+  {
+    "id": "1765642490306-6f0w5awt3",
+    "type": "cloze",
+    "content": "用域的变量",
+    "fullContext": ":: 闭包是指函数可以访问其外部作用域的变量",
+    "source": {
+      "file": "1.Rough/特色t.md",
+      "position": {
+        "start": 92,
+        "end": 97,
+        "line": 11
+      },
+      "heading": "# 我的学习笔记",
+      "anchorLink": "[[特色t#^extract-1765642490306-yziy0c]]"
+    },
+    "extractRule": {
+      "ruleId": "cloze-manual",
+      "ruleName": "Manual Cloze Card",
+      "extractedBy": "manual"
+    },
+    "metadata": {
+      "createdAt": 1765642490306,
+      "updatedAt": 1765642490306,
+      "tags": []
+    },
+    "flashcardIds": []
+  },
+  {
+    "id": "1765642509688-2kdw47uhs",
+    "type": "QA",
+    "content": "的",
+    "answer": "[Answer needed]",
+    "fullContext": "的",
+    "source": {
+      "file": "1.Rough/特色t.md",
+      "position": {
+        "start": 94,
+        "end": 95,
+        "line": 11
+      },
+      "heading": "# 我的学习笔记",
+      "anchorLink": "[[特色t#^extract-1765642509688-03jjbj]]"
+    },
+    "extractRule": {
+      "ruleId": "QA-manual",
+      "ruleName": "Manual QA Card",
+      "extractedBy": "manual"
+    },
+    "metadata": {
+      "createdAt": 1765642509688,
+      "updatedAt": 1765642509688,
+      "tags": []
+    },
+    "flashcardIds": []
+  },
+  {
+    "id": "1765642595430-n2q2965wf",
+    "type": "QA",
+    "content": "aa",
+    "answer": "bb",
+    "fullContext": "aa :: bb",
+    "source": {
+      "file": "1.Rough/特色t.md",
+      "position": {
+        "start": 131,
+        "end": 139,
+        "line": 15
+      },
+      "heading": "# 我的学习笔记",
+      "anchorLink": "[[特色t#^extract-1765642595430-osuaqs]]"
+    },
+    "extractRule": {
+      "ruleId": "QA-manual",
+      "ruleName": "Manual QA Card",
+      "extractedBy": "manual"
+    },
+    "metadata": {
+      "createdAt": 1765642595430,
+      "updatedAt": 1765642595430,
       "tags": []
     },
     "flashcardIds": []
