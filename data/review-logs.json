@@ -1528,5 +1528,69 @@
       "oldEase": 2.0999999999999996,
       "newEase": 1.9499999999999997
     }
+  },
+  {
+    "id": "log-1765674998380",
+    "flashcardId": "card-1765521968040-rq85xxxzb",
+    "timestamp": 1765674998377,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 1801.587,
+      "ease": "hard"
+    },
+    "schedulingChange": {
+      "oldInterval": 10,
+      "newInterval": 10,
+      "oldEase": 2.3,
+      "newEase": 2.3
+    }
+  },
+  {
+    "id": "log-1765674998382",
+    "flashcardId": "card-1765521968040-rq85xxxzb",
+    "timestamp": 1765674998378,
+    "response": {
+      "userAnswer": "到",
+      "timeSpent": 1794.62,
+      "ease": "hard"
+    },
+    "schedulingChange": {
+      "oldInterval": 10,
+      "newInterval": 10,
+      "oldEase": 2.3,
+      "newEase": 2.3
+    }
+  },
+  {
+    "id": "log-1765760426400",
+    "flashcardId": "card-1765725936152-z06x81933",
+    "timestamp": 1765760426395,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 14.238,
+      "ease": "hard"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 10,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1765760451576",
+    "flashcardId": "card-1765726338638-9lu9lck36",
+    "timestamp": 1765760451572,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 25.166,
+      "ease": "hard"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 10,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
   }
 ]

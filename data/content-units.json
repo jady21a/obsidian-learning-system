@@ -138,9 +138,7 @@
         "#todo/"
       ]
     },
-    "flashcardIds": [
-      "card-1765552069238-bhc9dzdjl"
-    ]
+    "flashcardIds": []
   },
   {
     "id": "1765531505999-o7kawbp4z",
@@ -171,147 +169,37 @@
     "flashcardIds": []
   },
   {
-    "id": "1765642345037-lijzqnrpx",
+    "id": "1765764299865-llerbq8s9",
     "type": "QA",
-    "content": "什么是闭包？",
-    "answer": "闭包是指函数可以访问其外部作用域的变量",
-    "fullContext": "什么是闭包？ :: 闭包是指函数可以访问其外部作用域的变量",
+    "content": "简称额",
+    "answer": "男外出",
+    "fullContext": "简称额::男外出",
     "source": {
       "file": "1.Rough/特色t.md",
       "position": {
-        "start": 68,
-        "end": 97,
-        "line": 11
+        "start": 37,
+        "end": 45,
+        "line": 8
       },
-      "heading": "# 我的学习笔记",
-      "anchorLink": "[[特色t#^extract-1765642345037-wbhfua]]"
+      "anchorLink": "[[特色t#^extract-1765764299865-uvease]]"
     },
     "extractRule": {
-      "ruleId": "QA-manual",
-      "ruleName": "Manual QA Card",
-      "extractedBy": "manual"
+      "ruleId": "QA",
+      "ruleName": "QA Card",
+      "extractedBy": "auto"
     },
     "metadata": {
-      "createdAt": 1765642345037,
-      "updatedAt": 1765642345037,
+      "createdAt": 1765764299865,
+      "updatedAt": 1765764318276,
       "tags": []
     },
     "flashcardIds": [
-      "card-1765642403513-3cpn8h3m6"
-    ]
+      "card-1765764299868-rzbkml369"
+    ],
+    "annotationId": "ann-1765764318269-971esiram"
   },
   {
-    "id": "1765642364490-5nth702zm",
-    "type": "text",
-    "content": "什么是闭包？ :: 闭包是指函数可以访问其外部作用域的变量",
-    "fullContext": "什么是闭包？ :: 闭包是指函数可以访问其外部作用域的变量",
-    "source": {
-      "file": "1.Rough/特色t.md",
-      "position": {
-        "start": 68,
-        "end": 97,
-        "line": 11
-      },
-      "heading": "# 我的学习笔记",
-      "anchorLink": "[[特色t#^extract-1765642364490-sdbyba]]"
-    },
-    "extractRule": {
-      "ruleId": "text-manual",
-      "ruleName": "Manual Text Extract",
-      "extractedBy": "manual"
-    },
-    "metadata": {
-      "createdAt": 1765642364490,
-      "updatedAt": 1765642364490,
-      "tags": []
-    },
-    "flashcardIds": []
-  },
-  {
-    "id": "1765642485802-53m8n8viu",
-    "type": "QA",
-    "content": "用域的变量",
-    "answer": "[Answer needed]",
-    "fullContext": "用域的变量",
-    "source": {
-      "file": "1.Rough/特色t.md",
-      "position": {
-        "start": 92,
-        "end": 97,
-        "line": 11
-      },
-      "heading": "# 我的学习笔记",
-      "anchorLink": "[[特色t#^extract-1765642485802-an4dqg]]"
-    },
-    "extractRule": {
-      "ruleId": "QA-manual",
-      "ruleName": "Manual QA Card",
-      "extractedBy": "manual"
-    },
-    "metadata": {
-      "createdAt": 1765642485802,
-      "updatedAt": 1765642485802,
-      "tags": []
-    },
-    "flashcardIds": []
-  },
-  {
-    "id": "1765642490306-6f0w5awt3",
-    "type": "cloze",
-    "content": "用域的变量",
-    "fullContext": ":: 闭包是指函数可以访问其外部作用域的变量",
-    "source": {
-      "file": "1.Rough/特色t.md",
-      "position": {
-        "start": 92,
-        "end": 97,
-        "line": 11
-      },
-      "heading": "# 我的学习笔记",
-      "anchorLink": "[[特色t#^extract-1765642490306-yziy0c]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze-manual",
-      "ruleName": "Manual Cloze Card",
-      "extractedBy": "manual"
-    },
-    "metadata": {
-      "createdAt": 1765642490306,
-      "updatedAt": 1765642490306,
-      "tags": []
-    },
-    "flashcardIds": []
-  },
-  {
-    "id": "1765642509688-2kdw47uhs",
-    "type": "QA",
-    "content": "的",
-    "answer": "[Answer needed]",
-    "fullContext": "的",
-    "source": {
-      "file": "1.Rough/特色t.md",
-      "position": {
-        "start": 94,
-        "end": 95,
-        "line": 11
-      },
-      "heading": "# 我的学习笔记",
-      "anchorLink": "[[特色t#^extract-1765642509688-03jjbj]]"
-    },
-    "extractRule": {
-      "ruleId": "QA-manual",
-      "ruleName": "Manual QA Card",
-      "extractedBy": "manual"
-    },
-    "metadata": {
-      "createdAt": 1765642509688,
-      "updatedAt": 1765642509688,
-      "tags": []
-    },
-    "flashcardIds": []
-  },
-  {
-    "id": "1765642595430-n2q2965wf",
+    "id": "1765764299866-4g0f50pbu",
     "type": "QA",
     "content": "aa",
     "answer": "bb",
@@ -319,21 +207,102 @@
     "source": {
       "file": "1.Rough/特色t.md",
       "position": {
-        "start": 131,
-        "end": 139,
+        "start": 119,
+        "end": 127,
         "line": 15
       },
       "heading": "# 我的学习笔记",
-      "anchorLink": "[[特色t#^extract-1765642595430-osuaqs]]"
+      "anchorLink": "[[特色t#^extract-1765764299866-q9tk7u]]"
     },
     "extractRule": {
-      "ruleId": "QA-manual",
-      "ruleName": "Manual QA Card",
-      "extractedBy": "manual"
+      "ruleId": "QA",
+      "ruleName": "QA Card",
+      "extractedBy": "auto"
     },
     "metadata": {
-      "createdAt": 1765642595430,
-      "updatedAt": 1765642595430,
+      "createdAt": 1765764299866,
+      "updatedAt": 1765764299866,
+      "tags": []
+    },
+    "flashcardIds": []
+  },
+  {
+    "id": "1765764299866-2htvujsxv",
+    "type": "QA",
+    "content": "cc",
+    "answer": "dd",
+    "fullContext": "cc::dd",
+    "source": {
+      "file": "1.Rough/特色t.md",
+      "position": {
+        "start": 129,
+        "end": 135,
+        "line": 17
+      },
+      "heading": "# 我的学习笔记",
+      "anchorLink": "[[特色t#^extract-1765764299866-d6su80]]"
+    },
+    "extractRule": {
+      "ruleId": "QA",
+      "ruleName": "QA Card",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765764299866,
+      "updatedAt": 1765764299866,
+      "tags": []
+    },
+    "flashcardIds": []
+  },
+  {
+    "id": "1765764299866-d4be0f670",
+    "type": "cloze",
+    "content": "风坑",
+    "fullContext": "港==风坑==",
+    "source": {
+      "file": "1.Rough/特色t.md",
+      "position": {
+        "start": 1,
+        "end": 7,
+        "line": 0
+      },
+      "anchorLink": "[[特色t#^extract-1765764299866-x8vlam]]"
+    },
+    "extractRule": {
+      "ruleId": "cloze",
+      "ruleName": "Cloze Deletion",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765764299866,
+      "updatedAt": 1765764299866,
+      "tags": []
+    },
+    "flashcardIds": []
+  },
+  {
+    "id": "1765764299866-an81yqd46",
+    "type": "cloze",
+    "content": "事件循环",
+    "fullContext": "JavaScript 中的 ==事件循环== 处理异步操作。",
+    "source": {
+      "file": "1.Rough/特色t.md",
+      "position": {
+        "start": 101,
+        "end": 109,
+        "line": 13
+      },
+      "heading": "# 我的学习笔记",
+      "anchorLink": "[[特色t#^extract-1765764299866-fy6fgl]]"
+    },
+    "extractRule": {
+      "ruleId": "cloze",
+      "ruleName": "Cloze Deletion",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765764299866,
+      "updatedAt": 1765764299866,
       "tags": []
     },
     "flashcardIds": []

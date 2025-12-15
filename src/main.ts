@@ -30,7 +30,6 @@ export default class LearningSystemPlugin extends Plugin {
 
 
   async onload() {
-    //不用删除的console.log
     console.log('Loading Learning System Plugin');
 
     await this.loadSettings();
@@ -42,12 +41,18 @@ export default class LearningSystemPlugin extends Plugin {
     this.annotationManager = new AnnotationManager(this.app, this);
     await this.annotationManager.initialize();
 
-    this.flashcardManager = new FlashcardManager(this.app, this);
+    this.flashcardManager = new FlashcardManager(
+      this.app,
+      this.dataManager,
+      this
+    );
     await this.flashcardManager.initialize();
+    
 
     this.extractionEngine = new ExtractionEngine(
       this.app,
-      this.dataManager
+      this.dataManager,
+      this.flashcardManager
     );
 
     // 注册视图
@@ -101,12 +106,10 @@ export default class LearningSystemPlugin extends Plugin {
     // 状态栏 - 显示待复习数量
     this.setupStatusBar();
 
-    //不用删除的console.log
     console.log('Learning System Plugin loaded');
   }
 
   onunload() {
-        //不用删除的console.log
     console.log('Unloading Learning System Plugin');
     
     // 只在插件完全卸载时才清理所有视图
@@ -200,17 +203,14 @@ export default class LearningSystemPlugin extends Plugin {
   }
   
   async activateMainView() {
-    console.log('[Plugin] activateMainView - START');
     const { workspace } = this.app;
 
     // 检查是否已经有主界面视图打开
     let leaf = workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW)[0];
-    console.log('[Plugin] activateMainView - existing leaf:', leaf ? (leaf as any).id : 'none');
     
     if (!leaf) {
       // 创建新的标签页
       leaf = workspace.getLeaf('tab');
-      console.log('[Plugin] activateMainView - creating new leaf:', (leaf as any).id);
       await leaf.setViewState({
         type: VIEW_TYPE_MAIN_OVERVIEW,
         active: true,
@@ -218,23 +218,19 @@ export default class LearningSystemPlugin extends Plugin {
     }
 
     workspace.revealLeaf(leaf);
-    console.log('[Plugin] activateMainView - END');
   }
   
   async activateSidebarOverview() {
-    console.log('[Plugin] activateSidebarOverview - START');
     const { workspace } = this.app;
     
     let leaf: WorkspaceLeaf | null = null;
     const leaves = workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR_OVERVIEW);
-    console.log('[Plugin] activateSidebarOverview - existing leaves count:', leaves.length);
 
     if (leaves.length > 0) {
       leaf = leaves[0];
     } else {
       // 在右侧边栏创建新的视图
       leaf = workspace.getRightLeaf(false);
-      console.log('[Plugin] activateSidebarOverview - creating new leaf:', (leaf as any).id);
       await leaf?.setViewState({
         type: VIEW_TYPE_SIDEBAR_OVERVIEW,
         active: true
@@ -244,7 +240,6 @@ export default class LearningSystemPlugin extends Plugin {
     if (leaf) {
       workspace.revealLeaf(leaf);
     }
-    console.log('[Plugin] activateSidebarOverview - END');
   }
 
   async activateOverview() {
@@ -315,11 +310,9 @@ export default class LearningSystemPlugin extends Plugin {
   }
 
   refreshOverview() {
-    console.log('[Plugin] refreshOverview - START');
     
     // 刷新旧版 Overview
     const overviewLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_OVERVIEW);
-    console.log('[Plugin] refreshOverview - VIEW_TYPE_OVERVIEW leaves:', overviewLeaves.length);
     overviewLeaves.forEach(leaf => {
       const view = leaf.view as OverviewView;
       view.refresh();
@@ -327,7 +320,6 @@ export default class LearningSystemPlugin extends Plugin {
 
     // 刷新侧边栏视图
     const sidebarLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR_OVERVIEW);
-    console.log('[Plugin] refreshOverview - VIEW_TYPE_SIDEBAR_OVERVIEW leaves:', sidebarLeaves.length);
     sidebarLeaves.forEach(leaf => {
       const view = leaf.view as SidebarOverviewView;
       view.refresh();
@@ -335,13 +327,11 @@ export default class LearningSystemPlugin extends Plugin {
 
     // 刷新主界面视图
     const mainLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW);
-    console.log('[Plugin] refreshOverview - VIEW_TYPE_MAIN_OVERVIEW leaves:', mainLeaves.length);
     mainLeaves.forEach(leaf => {
       const view = leaf.view as SidebarOverviewView;
       view.refresh();
     });
     
-    console.log('[Plugin] refreshOverview - END');
   }
 
   private setupStatusBar() {

@@ -232,23 +232,13 @@ export class CardScheduler {
     // 长度差异过大直接判错
     const lengthRatio = Math.min(user.length, correct.length) / Math.max(user.length, correct.length);
     if (lengthRatio < 0.3) {
-      console.log('Answer evaluation: Length difference too large', {
-        correctAnswer: correct,
-        userAnswer: user,
-        lengthRatio,
-        result: 'wrong'
-      });
+
       return { correctness: 'wrong', similarity: 0 };
     }
 
     const similarity = this.calculateSimilarity(correct, user);
 
-    console.log('Answer evaluation:', {
-      correctAnswer: correct,
-      userAnswer: user,
-      similarity,
-      lengthRatio
-    });
+
 
     if (similarity >= 0.9) {
       return { correctness: 'correct', similarity };

@@ -13,7 +13,7 @@ type DisplayMode = 'sidebar' | 'main';
 type GroupMode = 'file' | 'tag' | 'date';
 type ViewType = 'notes' | 'cards';
 
-export class SidebarOverviewView extends ItemView {
+export  class SidebarOverviewView extends ItemView {
   plugin: LearningSystemPlugin;
   
   // 状态管理
@@ -79,19 +79,13 @@ export class SidebarOverviewView extends ItemView {
   }
 
   async onOpen() {
-    console.log('[onOpen] Start', {
-      forceMainMode: this.forceMainMode,
-      viewType: this.getViewType()
-    });
+
     
     this.detectDisplayMode();
-    console.log('[onOpen] After detectDisplayMode:', this.displayMode);
   
     if (!this.forceMainMode) {
-      console.log('[onOpen] Registering active-leaf-change');
       this.registerEvent(
         this.app.workspace.on('active-leaf-change', () => {
-          console.log('[active-leaf-change] Triggered');
           const activeFile = this.app.workspace.getActiveFile();
           if (activeFile && this.displayMode === 'sidebar') {
             this.selectedFile = activeFile.path;
@@ -100,21 +94,11 @@ export class SidebarOverviewView extends ItemView {
         })
       );
     }
-  
-    // this.registerEvent(s
-    //   this.app.workspace.on('layout-change', () => {
-    //     console.log('[layout-change] Triggered');
-    //     this.detectDisplayMode();
-    //     this.render();
-    //   })
-    // );
+
     
-    console.log('[onOpen] Before render');
     this.render();
-    console.log('[onOpen] After render');
     
     this.addStyles();
-    console.log('[onOpen] Completed');
   }
 
   // ==================== 核心方法 ====================
@@ -147,25 +131,37 @@ export class SidebarOverviewView extends ItemView {
    * 刷新视图
    */
   refresh() {
-
-    if (!this.isRendering) {
-      this.render();
+    
+    // 🔧 如果正在渲染，标记需要再次刷新
+    if (this.isRendering) {
+      requestAnimationFrame(() => {
+        this.refresh();
+      });
+      return;
     }
+    
+    // 🔧 清除搜索防抖定时器
+    if (this.searchDebounceTimer !== null) {
+      window.clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = null;
+    }
+    
+    // 🔧 标记需要恢复滚动位置
+    this.shouldRestoreScroll = true;
+    
+    this.render();
   }
 
   /**
    * 主渲染方法
    */
   private render() {
-    console.log('[render] Called', {
-      isRendering: this.isRendering,
-      displayMode: this.displayMode,
-      filterMode: this.filterMode,
-      viewType: this.viewType
-    });
-    
+
+      // 🔧 验证数据是否已加载
+  const allUnits = this.plugin.dataManager.getAllContentUnits();
+  const unitsWithCards = allUnits.filter(u => u.flashcardIds.length > 0);
+
     if (this.isRendering) {
-      console.log('[render] Already rendering, return');
       return;
     }
     if (this.searchDebounceTimer !== null) {
@@ -173,10 +169,8 @@ export class SidebarOverviewView extends ItemView {
       this.searchDebounceTimer = null;
     }
     this.isRendering = true;
-    console.log('[render] Set isRendering = true');
     
     const container = this.containerEl.children[1] as HTMLElement;
-    console.log('[render] Got container:', !!container);
     
    
     // 如果是侧边栏模式，总是保存当前滚动位置
@@ -269,13 +263,9 @@ if (toolbar) {
   }
 
   private renderSidebarToolbar(container: HTMLElement) {
-    console.log('[renderSidebarToolbar] Start');
     const toolbar = container.createDiv({ cls: 'sidebar-toolbar' });
-    console.log('[renderSidebarToolbar] Created toolbar');
-    
     // 搜索框
     const searchContainer = toolbar.createDiv({ cls: 'search-container' });
-    console.log('[renderSidebarToolbar] Created searchContainer');
     const searchInput = searchContainer.createEl('input', {
       type: 'text',
       placeholder: '🔍 搜索笔记...',
@@ -320,9 +310,7 @@ if (toolbar) {
           this.filterMode = mode;
     this.autoSelectAll();
           this.shouldRestoreScroll = false;
-          console.log('[Filter Click] Before render');
           this.render();
-          console.log('[Filter Click] After render');
         }
       });
     });
@@ -500,10 +488,22 @@ if (this.batchMode) {
       });
     }
 
-    // 左侧指示器
-    const indicator = card.createDiv({ cls: 'card-indicator' });
-    if (unit.annotationId) indicator.addClass('has-annotation');
-    if (unit.flashcardIds.length > 0) indicator.addClass('has-flashcard');
+// 左侧指示器
+const indicator = card.createDiv({ cls: 'card-indicator' });
+
+// 🔧 根据 unit.type 添加不同的类
+if (unit.type === 'QA') {
+  indicator.addClass('type-qa');
+} else if (unit.type === 'cloze') {
+  indicator.addClass('type-cloze');
+} else if (unit.type === 'text') {
+  indicator.addClass('type-text');
+}
+
+// 保留原有的批注和闪卡状态
+if (unit.annotationId) indicator.addClass('has-annotation');
+if (unit.flashcardIds.length > 0) indicator.addClass('has-flashcard');
+    
 
 // 内容区域
 const content = card.createDiv({ cls: 'card-content' });
@@ -548,16 +548,34 @@ if (!this.batchMode) {
       this.showContextMenu(e, unit);
     });
 
-    // 笔记内容（点击跳转到原文）
-    const noteText = content.createDiv({ cls: 'note-text' });
-    const truncatedText = unit.content.length > 80
-      ? unit.content.substring(0, 80) + '...'
-      : unit.content;
-    noteText.textContent = truncatedText;
-    
-    noteText.addEventListener('click', () => {
-      this.jumpToSource(unit);
-    });
+// 笔记内容（点击跳转到原文）
+const noteText = content.createDiv({ cls: 'note-text' });
+
+let displayHTML = '';
+
+// 如果是 QA 类型，用不同样式显示问题和答案
+if (unit.type === 'QA' && unit.answer) {
+  displayHTML = `<span class="qa-question">${unit.content}</span> <span class="qa-separator">::</span> <span class="qa-answer">${unit.answer}</span>`;
+}
+// 如果是 cloze 类型，高亮显示答案
+else if (unit.type === 'cloze' && unit.fullContext) {
+  let context = unit.fullContext.replace(/==/g, '');
+  const answer = unit.content;
+  displayHTML = context.replace(
+    answer, 
+    `<span class="cloze-highlight">${answer}</span>`
+  );
+}
+// 纯文本
+else {
+  displayHTML = unit.content;
+}
+
+noteText.innerHTML = displayHTML;
+
+noteText.addEventListener('click', () => {
+  this.jumpToSource(unit);
+});
 
     // 显示批注（如果有）
     const annotation = this.plugin.annotationManager.getContentAnnotation(unit.id);
@@ -1096,6 +1114,20 @@ if (!this.batchMode) {
 
     // 顶部：文档名称
     const header = card.createDiv({ cls: 'grid-card-header' });
+
+    // 🔧 添加类型指示器
+const typeIndicator = header.createDiv({ cls: 'type-indicator' });
+if (unit.type === 'QA') {
+  typeIndicator.addClass('type-qa');
+  typeIndicator.textContent = 'Q&A';
+} else if (unit.type === 'cloze') {
+  typeIndicator.addClass('type-cloze');
+  typeIndicator.textContent = 'Cloze';
+} else {
+  typeIndicator.addClass('type-text');
+  typeIndicator.textContent = 'Text';
+}
+
     const fileName = unit.source.file.split('/').pop()?.replace('.md', '') || '';
     header.createSpan({ text: fileName, cls: 'doc-name' });
 
@@ -1125,11 +1157,36 @@ if (!this.batchMode) {
     // 笔记内容（点击展开批注编辑）
     const content = card.createDiv({ cls: 'grid-card-content' });
     const noteText = content.createDiv({ cls: 'grid-note-text' });
-    noteText.textContent = unit.content;
-    
-    noteText.addEventListener('click', () => {
-      this.toggleInlineAnnotation(card, unit);
-    });
+
+// 🔧 显示完整内容，不截断
+let displayHTML = '';
+
+// 如果是 QA 类型，用不同样式显示问题和答案
+if (unit.type === 'QA' && unit.answer) {
+  displayHTML = `<span>${unit.content}</span> <span >::</span> <span >${unit.answer}</span>`;
+}
+// 如果是 cloze 类型，高亮显示答案
+else if (unit.type === 'cloze' && unit.fullContext) {
+  // 🔧 先去除 fullContext 中的 == 标记
+  const context = unit.fullContext;
+  const answer = unit.content;
+  
+  // 然后用 span 高亮答案
+  displayHTML = context.replace(
+    answer, 
+    `<span >${answer}</span>`
+  );
+}
+// 纯文本
+else {
+  displayHTML = unit.content;
+}
+
+noteText.innerHTML = displayHTML;
+
+noteText.addEventListener('click', () => {
+  this.toggleInlineAnnotation(card, unit);
+});
 
     // 显示批注
     const annotation = this.plugin.annotationManager.getContentAnnotation(unit.id);
@@ -1690,6 +1747,14 @@ private showBatchMenu(event: MouseEvent, unit?: ContentUnit) {
         .setIcon('trash')
         .onClick(async () => {
           if (confirm('确定要删除这条笔记吗？')) {
+            // 🔧 先删除关联的闪卡
+            if (unit.flashcardIds.length > 0) {
+              for (const cardId of unit.flashcardIds) {
+                await this.plugin.flashcardManager.deleteCard(cardId);
+              }
+            }
+            
+            // 再删除笔记
             await this.plugin.dataManager.deleteContentUnit(unit.id);
             new Notice('🗑️ 笔记已删除');
             this.refresh();
@@ -1933,36 +1998,50 @@ private editFlashcard(card: Flashcard) {
     this.refresh();
   }
 
-  /**
-   * 批量删除笔记
-   */
-  private async batchDeleteNotes() {
-    if (this.selectedUnitIds.size === 0) {
-      new Notice('⚠️ 请先选择要删除的笔记');
-      return;
-    }
-
-    if (!confirm(`确定要删除选中的 ${this.selectedUnitIds.size} 条笔记吗？`)) {
-      return;
-    }
-
-    let success = 0;
-    let failed = 0;
-
-    for (const unitId of this.selectedUnitIds) {
-      try {
-        await this.plugin.dataManager.deleteContentUnit(unitId);
-        success++;
-      } catch (error) {
-        console.error('Error deleting note:', error);
-        failed++;
-      }
-    }
-
-    this.selectedUnitIds.clear();
-    new Notice(`✅ 已删除 ${success} 条笔记${failed > 0 ? `，${failed} 条失败` : ''}`);
-    this.refresh();
+/**
+ * 批量删除笔记
+ */
+private async batchDeleteNotes() {
+  if (this.selectedUnitIds.size === 0) {
+    new Notice('⚠️ 请先选择要删除的笔记');
+    return;
   }
+
+  if (!confirm(`确定要删除选中的 ${this.selectedUnitIds.size} 条笔记吗？`)) {
+    return;
+  }
+
+  let success = 0;
+  let failed = 0;
+
+  for (const unitId of this.selectedUnitIds) {
+    try {
+      // 🔧 获取笔记
+      const unit = this.plugin.dataManager.getContentUnit(unitId);
+      
+      if (unit) {
+        // 🔧 先删除关联的闪卡
+        if (unit.flashcardIds.length > 0) {
+          for (const cardId of unit.flashcardIds) {
+            await this.plugin.flashcardManager.deleteCard(cardId);
+          }
+        }
+      }
+      
+      // 再删除笔记
+      await this.plugin.dataManager.deleteContentUnit(unitId);
+      success++;
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      failed++;
+    }
+  }
+
+  this.selectedUnitIds.clear();
+  this.batchMode = false;
+  new Notice(`✅ 已删除 ${success} 条笔记${failed > 0 ? `，${failed} 条失败` : ''}`);
+  this.refresh();
+}
 
   /**
    * 检查是否全选
@@ -2862,24 +2941,127 @@ private groupFlashcards(flashcards: Flashcard[]): Array<{ groupKey: string; card
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       }
 
-      .card-indicator {
-        width: 4px;
-        border-radius: 2px;
-        background: var(--background-modifier-border);
-        flex-shrink: 0;
-      }
+/* 基础指示器样式 */
+.card-indicator {
+  width: 4px;
+  border-radius: 2px;
+  background: var(--background-modifier-border);
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
 
-      .card-indicator.has-annotation {
-        background: linear-gradient(to bottom, #3b82f6 0%, #3b82f6 50%, transparent 50%);
-      }
 
-      .card-indicator.has-flashcard {
-        background: linear-gradient(to bottom, transparent 0%, transparent 50%, #10b981 50%);
-      }
+/* 🔧 没有批注时：上半透明，下半显示类型颜色 */
+.card-indicator.type-qa {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 50%,
+    #10b981 50%,
+    #10b981 100%
+  );
+}
 
-      .card-indicator.has-annotation.has-flashcard {
-        background: linear-gradient(to bottom, #3b82f6 0%, #3b82f6 50%, #10b981 50%);
-      }
+.card-indicator.type-cloze {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 50%,
+        #9333ea 50%,
+    #9333ea 100%
+
+  );
+}
+
+.card-indicator.type-text {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 50%,
+    #6b7280 50%,
+    #6b7280 100%
+  );
+}
+
+/* 🔧 有批注时：上半蓝色，下半类型颜色 */
+.card-indicator.type-qa.has-annotation {
+  background: linear-gradient(
+    to bottom, 
+    #3b82f6 0%, 
+    #3b82f6 50%, 
+    #10b981 50%,
+    #10b981 100%
+  );
+}
+
+.card-indicator.type-cloze.has-annotation {
+  background: linear-gradient(
+    to bottom, 
+    #3b82f6 0%, 
+    #3b82f6 50%, 
+        #9333ea 50%,
+    #9333ea 100%
+
+  );
+}
+
+.card-indicator.type-text.has-annotation {
+  background: linear-gradient(
+    to bottom, 
+    #3b82f6 0%, 
+    #3b82f6 50%, 
+    #6b7280 50%,
+    #6b7280 100%
+  );
+}
+
+/* 🔧 默认样式（没有类型时的兜底） */
+.card-indicator:not(.type-qa):not(.type-cloze):not(.type-text) {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 50%,
+    var(--background-modifier-border) 50%,
+    var(--background-modifier-border) 100%
+  );
+}
+
+.card-indicator.has-annotation:not(.type-qa):not(.type-cloze):not(.type-text) {
+  background: linear-gradient(
+    to bottom,
+    #3b82f6 0%,
+    #3b82f6 50%,
+    var(--background-modifier-border) 50%,
+    var(--background-modifier-border) 100%
+  );
+}
+
+
+
+.type-indicator {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.type-indicator.type-qa {
+  background: rgba(16, 185, 129, 0.2);
+
+  color: #10b981;
+}
+
+.type-indicator.type-cloze {
+  background: rgba(147, 51, 234, 0.2);
+    color: #9333ea;
+
+}
+
+.type-indicator.type-text {
+  background: rgba(107, 114, 128, 0.2);
+  color: #6b7280;
+}
 
       .card-content {
         flex: 1;
@@ -2931,17 +3113,46 @@ private groupFlashcards(flashcards: Flashcard[]): Array<{ groupKey: string; card
         background: var(--background-modifier-hover);
       }
 
-      .note-text {
-        font-size: 13px;
-        line-height: 1.5;
-        color: var(--text-normal);
-        margin-bottom: 6px;
-        cursor: pointer;
-      }
+.note-text {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-normal);
+  cursor: pointer;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+  overflow-wrap: break-word;
+  margin-bottom: 6px;
+}
 
-      .note-text:hover {
-        color: var(--interactive-accent);
-      }
+.note-text:hover {
+  color: var(--interactive-accent);
+}
+
+/* 🔧 QA 样式 */
+.qa-question {
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.qa-separator {
+  color: var(--text-muted);
+  margin: 0 4px;
+}
+
+.qa-answer {
+  color: var(--text-accent);
+  font-style: italic;
+}
+
+/* 🔧 Cloze 高亮样式 */
+.cloze-highlight {
+
+  color: #f59e0b;
+  font-weight: 500;
+  padding: 1px 3px;
+  border-radius: 3px;
+}
 
       .annotation-preview {
         font-size: 11px;
@@ -3355,17 +3566,22 @@ private groupFlashcards(flashcards: Flashcard[]): Array<{ groupKey: string; card
         margin-bottom: 12px;
       }
 
-      .grid-note-text {
-        font-size: 14px;
-        line-height: 1.6;
-        color: var(--text-normal);
-        cursor: pointer;
-        margin-bottom: 10px;
-      }
+.grid-note-text {
+  font-size: 13px;  /* 🔧 从 14px 改为 13px */
+  line-height: 1.6;
+  color: var(--text-normal);
+  cursor: pointer;
+  margin-bottom: 10px;
+  word-wrap: break-word;  /* 🔧 允许换行 */
+  word-break: break-word;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
 
-      .grid-note-text:hover {
-        color: var(--interactive-accent);
-      }
+.grid-note-text:hover {
+  color: var(--interactive-accent);
+}
+
 
       .grid-annotation {
         font-size: 12px;
@@ -3483,13 +3699,15 @@ private groupFlashcards(flashcards: Flashcard[]): Array<{ groupKey: string; card
       }
 
       .flashcard-type.qa {
-        background: rgba(147, 51, 234, 0.2);
-        color: #9333ea;
+              background: rgba(16, 185, 129, 0.2);
+
+        color: #10b981;
       }
 
       .flashcard-type.cloze {
-        background: rgba(16, 185, 129, 0.2);
-        color: #10b981;
+
+               background: rgba(147, 51, 234, 0.2);
+         color: #9333ea;
       }
 
       .flashcard-date {

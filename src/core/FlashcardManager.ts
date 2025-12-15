@@ -1,4 +1,5 @@
 import { App } from 'obsidian';
+import { DataManager, ContentUnit } from './DataManager'; 
 import type LearningSystemPlugin from '../main';
 
 export interface Flashcard {
@@ -79,6 +80,7 @@ export class FlashcardManager {
 
   constructor(
     private app: App,
+    private dataManager: DataManager,
     private plugin: LearningSystemPlugin
   ) {
     this.dataFolder = `${this.app.vault.configDir}/plugins/learning-system/data`;
@@ -89,40 +91,53 @@ export class FlashcardManager {
     await this.loadReviewLogs();
   }
 
-  private async loadFlashcards() {
-    try {
-      const path = `${this.dataFolder}/flashcards.json`;
-      const adapter = this.app.vault.adapter;
-
-      if (await adapter.exists(path)) {
-        const data = await adapter.read(path);
-        const flashcards: Flashcard[] = JSON.parse(data);
-        
-        for (const card of flashcards) {
-          this.flashcards.set(card.id, card);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading flashcards:', error);
+  // ==================== 统一创建入口 ====================
+  
+  /**
+   * 🆕 统一入口: 从 ContentUnit 创建闪卡
+   * 适配所有场景: 右键提取、Scan、批量创建、快速生成
+   */
+  async createFlashcardFromUnit(
+    unit: ContentUnit,
+    options?: {
+      customQuestion?: string;
+      customAnswer?: string;
+      cardType?: 'qa' | 'cloze';
     }
+  ): Promise<Flashcard> {
+    
+    const cardType = options?.cardType || (unit.type === 'QA' ? 'qa' : 'cloze');
+  
+    let flashcard: Flashcard;
+  
+    if (cardType === 'qa' || unit.type === 'QA') {
+      const question = options?.customQuestion || unit.content;
+      const answer = options?.customAnswer || unit.answer || unit.content;
+      
+      flashcard = await this.createQACard(unit.id, question, answer);
+      
+    } else {
+      const text = unit.fullContext || unit.content;
+      const answer = options?.customAnswer || unit.content;
+      
+      const deletions = [{
+        index: text.indexOf(answer),
+        answer: answer
+      }];
+      
+
+      flashcard = await this.createClozeCard(unit.id, text, deletions);
+    }
+  
+    
+  
+    return flashcard;
   }
 
-  private async loadReviewLogs() {
-    try {
-      const path = `${this.dataFolder}/review-logs.json`;
-      const adapter = this.app.vault.adapter;
-
-      if (await adapter.exists(path)) {
-        const data = await adapter.read(path);
-        this.reviewLogs = JSON.parse(data);
-      }
-    } catch (error) {
-      console.error('Error loading review logs:', error);
-    }
-  }
+  // ==================== 核心创建方法 ====================
 
   /**
-   * 创建问答卡
+   * 创建问答卡（唯一版本，合并了所有功能）
    */
   async createQACard(
     contentUnitId: string,
@@ -130,7 +145,7 @@ export class FlashcardManager {
     answer: string,
     deck?: string
   ): Promise<Flashcard> {
-    const contentUnit = this.plugin.dataManager.getContentUnit(contentUnitId);
+    const contentUnit = this.dataManager.getContentUnit(contentUnitId);
     if (!contentUnit) throw new Error('Content unit not found');
 
     const card: Flashcard = {
@@ -160,21 +175,21 @@ export class FlashcardManager {
     
     // 更新 ContentUnit 关联
     contentUnit.flashcardIds.push(card.id);
-    await this.plugin.dataManager.saveContentUnit(contentUnit);
+    await this.dataManager.saveContentUnits([contentUnit]);
     
     await this.persistFlashcards();
     return card;
   }
 
   /**
-   * 创建完形填空卡
+   * 创建完形填空卡（唯一版本，合并了所有功能）
    */
   async createClozeCard(
     contentUnitId: string,
     original: string,
     deletions: { index: number; answer: string; alternatives?: string[] }[]
   ): Promise<Flashcard> {
-    const contentUnit = this.plugin.dataManager.getContentUnit(contentUnitId);
+    const contentUnit = this.dataManager.getContentUnit(contentUnitId);
     if (!contentUnit) throw new Error('Content unit not found');
 
     const front = this.generateClozeText(original, deletions);
@@ -210,11 +225,13 @@ export class FlashcardManager {
     this.flashcards.set(card.id, card);
     
     contentUnit.flashcardIds.push(card.id);
-    await this.plugin.dataManager.saveContentUnit(contentUnit);
+    await this.dataManager.saveContentUnits([contentUnit]);
     
     await this.persistFlashcards();
     return card;
   }
+
+  // ==================== 查询方法 ====================
 
   /**
    * 获取闪卡
@@ -238,7 +255,6 @@ export class FlashcardManager {
     return Array.from(this.flashcards.values())
       .filter(card => card.scheduling.due <= now)
       .sort((a, b) => {
-        // 优先级：过期时间越长 > 新卡片 > 正在学习
         const aPriority = this.getCardPriority(a);
         const bPriority = this.getCardPriority(b);
         return bPriority - aPriority;
@@ -253,6 +269,8 @@ export class FlashcardManager {
       .filter(card => card.scheduling.state === 'new');
   }
 
+  // ==================== 更新和删除 ====================
+
   /**
    * 更新卡片（复习后）
    */
@@ -261,26 +279,29 @@ export class FlashcardManager {
     await this.persistFlashcards();
   }
 
-  /**
-   * 删除卡片
-   */
-  async deleteCard(id: string) {
-    const card = this.flashcards.get(id);
-    if (!card) return;
+/**
+ * 删除卡片
+ */
+async deleteCard(id: string) {
+  const card = this.flashcards.get(id);
+  if (!card) return;
 
-    // 解除 ContentUnit 关联
-    const contentUnit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
-    if (contentUnit) {
-      const index = contentUnit.flashcardIds.indexOf(id);
-      if (index > -1) {
-        contentUnit.flashcardIds.splice(index, 1);
-        await this.plugin.dataManager.saveContentUnit(contentUnit);
-      }
+  // 🔧 解除 ContentUnit 关联
+  const contentUnit = this.dataManager.getContentUnit(card.sourceContentId);
+  if (contentUnit) {
+    const index = contentUnit.flashcardIds.indexOf(id);
+    if (index > -1) {
+      contentUnit.flashcardIds.splice(index, 1);
+      await this.dataManager.saveContentUnits([contentUnit]);
     }
-
-    this.flashcards.delete(id);
-    await this.persistFlashcards();
   }
+
+  // 删除闪卡
+  this.flashcards.delete(id);
+  await this.persistFlashcards();
+}
+
+  // ==================== 复习日志 ====================
 
   /**
    * 记录复习日志
@@ -288,7 +309,6 @@ export class FlashcardManager {
   async logReview(log: ReviewLog) {
     this.reviewLogs.push(log);
     
-    // 只保留最近 1000 条记录
     if (this.reviewLogs.length > 1000) {
       this.reviewLogs = this.reviewLogs.slice(-1000);
     }
@@ -301,6 +321,70 @@ export class FlashcardManager {
    */
   getCardReviewHistory(cardId: string): ReviewLog[] {
     return this.reviewLogs.filter(log => log.flashcardId === cardId);
+  }
+
+  // ==================== 统计 ====================
+
+  /**
+   * 获取统计数据
+   */
+  getStats() {
+    const all = this.getAllFlashcards();
+    const due = this.getDueCards();
+    const newCards = this.getNewCards();
+    
+    const today = new Date().setHours(0, 0, 0, 0);
+    const reviewedToday = this.reviewLogs.filter(
+      log => log.timestamp >= today
+    ).length;
+
+    return {
+      total: all.length,
+      new: newCards.length,
+      due: due.length,
+      reviewedToday,
+      totalReviews: this.reviewLogs.length
+    };
+  }
+
+  // ==================== 私有工具方法 ====================
+
+  /**
+   * 加载闪卡
+   */
+  private async loadFlashcards() {
+    try {
+      const path = `${this.dataFolder}/flashcards.json`;
+      const adapter = this.app.vault.adapter;
+
+      if (await adapter.exists(path)) {
+        const data = await adapter.read(path);
+        const flashcards: Flashcard[] = JSON.parse(data);
+        
+        for (const card of flashcards) {
+          this.flashcards.set(card.id, card);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading flashcards:', error);
+    }
+  }
+
+  /**
+   * 加载复习日志
+   */
+  private async loadReviewLogs() {
+    try {
+      const path = `${this.dataFolder}/review-logs.json`;
+      const adapter = this.app.vault.adapter;
+
+      if (await adapter.exists(path)) {
+        const data = await adapter.read(path);
+        this.reviewLogs = JSON.parse(data);
+      }
+    } catch (error) {
+      console.error('Error loading review logs:', error);
+    }
   }
 
   /**
@@ -389,27 +473,5 @@ export class FlashcardManager {
    */
   private generateId(): string {
     return `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  /**
-   * 获取统计数据
-   */
-  getStats() {
-    const all = this.getAllFlashcards();
-    const due = this.getDueCards();
-    const newCards = this.getNewCards();
-    
-    const today = new Date().setHours(0, 0, 0, 0);
-    const reviewedToday = this.reviewLogs.filter(
-      log => log.timestamp >= today
-    ).length;
-
-    return {
-      total: all.length,
-      new: newCards.length,
-      due: due.length,
-      reviewedToday,
-      totalReviews: this.reviewLogs.length
-    };
   }
 }
