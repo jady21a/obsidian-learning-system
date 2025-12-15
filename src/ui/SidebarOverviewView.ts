@@ -10,7 +10,7 @@ export const VIEW_TYPE_MAIN_OVERVIEW = 'learning-system-main-overview';
 
 type FilterMode = 'all' | 'annotated' | 'flashcards';
 type DisplayMode = 'sidebar' | 'main';
-type GroupMode = 'file' | 'tag' | 'date';
+type GroupMode = 'file' |  'annotation' | 'tag' | 'date';
 type ViewType = 'notes' | 'cards';
 
 export  class SidebarOverviewView extends ItemView {
@@ -320,6 +320,7 @@ if (toolbar) {
     
     const groupOptions = [
       { mode: 'file' as GroupMode, icon: '📁', tooltip: '按文件' },
+      // { mode: 'annotation' as GroupMode, icon: '💬', tooltip: '批注' },
       { mode: 'tag' as GroupMode, icon: '🏷️', tooltip: '按标签' },
       { mode: 'date' as GroupMode, icon: '📅', tooltip: '按日期' }
     ];
@@ -693,6 +694,7 @@ noteText.addEventListener('click', () => {
     
     const groupOptions = [
       { mode: 'file' as GroupMode, icon: '📁', label: '文件' },
+      { mode: 'annotation' as GroupMode, icon: '💬', label: '批注' },
       { mode: 'tag' as GroupMode, icon: '🏷️', label: '标签' },
       { mode: 'date' as GroupMode, icon: '📅', label: '日期' }
     ];
@@ -701,7 +703,7 @@ noteText.addEventListener('click', () => {
       const btn = groupSwitcher.createDiv({
         cls: `group-btn-main ${this.groupMode === mode ? 'active' : ''}`,
       });
-      btn.innerHTML = `${icon} <span>${label}</span>`;
+      btn.innerHTML = `${icon} `;
       btn.addEventListener('click', () => {
         if (this.groupMode !== mode) {
           this.groupMode = mode;
@@ -957,7 +959,11 @@ noteText.addEventListener('click', () => {
     const units = this.getFilteredUnits().filter(unit => {
       if (this.groupMode === 'file') {
         return unit.source.file === this.selectedFile;
-      } else if (this.groupMode === 'tag') {
+      }else if (this.groupMode === 'annotation'){
+        const hasAnnotation = this.selectedFile === '有批注';
+        return hasAnnotation ? !!unit.annotationId : !unit.annotationId;
+      }
+       else if (this.groupMode === 'tag') {
         return unit.metadata.tags.includes(this.selectedFile!);
       } else if (this.groupMode === 'date') {
         return this.formatDate(new Date(unit.metadata.createdAt)) === this.selectedFile;
@@ -1036,7 +1042,18 @@ noteText.addEventListener('click', () => {
         // 按文件过滤
         return card.sourceFile === this.selectedFile;
       } 
-      
+
+      if (this.groupMode === 'annotation') {
+        // 🔧 按批注过滤
+        const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+        const hasAnnotation = this.selectedFile === '有批注';
+        if (hasAnnotation) {
+          return unit && !!unit.annotationId;
+        } else {
+          return !unit || !unit.annotationId;
+        }
+      }
+
       if (this.groupMode === 'tag') {
         // 按标签过滤
         const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
@@ -1115,6 +1132,11 @@ noteText.addEventListener('click', () => {
     // 顶部：文档名称
     const header = card.createDiv({ cls: 'grid-card-header' });
 
+header.addEventListener('click', () => {
+  this.jumpToSource(unit);
+});
+
+
     // 🔧 添加类型指示器
 const typeIndicator = header.createDiv({ cls: 'type-indicator' });
 if (unit.type === 'QA') {
@@ -1184,6 +1206,7 @@ else {
 
 noteText.innerHTML = displayHTML;
 
+
 noteText.addEventListener('click', () => {
   this.toggleInlineAnnotation(card, unit);
 });
@@ -1243,6 +1266,22 @@ private renderFlashcardGridCard(container: HTMLElement, card: Flashcard) {
 
   // 顶部
   const header = cardEl.createDiv({ cls: 'grid-card-header' });
+  header.addEventListener('click', async () => {
+    const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+    if (unit) {
+      await this.jumpToSource(unit);
+    } else {
+      // 如果找不到笔记单元，尝试直接打开文件
+      const file = this.app.vault.getAbstractFileByPath(card.sourceFile);
+      if (file instanceof TFile) {
+        await this.app.workspace.getLeaf(false).openFile(file);
+        new Notice('✅ 已打开源文件');
+      } else {
+        new Notice('⚠️ 找不到原始笔记');
+      }
+    }
+  });
+
   const typeLabel = header.createDiv({
     cls: `flashcard-type ${card.type}`,
     text: card.type === 'qa' ? 'Q&A' : '填空'
@@ -1394,7 +1433,7 @@ private renderFlashcardGridCard(container: HTMLElement, card: Flashcard) {
     
     const hint = document.createElement('div');
     hint.className = 'inline-annotation-hint';
-    hint.textContent = 'Shift + Enter 换行, Enter 保存';
+    hint.textContent = 'Shift + Enter 换行';
     
     editor.appendChild(textarea);
     editor.appendChild(hint);
@@ -1417,27 +1456,26 @@ private renderFlashcardGridCard(container: HTMLElement, card: Flashcard) {
     textarea.focus();
     textarea.setSelectionRange(textarea.value.length, textarea.value.length);
     
-    // Enter 键保存
-    textarea.addEventListener('keydown', async (e) => {
-      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+    // 只监听 Escape 取消编辑，不拦截任何其他按键
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
         e.preventDefault();
-        await this.saveInlineAnnotation(editor, unit, textarea.value);
-      } else if (e.key === 'Escape') {
         this.cancelInlineAnnotation(editor, cardEl, unit);
       }
+      // 不处理其他按键，让 textarea 保持默认行为
     });
     
-    // 失焦时不自动保存，等待用户操作
-    textarea.addEventListener('blur', (e) => {
-      // 如果点击的是其他卡片，关闭编辑器
+    // 失焦时自动保存
+    textarea.addEventListener('blur', async (e) => {
+      // 如果点击的是其他元素，自动保存
       const relatedTarget = e.relatedTarget as HTMLElement;
       if (!relatedTarget || !editor.contains(relatedTarget)) {
-        // 延迟关闭，避免点击其他元素时闪烁
-        setTimeout(() => {
+        // 延迟保存，确保编辑器还在 DOM 中
+        setTimeout(async () => {
           if (editor.parentElement) {
-            this.cancelInlineAnnotation(editor, cardEl, unit);
+            await this.saveInlineAnnotation(editor, unit, textarea.value);
           }
-        }, 200);
+        }, 100);
       }
     });
   }
@@ -1457,7 +1495,7 @@ private renderFlashcardGridCard(container: HTMLElement, card: Flashcard) {
       } else {
         await this.plugin.annotationManager.addContentAnnotation(unit.id, trimmedText);
       }
-      new Notice('✅ 批注已保存');
+      // new Notice('✅ 批注已保存');
     } else if (annotation) {
       await this.plugin.annotationManager.deleteAnnotation(annotation.id);
       new Notice('🗑️ 批注已删除');
@@ -2392,6 +2430,12 @@ private clearSelection() {
         case 'file':
           key = unit.source.file;
           break;
+          case 'annotation':
+  // 按是否有批注分组
+  const hasAnnotation = unit.annotationId ? '有批注' : '无批注';
+  if (!grouped.has(hasAnnotation)) grouped.set(hasAnnotation, []);
+  grouped.get(hasAnnotation)!.push(unit);
+  return;
         case 'tag':
           unit.metadata.tags.forEach(tag => {
             if (!grouped.has(tag)) grouped.set(tag, []);
@@ -2412,6 +2456,12 @@ private clearSelection() {
     return Array.from(grouped.entries())
     .map(([groupKey, units]) => ({ groupKey, units }))
     .sort((a, b) => {
+        // 如果是批注分组，"有批注"排在前面
+  if (this.groupMode === 'annotation') {
+    if (a.groupKey === '有批注') return -1;
+    if (b.groupKey === '有批注') return 1;
+    return 0;
+  }
       // 如果是日期分组，按日期降序排列
       if (this.groupMode === 'date') {
         return b.groupKey.localeCompare(a.groupKey); // 日期字符串降序
@@ -2437,13 +2487,24 @@ private groupFlashcards(flashcards: Flashcard[]): Array<{ groupKey: string; card
         // 按文件分组 - 使用卡片的 sourceFile
         keys = [card.sourceFile];
         break;
+
+        case 'annotation':
+          const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+          console.log('Card:', card.id, 'Unit:', unit?.id, 'Has annotation:', !!unit?.annotationId);
+          if (unit && unit.annotationId) {
+            keys = ['有批注'];
+          } else {
+            keys = ['无批注'];
+          }
+          break;
+        
         
       case 'tag':
         // 按标签分组
         // 优先使用笔记单元的标签
         if (unit && unit.metadata.tags.length > 0) {
           keys = unit.metadata.tags;
-        } 
+        }   
         // 其次使用卡片自己的标签
         else if (card.tags && card.tags.length > 0) {
           keys = card.tags;
@@ -2480,6 +2541,13 @@ private groupFlashcards(flashcards: Flashcard[]): Array<{ groupKey: string; card
   const result = Array.from(grouped.entries())
   .map(([groupKey, cards]) => ({ groupKey, cards }))
   .sort((a, b) => {
+      // 🔧 如果是批注分组，"有批注"排在前面
+  if (this.groupMode === 'annotation') {
+    if (a.groupKey === '有批注') return -1;
+    if (b.groupKey === '有批注') return 1;
+    return 0;
+  }
+
     // 如果是日期分组，按日期降序排列
     if (this.groupMode === 'date') {
       return b.groupKey.localeCompare(a.groupKey); // 日期字符串降序
@@ -2519,6 +2587,7 @@ private groupFlashcards(flashcards: Flashcard[]): Array<{ groupKey: string; card
   private getGroupIcon(mode: GroupMode): string {
     switch (mode) {
       case 'file': return '📄';
+      case 'annotation': return '💬';
       case 'tag': return '🏷️';
       case 'date': return '📅';
       default: return '📁';

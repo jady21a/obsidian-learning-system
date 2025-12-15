@@ -1,18 +1,463 @@
 [
   {
-    "id": "card-1765764299868-rzbkml369",
+    "id": "card-1765725936152-z06x81933",
     "type": "qa",
-    "sourceContentId": "1765764299865-llerbq8s9",
+    "sourceContentId": "1765725936147-eggcjywfb",
     "sourceFile": "1.Rough/特色t.md",
-    "anchorLink": "[[特色t#^extract-1765764299865-uvease]]",
+    "anchorLink": "[[特色t#^extract-1765725936147-aqz8nf]]",
+    "front": "cc",
+    "back": "dd",
+    "deck": "1.Rough",
+    "tags": [],
+    "scheduling": {
+      "interval": 10,
+      "ease": 2.5,
+      "due": 1765761026396,
+      "lapses": 0,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 0.5,
+      "averageTime": 14.238,
+      "difficulty": 0.55,
+      "lastReview": 1765760426395
+    },
+    "metadata": {
+      "createdAt": 1765725936152,
+      "updatedAt": 1765760426395
+    }
+  },
+  {
+    "id": "card-1765726338638-9lu9lck36",
+    "type": "qa",
+    "sourceContentId": "1765726338632-28kdz3vt9",
+    "sourceFile": "1.Rough/特色t.md",
+    "anchorLink": "[[特色t#^extract-1765726338633-cbnpft]]",
     "front": "简称额",
     "back": "男外出",
     "deck": "1.Rough",
     "tags": [],
     "scheduling": {
+      "interval": 10,
+      "ease": 2.5,
+      "due": 1765761051572,
+      "lapses": 0,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 0.5,
+      "averageTime": 25.166,
+      "difficulty": 0.55,
+      "lastReview": 1765760451572
+    },
+    "metadata": {
+      "createdAt": 1765726338638,
+      "updatedAt": 1765760451572
+    }
+  },
+  {
+    "id": "card-1765726338644-wl7qvany6",
+    "type": "qa",
+    "sourceContentId": "1765726338633-c4qs7mugk",
+    "sourceFile": "1.Rough/特色t.md",
+    "anchorLink": "[[特色t#^extract-1765726338633-3ua9r8]]",
+    "front": "什么是闭包？",
+    "back": "闭包是指函数可以访问其外部作用域的变量",
+    "deck": "1.Rough",
+    "tags": [],
+    "scheduling": {
+      "interval": 10,
+      "ease": 2.5,
+      "due": 1765770331632,
+      "lapses": 0,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 0.5,
+      "averageTime": 9280.053,
+      "difficulty": 0.55,
+      "lastReview": 1765769731631
+    },
+    "metadata": {
+      "createdAt": 1765726338644,
+      "updatedAt": 1765769731631
+    }
+  },
+  {
+    "id": "card-1765726338646-0xf66kans",
+    "type": "qa",
+    "sourceContentId": "1765726338633-251hny7bt",
+    "sourceFile": "1.Rough/特色t.md",
+    "anchorLink": "[[特色t#^extract-1765726338633-i7yfy4]]",
+    "front": "aa",
+    "back": "bb",
+    "deck": "1.Rough",
+    "tags": [],
+    "scheduling": {
+      "interval": 4,
+      "ease": 2.5,
+      "due": 1766120082497,
+      "lapses": 0,
+      "reps": 1,
+      "state": "review"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 4750.813,
+      "difficulty": 0.4,
+      "lastReview": 1765774482497
+    },
+    "metadata": {
+      "createdAt": 1765726338646,
+      "updatedAt": 1765774482497
+    }
+  },
+  {
+    "id": "card-1765726338648-gd7idnynl",
+    "type": "qa",
+    "sourceContentId": "1765726338633-75niysn56",
+    "sourceFile": "1.Rough/特色t.md",
+    "anchorLink": "[[特色t#^extract-1765726338633-h5nqf4]]",
+    "front": "cc",
+    "back": "dd",
+    "deck": "1.Rough",
+    "tags": [],
+    "scheduling": {
+      "interval": 10,
+      "ease": 2.5,
+      "due": 1765777970106,
+      "lapses": 0,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 0.5,
+      "averageTime": 2887.588,
+      "difficulty": 0.55,
+      "lastReview": 1765777370106
+    },
+    "metadata": {
+      "createdAt": 1765726338648,
+      "updatedAt": 1765777370106
+    }
+  },
+  {
+    "id": "card-1765726338652-2h9y6bcsq",
+    "type": "cloze",
+    "sourceContentId": "1765726338633-sem4kxz31",
+    "sourceFile": "1.Rough/特色t.md",
+    "anchorLink": "[[特色t#^extract-1765726338633-ldwfmc]]",
+    "front": "港==[...]==",
+    "back": [
+      "风坑"
+    ],
+    "cloze": {
+      "original": "港==风坑==",
+      "deletions": [
+        {
+          "index": 3,
+          "answer": "风坑"
+        }
+      ]
+    },
+    "deck": "1.Rough",
+    "tags": [],
+    "scheduling": {
+      "interval": 10,
+      "ease": 2.5,
+      "due": 1765778900093,
+      "lapses": 0,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 0.5,
+      "averageTime": 929.96,
+      "difficulty": 0.55,
+      "lastReview": 1765778300093
+    },
+    "metadata": {
+      "createdAt": 1765726338652,
+      "updatedAt": 1765778300093
+    }
+  },
+  {
+    "id": "card-1765726338656-ls47kco6i",
+    "type": "cloze",
+    "sourceContentId": "1765726338633-1y5gtc8ce",
+    "sourceFile": "1.Rough/特色t.md",
+    "anchorLink": "[[特色t#^extract-1765726338633-4e9x2b]]",
+    "front": "JavaScript 中的 ==[...]== 处理异步操作。",
+    "back": [
+      "事件循环"
+    ],
+    "cloze": {
+      "original": "JavaScript 中的 ==事件循环== 处理异步操作。",
+      "deletions": [
+        {
+          "index": 16,
+          "answer": "事件循环"
+        }
+      ]
+    },
+    "deck": "1.Rough",
+    "tags": [],
+    "scheduling": {
+      "interval": 1,
+      "ease": 2.5,
+      "due": 1765869362558,
+      "lapses": 0,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 5.179,
+      "difficulty": 0.45,
+      "lastReview": 1765782962558
+    },
+    "metadata": {
+      "createdAt": 1765726338656,
+      "updatedAt": 1765782962558
+    }
+  },
+  {
+    "id": "card-1765726483067-io4r6m0db",
+    "type": "cloze",
+    "sourceContentId": "1765726483064-wqrzpvoaa",
+    "sourceFile": "1.Rough/特色t.md",
+    "anchorLink": "[[特色t#^extract-1765726483064-wl2s7p]]",
+    "front": "[...]",
+    "back": [
+      "cc :: dd"
+    ],
+    "cloze": {
+      "original": "cc :: dd",
+      "deletions": [
+        {
+          "index": 0,
+          "answer": "cc :: dd"
+        }
+      ]
+    },
+    "deck": "1.Rough",
+    "tags": [],
+    "scheduling": {
+      "interval": 1,
+      "ease": 2.5,
+      "due": 1765869412908,
+      "lapses": 0,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 50.341,
+      "difficulty": 0.45,
+      "lastReview": 1765783012908
+    },
+    "metadata": {
+      "createdAt": 1765726483067,
+      "updatedAt": 1765783012908
+    }
+  },
+  {
+    "id": "card-1765727296866-whfo1ewkf",
+    "type": "qa",
+    "sourceContentId": "1765727296859-62o9gup4o",
+    "sourceFile": "1.Rough/特色t.md",
+    "anchorLink": "[[特色t#^extract-1765727296859-heqlst]]",
+    "front": "简称额",
+    "back": "男外出",
+    "deck": "1.Rough",
+    "tags": [],
+    "scheduling": {
+      "interval": 10,
+      "ease": 2.5,
+      "due": 1765785855767,
+      "lapses": 0,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 0.5,
+      "averageTime": 2242.852,
+      "difficulty": 0.55,
+      "lastReview": 1765785255766
+    },
+    "metadata": {
+      "createdAt": 1765727296866,
+      "updatedAt": 1765785255766
+    }
+  },
+  {
+    "id": "card-1765727296867-ha3uztbv2",
+    "type": "qa",
+    "sourceContentId": "1765727296859-x75njj758",
+    "sourceFile": "1.Rough/特色t.md",
+    "anchorLink": "[[特色t#^extract-1765727296859-0t40v8]]",
+    "front": "什么是闭包？",
+    "back": "闭包是指函数可以访问其外部作用域的变量",
+    "deck": "1.Rough",
+    "tags": [],
+    "scheduling": {
+      "interval": 10,
+      "ease": 2.5,
+      "due": 1765786388778,
+      "lapses": 0,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 0.5,
+      "averageTime": 6.628,
+      "difficulty": 0.55,
+      "lastReview": 1765785788778
+    },
+    "metadata": {
+      "createdAt": 1765727296867,
+      "updatedAt": 1765785788778
+    }
+  },
+  {
+    "id": "card-1765727296868-zwln3xrty",
+    "type": "qa",
+    "sourceContentId": "1765727296860-yhs5dbul7",
+    "sourceFile": "1.Rough/特色t.md",
+    "anchorLink": "[[特色t#^extract-1765727296860-wurc3b]]",
+    "front": "aa",
+    "back": "bb",
+    "deck": "1.Rough",
+    "tags": [],
+    "scheduling": {
+      "interval": 10,
+      "ease": 2.5,
+      "due": 1765786392113,
+      "lapses": 0,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 0.5,
+      "averageTime": 3.329,
+      "difficulty": 0.55,
+      "lastReview": 1765785792113
+    },
+    "metadata": {
+      "createdAt": 1765727296869,
+      "updatedAt": 1765785792113
+    }
+  },
+  {
+    "id": "card-1765727296870-ym3njvpkp",
+    "type": "qa",
+    "sourceContentId": "1765727296860-t4dreysxl",
+    "sourceFile": "1.Rough/特色t.md",
+    "anchorLink": "[[特色t#^extract-1765727296860-ete751]]",
+    "front": "cc",
+    "back": "dd",
+    "deck": "1.Rough",
+    "tags": [],
+    "scheduling": {
+      "interval": 1,
+      "ease": 2.3,
+      "due": 1765786421143,
+      "lapses": 1,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 0,
+      "averageTime": 84.418,
+      "difficulty": 0.6,
+      "lastReview": 1765786361143
+    },
+    "metadata": {
+      "createdAt": 1765727296870,
+      "updatedAt": 1765786361143
+    }
+  },
+  {
+    "id": "card-1765727296871-52swfytzw",
+    "type": "cloze",
+    "sourceContentId": "1765727296860-o25y3wuw3",
+    "sourceFile": "1.Rough/特色t.md",
+    "anchorLink": "[[特色t#^extract-1765727296860-0eo3lc]]",
+    "front": "港==[...]==",
+    "back": [
+      "风坑"
+    ],
+    "cloze": {
+      "original": "港==风坑==",
+      "deletions": [
+        {
+          "index": 3,
+          "answer": "风坑"
+        }
+      ]
+    },
+    "deck": "1.Rough",
+    "tags": [],
+    "scheduling": {
+      "interval": 1,
+      "ease": 2.3,
+      "due": 1765788998466,
+      "lapses": 1,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 0,
+      "averageTime": 2577.319,
+      "difficulty": 0.6,
+      "lastReview": 1765788938465
+    },
+    "metadata": {
+      "createdAt": 1765727296871,
+      "updatedAt": 1765788938465
+    }
+  },
+  {
+    "id": "card-1765727296872-0m7yukc40",
+    "type": "cloze",
+    "sourceContentId": "1765727296860-hd7knha70",
+    "sourceFile": "1.Rough/特色t.md",
+    "anchorLink": "[[特色t#^extract-1765727296860-o1xxxr]]",
+    "front": "JavaScript 中的 ==[...]== 处理异步操作。",
+    "back": [
+      "事件循环"
+    ],
+    "cloze": {
+      "original": "JavaScript 中的 ==事件循环== 处理异步操作。",
+      "deletions": [
+        {
+          "index": 16,
+          "answer": "事件循环"
+        }
+      ]
+    },
+    "deck": "1.Rough",
+    "tags": [],
+    "scheduling": {
       "interval": 0,
       "ease": 2.5,
-      "due": 1765764299868,
+      "due": 1765727296872,
       "lapses": 0,
       "reps": 0,
       "state": "new"
@@ -24,8 +469,8 @@
       "difficulty": 0.5
     },
     "metadata": {
-      "createdAt": 1765764299868,
-      "updatedAt": 1765764299868
+      "createdAt": 1765727296872,
+      "updatedAt": 1765727296872
     }
   }
 ]

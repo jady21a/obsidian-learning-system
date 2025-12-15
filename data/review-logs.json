@@ -1592,5 +1592,189 @@
       "oldEase": 2.5,
       "newEase": 2.5
     }
+  },
+  {
+    "id": "log-1765769731674",
+    "flashcardId": "card-1765726338644-wl7qvany6",
+    "timestamp": 1765769731631,
+    "response": {
+      "userAnswer": "2",
+      "timeSpent": 9280.053,
+      "ease": "hard"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 10,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1765774482517",
+    "flashcardId": "card-1765726338646-0xf66kans",
+    "timestamp": 1765774482497,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 4750.813,
+      "ease": "easy"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 4,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1765777370131",
+    "flashcardId": "card-1765726338648-gd7idnynl",
+    "timestamp": 1765777370106,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 2887.588,
+      "ease": "hard"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 10,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1765778300124",
+    "flashcardId": "card-1765726338652-2h9y6bcsq",
+    "timestamp": 1765778300093,
+    "response": {
+      "userAnswer": [
+        ""
+      ],
+      "timeSpent": 929.96,
+      "ease": "hard"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 10,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1765782962564",
+    "flashcardId": "card-1765726338656-ls47kco6i",
+    "timestamp": 1765782962558,
+    "response": {
+      "userAnswer": [
+        "fygy"
+      ],
+      "timeSpent": 5.179,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1765783012912",
+    "flashcardId": "card-1765726483067-io4r6m0db",
+    "timestamp": 1765783012908,
+    "response": {
+      "userAnswer": [
+        "vhj"
+      ],
+      "timeSpent": 50.341,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1765785255825",
+    "flashcardId": "card-1765727296866-whfo1ewkf",
+    "timestamp": 1765785255766,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 2242.852,
+      "ease": "hard"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 10,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1765785788781",
+    "flashcardId": "card-1765727296867-ha3uztbv2",
+    "timestamp": 1765785788778,
+    "response": {
+      "userAnswer": "bh j",
+      "timeSpent": 6.628,
+      "ease": "hard"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 10,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1765785792117",
+    "flashcardId": "card-1765727296868-zwln3xrty",
+    "timestamp": 1765785792113,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 3.329,
+      "ease": "hard"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 10,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1765786361145",
+    "flashcardId": "card-1765727296870-ym3njvpkp",
+    "timestamp": 1765786361143,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 84.418,
+      "ease": "again"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.3
+    }
+  },
+  {
+    "id": "log-1765788938468",
+    "flashcardId": "card-1765727296871-52swfytzw",
+    "timestamp": 1765788938465,
+    "response": {
+      "userAnswer": [
+        ""
+      ],
+      "timeSpent": 2577.319,
+      "ease": "again"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.3
+    }
   }
 ]
