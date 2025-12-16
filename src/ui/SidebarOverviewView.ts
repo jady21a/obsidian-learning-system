@@ -22,7 +22,7 @@ export  class SidebarOverviewView extends ItemView {
   private filterMode: FilterMode = 'all';
   private groupMode: GroupMode = 'file';
   private selectedFile: string | null = null;
-  private displayMode: DisplayMode = 'sidebar';
+  private displayMode: DisplayMode = 'sidebar'; 
   private viewType: ViewType = 'notes';
   private activeMenuId: string | null = null;
   private savedScrollPosition: number = 0;
@@ -1430,6 +1430,7 @@ private renderFlashcardGridCard(container: HTMLElement, card: Flashcard) {
     textarea.className = 'inline-annotation-textarea';
     textarea.placeholder = 'Add comment...';
     textarea.value = annotation?.content || '';
+    textarea.setAttribute('data-unit-id', unit.id);
     
     const hint = document.createElement('div');
     hint.className = 'inline-annotation-hint';
@@ -1456,34 +1457,37 @@ private renderFlashcardGridCard(container: HTMLElement, card: Flashcard) {
     textarea.focus();
     textarea.setSelectionRange(textarea.value.length, textarea.value.length);
     
-    // 只监听 Escape 取消编辑，不拦截任何其他按键
-    textarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        this.cancelInlineAnnotation(editor, cardEl, unit);
-      }
-      // 不处理其他按键，让 textarea 保持默认行为
-    });
+
     
-    // 失焦时自动保存
-    textarea.addEventListener('blur', async (e) => {
-      // 如果点击的是其他元素，自动保存
-      const relatedTarget = e.relatedTarget as HTMLElement;
-      if (!relatedTarget || !editor.contains(relatedTarget)) {
-        // 延迟保存，确保编辑器还在 DOM 中
-        setTimeout(async () => {
-          if (editor.parentElement) {
-            await this.saveInlineAnnotation(editor, unit, textarea.value);
-          }
-        }, 100);
+// 失焦时自动保存
+textarea.addEventListener('blur', async (e) => {
+  // 如果点击的是其他元素，自动保存
+  const relatedTarget = e.relatedTarget as HTMLElement;
+  if (!relatedTarget || !editor.contains(relatedTarget)) {
+    // 延迟保存，确保编辑器还在 DOM 中
+    setTimeout(async () => {
+      if (editor.parentElement) {
+        await this.saveInlineAnnotation(editor, unit, textarea.value);
       }
-    });
+    }, 100);
+  }
+});
+
+// Tab 键保存
+textarea.addEventListener('keydown', async (e) => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    await this.saveInlineAnnotation(editor, unit, textarea.value);
+  }
+});
   }
   
   /**
    * 保存内联批注
    */
   private async saveInlineAnnotation(editorEl: HTMLElement, unit: ContentUnit, text: string) {
+    console.log('🔍 [saveInlineAnnotation] 开始保存', { unitId: unit.id, text });
+    
     const trimmedText = text.trim();
     const annotation = this.plugin.annotationManager.getContentAnnotation(unit.id);
     
@@ -1495,17 +1499,40 @@ private renderFlashcardGridCard(container: HTMLElement, card: Flashcard) {
       } else {
         await this.plugin.annotationManager.addContentAnnotation(unit.id, trimmedText);
       }
-      // new Notice('✅ 批注已保存');
     } else if (annotation) {
       await this.plugin.annotationManager.deleteAnnotation(annotation.id);
       new Notice('🗑️ 批注已删除');
     }
     
-    // 移除编辑器
-    editorEl.remove();
+    const card = editorEl.closest('.compact-card, .grid-card') as HTMLElement;
+    console.log('🔍 [saveInlineAnnotation] 找到 card:', !!card);
     
-    // 刷新内容以显示更新后的批注
-    this.refreshContent();
+    editorEl.remove();
+    console.log('🔍 [saveInlineAnnotation] 编辑器已移除');
+    
+    if (trimmedText && card) {
+      const content = card.querySelector('.card-content, .grid-card-content') as HTMLElement;
+      console.log('🔍 [saveInlineAnnotation] 找到 content:', !!content);
+      
+      if (content) {
+        console.log('🔍 [saveInlineAnnotation] 准备重建批注预览');
+        this.recreateAnnotationPreview(content, card, unit, trimmedText);
+        console.log('🔍 [saveInlineAnnotation] 批注预览已重建');
+              // 🔧 新增：更新 indicator
+      const indicator = card.querySelector('.card-indicator') as HTMLElement;
+      if (indicator && !indicator.classList.contains('has-annotation')) {
+        console.log('🔍 [saveInlineAnnotation] 更新 indicator 添加批注样式');
+        indicator.classList.add('has-annotation');
+      }
+    }
+  } else if (!trimmedText && card) {
+    // 🔧 如果删除了批注，移除 indicator 的批注样式
+    const indicator = card.querySelector('.card-indicator') as HTMLElement;
+    if (indicator && indicator.classList.contains('has-annotation')) {
+      console.log('🔍 [saveInlineAnnotation] 更新 indicator 移除批注样式');
+      indicator.classList.remove('has-annotation');
+      }
+    }
   }
   
   /**
@@ -1532,10 +1559,17 @@ private renderFlashcardGridCard(container: HTMLElement, card: Flashcard) {
     unit: ContentUnit, 
     annotationText: string
   ) {
+    console.log('🔍 [recreateAnnotationPreview] 开始重建', { unitId: unit.id });
+    
+    const existingPreview = contentEl.querySelector('.annotation-preview, .grid-annotation');
+    if (existingPreview) {
+      console.log('🔍 [recreateAnnotationPreview] 移除旧预览');
+      existingPreview.remove();
+    }
+    
     const isGridCard = cardEl.classList.contains('grid-card');
-    const annEl = contentEl.createDiv({ 
-      cls: isGridCard ? 'grid-annotation' : 'annotation-preview' 
-    });
+    const annEl = document.createElement('div');
+    annEl.className = isGridCard ? 'grid-annotation' : 'annotation-preview';
     
     if (isGridCard) {
       annEl.innerHTML = `<strong>批注：</strong>${annotationText}`;
@@ -1546,19 +1580,44 @@ private renderFlashcardGridCard(container: HTMLElement, card: Flashcard) {
       annEl.textContent = `💬 ${displayText}`;
     }
     
-    // 添加点击事件
+    console.log('🔍 [recreateAnnotationPreview] 批注元素已创建，className:', annEl.className);
+    
+    // 点击事件
     annEl.addEventListener('click', (e) => {
+      console.log('🔍 [批注预览] 被点击');
       e.stopPropagation();
       this.toggleInlineAnnotation(cardEl, unit);
     });
     
-    // 插入到正确位置
+    // 🔧 新增：Tab 键事件
+    annEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        console.log('🔍 [批注预览] Tab 键被按下');
+        e.preventDefault();
+        e.stopPropagation();
+        this.toggleInlineAnnotation(cardEl, unit);
+      }
+    });
+    
     const noteText = contentEl.querySelector('.note-text, .grid-note-text') as HTMLElement;
     if (noteText) {
-      noteText.after(annEl);
+      console.log('🔍 [recreateAnnotationPreview] 插入到 note-text 后面');
+      noteText.insertAdjacentElement('afterend', annEl);
+      
+      const inserted = contentEl.querySelector('.annotation-preview, .grid-annotation');
+      console.log('🔍 [recreateAnnotationPreview] 插入后检查，元素是否在DOM中:', !!inserted, inserted);
     } else {
+      console.log('🔍 [recreateAnnotationPreview] 直接追加到 content');
       contentEl.appendChild(annEl);
     }
+    
+    console.log('🔍 [recreateAnnotationPreview] 重建完成');
+    
+    // 🔧 设置 tabindex 使其可以接收焦点
+    annEl.setAttribute('tabindex', '0');
+    annEl.focus();
+    
+    console.log('🔍 [recreateAnnotationPreview] 已聚焦到批注预览');
   }
 
   /**
@@ -1740,14 +1799,22 @@ private showBatchMenu(event: MouseEvent, unit?: ContentUnit) {
     );
 
     menu.addSeparator();
-
+    if (unit.flashcardIds.length > 0) {
+      menu.addItem((item) =>
+        item
+          .setTitle('✏️ 编辑闪卡')
+          .setIcon('edit')
+          .onClick(() => this.editFlashcardsForUnit(unit,event))
+      );
+      menu.addSeparator();
+    }
     menu.addItem((item) =>
       item
         .setTitle('⚡ 生成闪卡')
         .setIcon('zap')
         .onClick(() => this.quickGenerateFlashcard(unit))
     );
-
+  
     menu.addItem((item) =>
       item
         .setTitle('➕ 创建 QA 闪卡')
@@ -1802,6 +1869,54 @@ private showBatchMenu(event: MouseEvent, unit?: ContentUnit) {
 
     menu.showAtMouseEvent(event);
   }
+/**
+ * 编辑笔记单元关联的闪卡
+ */
+private editFlashcardsForUnit(unit: ContentUnit, event?: MouseEvent) {
+  if (unit.flashcardIds.length === 0) {
+    new Notice('⚠️ 该笔记没有关联的闪卡');
+    return;
+  }
+
+  // 如果只有一张闪卡,直接编辑
+  if (unit.flashcardIds.length === 1) {
+    const allCards = this.plugin.flashcardManager.getAllFlashcards();
+    const card = allCards.find(c => c.id === unit.flashcardIds[0]);
+    if (card) {
+      this.editFlashcard(card);
+    } else {
+      new Notice('⚠️ 找不到该闪卡');
+    }
+    return;
+  }
+
+  // 如果有多张闪卡,显示选择菜单
+  const menu = new Menu();
+  const allCards = this.plugin.flashcardManager.getAllFlashcards();
+  
+  unit.flashcardIds.forEach((cardId, index) => {
+    const card = allCards.find(c => c.id === cardId);
+    if (card) {
+      const typeLabel = card.type === 'qa' ? 'Q&A' : '填空';
+      const preview = card.front.length > 30 
+        ? card.front.substring(0, 30) + '...' 
+        : card.front;
+      
+      menu.addItem((item) =>
+        item
+          .setTitle(`${index + 1}. ${typeLabel}: ${preview}`)
+          .onClick(() => this.editFlashcard(card))
+      );
+    }
+  });
+
+  // 在鼠标位置显示菜单
+  if (event) {
+    menu.showAtMouseEvent(event);
+  } else {
+    menu.showAtPosition({ x: 100, y: 100 }); // 默认位置
+  }
+}
 /**
  * 显示闪卡上下文菜单
  */
@@ -2490,7 +2605,6 @@ private groupFlashcards(flashcards: Flashcard[]): Array<{ groupKey: string; card
 
         case 'annotation':
           const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
-          console.log('Card:', card.id, 'Unit:', unit?.id, 'Has annotation:', !!unit?.annotationId);
           if (unit && unit.annotationId) {
             keys = ['有批注'];
           } else {
@@ -3915,7 +4029,9 @@ class AnnotationModal extends Modal {
 
     const textarea = contentEl.createEl('textarea', {
       cls: 'annotation-textarea',
-      placeholder: '输入你的批注...'
+      placeholder: '输入你的批注...',
+      
+      
     });
     textarea.value = this.defaultValue;
     textarea.style.width = '100%';
@@ -4094,7 +4210,7 @@ class FlashcardCreationModal extends Modal {
   }
 }
 // ==================== 闪卡编辑模态框 ====================
-class FlashcardEditModal extends Modal {
+export class FlashcardEditModal extends Modal {
   private card: Flashcard;
   private onSubmit: (question: string, answer: string) => void;
 

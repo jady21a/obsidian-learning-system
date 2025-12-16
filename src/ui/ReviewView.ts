@@ -2,6 +2,7 @@ import { ItemView, WorkspaceLeaf, TFile, Notice } from 'obsidian';
 import type LearningSystemPlugin from '../main';
 import { Flashcard } from '../core/FlashcardManager';
 import { CardScheduler, ReviewEase } from '../core/CardScheduler';
+import { FlashcardEditModal } from './SidebarOverviewView';
 
 export const VIEW_TYPE_REVIEW = 'learning-system-review';
 
@@ -114,6 +115,17 @@ export class ReviewView extends ItemView {
     // 创建下拉菜单
     const dropdown = actionsBar.createDiv({ cls: 'more-dropdown' });
     dropdown.style.display = 'none';
+
+    // 添加编辑选项
+const editOption = dropdown.createEl('div', {
+  cls: 'dropdown-item'
+});
+editOption.innerHTML = '✏️ Edit Card';
+editOption.addEventListener('click', () => {
+  if (!this.currentCard) return;
+  this.editCurrentFlashcard();
+  dropdown.style.display = 'none';
+});
 
     const deleteOption = dropdown.createEl('div', {
       cls: 'dropdown-item delete-item'
@@ -256,7 +268,7 @@ export class ReviewView extends ItemView {
     const showAnswerBtn = buttonArea.createEl('button', {
       text: 'Show Answer',
       cls: 'mod-cta show-answer-btn',
-      attr: { title: 'Press Enter' } 
+      attr: { title: 'Press Enter or Tab'} 
     });
     showAnswerBtn.addEventListener('click', () => {
       this.showAnswer = true;
@@ -514,39 +526,66 @@ export class ReviewView extends ItemView {
       new Notice('❌ 删除闪卡失败');
     }
   }
+  private editCurrentFlashcard() {
+    if (!this.currentCard) return;
+  
+    const modal = new FlashcardEditModal(
+      this.app,
+      this.currentCard,
+      async (question: string, answer: string) => {
+        try {
+          const updatedCard: Flashcard = {
+            ...this.currentCard!,
+            front: question,
+            back: this.currentCard!.type === 'cloze' ? [answer] : answer,
+            metadata: {
+              ...this.currentCard!.metadata,
+              updatedAt: Date.now()
+            }
+          };
+          
+          await this.plugin.flashcardManager.updateCard(updatedCard);
+          new Notice('✅ 闪卡已更新');
+          
+          // 刷新当前卡片显示
+          this.currentCard = updatedCard;
+          this.render();
+        } catch (error) {
+          console.error('Error updating flashcard:', error);
+          new Notice('❌ 更新闪卡失败');
+        }
+      }
+    );
+    modal.open();
+  }
 
   // 快捷键
   private keyboardHandler = (e: KeyboardEvent) => {
     const target = e.target as HTMLElement;
     const isInInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+      // Tab 键处理
+  if (e.key === 'Tab') {
+    e.preventDefault();
     
-    // 在输入框中
-    if (isInInput) {
-      if (e.key === 'Enter' && e.shiftKey) {
-        // Shift+Enter 在 textarea 中换行（默认行为）
-        return;
+    if (e.shiftKey) {
+      // Shift + Tab: 回到题面
+      if (this.showAnswer) {
+        this.showAnswer = false;
+        this.render();
       }
-      
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        if (!this.showAnswer) {
-          this.showAnswer = true;
-          this.render();
-        }
-        return;
+    } else {
+      // Tab: 显示答案或下一张
+      if (!this.showAnswer) {
+        this.showAnswer = true;
+        this.render();
+      } else {
+        // 已显示答案,直接按 "Good" 评分进入下一张
+        this.submitReview('good');
       }
-      
-      // 在输入框中按数字键时不触发评分
-      return;
     }
-    
-    // 不在输入框时的快捷键
-    if (e.key === 'Enter' && !this.showAnswer) {
-      e.preventDefault();
-      this.showAnswer = true;
-      this.render();
-      return;
-    }
+    return;
+  }
+
     
     // 数字键评分（只在显示答案且不在输入框时有效）
     if (this.showAnswer) {

@@ -1,108 +1,18 @@
 [
   {
-    "id": "card-1765725936152-z06x81933",
+    "id": "card-1765848718326-956x9wwwh",
     "type": "qa",
-    "sourceContentId": "1765725936147-eggcjywfb",
-    "sourceFile": "1.Rough/特色t.md",
-    "anchorLink": "[[特色t#^extract-1765725936147-aqz8nf]]",
-    "front": "cc",
-    "back": "dd",
-    "deck": "1.Rough",
-    "tags": [],
-    "scheduling": {
-      "interval": 10,
-      "ease": 2.5,
-      "due": 1765761026396,
-      "lapses": 0,
-      "reps": 1,
-      "state": "learning"
-    },
-    "stats": {
-      "totalReviews": 1,
-      "correctCount": 0.5,
-      "averageTime": 14.238,
-      "difficulty": 0.55,
-      "lastReview": 1765760426395
-    },
-    "metadata": {
-      "createdAt": 1765725936152,
-      "updatedAt": 1765760426395
-    }
-  },
-  {
-    "id": "card-1765726338638-9lu9lck36",
-    "type": "qa",
-    "sourceContentId": "1765726338632-28kdz3vt9",
-    "sourceFile": "1.Rough/特色t.md",
-    "anchorLink": "[[特色t#^extract-1765726338633-cbnpft]]",
-    "front": "简称额",
-    "back": "男外出",
-    "deck": "1.Rough",
-    "tags": [],
-    "scheduling": {
-      "interval": 10,
-      "ease": 2.5,
-      "due": 1765761051572,
-      "lapses": 0,
-      "reps": 1,
-      "state": "learning"
-    },
-    "stats": {
-      "totalReviews": 1,
-      "correctCount": 0.5,
-      "averageTime": 25.166,
-      "difficulty": 0.55,
-      "lastReview": 1765760451572
-    },
-    "metadata": {
-      "createdAt": 1765726338638,
-      "updatedAt": 1765760451572
-    }
-  },
-  {
-    "id": "card-1765726338644-wl7qvany6",
-    "type": "qa",
-    "sourceContentId": "1765726338633-c4qs7mugk",
-    "sourceFile": "1.Rough/特色t.md",
-    "anchorLink": "[[特色t#^extract-1765726338633-3ua9r8]]",
-    "front": "什么是闭包？",
-    "back": "闭包是指函数可以访问其外部作用域的变量",
-    "deck": "1.Rough",
-    "tags": [],
-    "scheduling": {
-      "interval": 10,
-      "ease": 2.5,
-      "due": 1765770331632,
-      "lapses": 0,
-      "reps": 1,
-      "state": "learning"
-    },
-    "stats": {
-      "totalReviews": 1,
-      "correctCount": 0.5,
-      "averageTime": 9280.053,
-      "difficulty": 0.55,
-      "lastReview": 1765769731631
-    },
-    "metadata": {
-      "createdAt": 1765726338644,
-      "updatedAt": 1765769731631
-    }
-  },
-  {
-    "id": "card-1765726338646-0xf66kans",
-    "type": "qa",
-    "sourceContentId": "1765726338633-251hny7bt",
-    "sourceFile": "1.Rough/特色t.md",
-    "anchorLink": "[[特色t#^extract-1765726338633-i7yfy4]]",
+    "sourceContentId": "1765848718325-whunov3q9",
+    "sourceFile": "9.备忘/软件设备/2.obsidian.md",
+    "anchorLink": "[[2.obsidian#^extract-1765848718325-dg65rd]]",
     "front": "aa",
     "back": "bb",
-    "deck": "1.Rough",
+    "deck": "软件设备",
     "tags": [],
     "scheduling": {
       "interval": 4,
       "ease": 2.5,
-      "due": 1766120082497,
+      "due": 1766194578785,
       "lapses": 0,
       "reps": 1,
       "state": "review"
@@ -110,294 +20,1737 @@
     "stats": {
       "totalReviews": 1,
       "correctCount": 1,
-      "averageTime": 4750.813,
+      "averageTime": 4.69,
       "difficulty": 0.4,
-      "lastReview": 1765774482497
+      "lastReview": 1765848978785
     },
     "metadata": {
-      "createdAt": 1765726338646,
-      "updatedAt": 1765774482497
+      "createdAt": 1765848718326,
+      "updatedAt": 1765848978785
     }
   },
   {
-    "id": "card-1765726338648-gd7idnynl",
+    "id": "card-1765848718330-ku26b82kd",
     "type": "qa",
-    "sourceContentId": "1765726338633-75niysn56",
-    "sourceFile": "1.Rough/特色t.md",
-    "anchorLink": "[[特色t#^extract-1765726338633-h5nqf4]]",
-    "front": "cc",
-    "back": "dd",
-    "deck": "1.Rough",
+    "sourceContentId": "1765848718325-2uxezkoyw",
+    "sourceFile": "9.备忘/软件设备/2.obsidian.md",
+    "anchorLink": "[[2.obsidian#^extract-1765848718325-czrj5v]]",
+    "front": "aa",
+    "back": ":bb",
+    "deck": "软件设备",
     "tags": [],
     "scheduling": {
-      "interval": 10,
+      "interval": 4,
       "ease": 2.5,
-      "due": 1765777970106,
+      "due": 1766194582569,
       "lapses": 0,
       "reps": 1,
-      "state": "learning"
+      "state": "review"
     },
     "stats": {
       "totalReviews": 1,
-      "correctCount": 0.5,
-      "averageTime": 2887.588,
-      "difficulty": 0.55,
-      "lastReview": 1765777370106
+      "correctCount": 1,
+      "averageTime": 3.777,
+      "difficulty": 0.4,
+      "lastReview": 1765848982569
     },
     "metadata": {
-      "createdAt": 1765726338648,
-      "updatedAt": 1765777370106
+      "createdAt": 1765848718330,
+      "updatedAt": 1765848982569
     }
   },
   {
-    "id": "card-1765726338652-2h9y6bcsq",
+    "id": "card-1765848718331-aicnkl37a",
     "type": "cloze",
-    "sourceContentId": "1765726338633-sem4kxz31",
-    "sourceFile": "1.Rough/特色t.md",
-    "anchorLink": "[[特色t#^extract-1765726338633-ldwfmc]]",
-    "front": "港==[...]==",
+    "sourceContentId": "1765848718325-cv6uvgex6",
+    "sourceFile": "9.备忘/软件设备/2.obsidian.md",
+    "anchorLink": "[[2.obsidian#^extract-1765848718325-gv2kgm]]",
+    "front": "如果有==[...]==就会显示为完形填空",
     "back": [
-      "风坑"
+      "高亮"
     ],
     "cloze": {
-      "original": "港==风坑==",
+      "original": "如果有==高亮==就会显示为完形填空",
       "deletions": [
         {
-          "index": 3,
-          "answer": "风坑"
+          "index": 5,
+          "answer": "高亮"
         }
       ]
     },
-    "deck": "1.Rough",
+    "deck": "软件设备",
     "tags": [],
     "scheduling": {
-      "interval": 10,
+      "interval": 1,
+      "ease": 2.3,
+      "due": 1765849050185,
+      "lapses": 1,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 0,
+      "averageTime": 7.607,
+      "difficulty": 0.6,
+      "lastReview": 1765848990185
+    },
+    "metadata": {
+      "createdAt": 1765848718331,
+      "updatedAt": 1765848990185
+    }
+  },
+  {
+    "id": "card-1765848718339-z0jerri2q",
+    "type": "qa",
+    "sourceContentId": "1765848718338-38o2p1ezb",
+    "sourceFile": "9.备忘/tag.md",
+    "anchorLink": "[[tag#^extract-1765848718338-erp58m]]",
+    "front": "这个结论值得商榷 #view/存疑 [reason",
+    "back": "缺少实证数据]",
+    "deck": "9.备忘",
+    "tags": [
+      "#view/"
+    ],
+    "scheduling": {
+      "interval": 4,
       "ease": 2.5,
-      "due": 1765778900093,
+      "due": 1766194600812,
+      "lapses": 0,
+      "reps": 1,
+      "state": "review"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 10.618,
+      "difficulty": 0.4,
+      "lastReview": 1765849000812
+    },
+    "metadata": {
+      "createdAt": 1765848718339,
+      "updatedAt": 1765849000812
+    }
+  },
+  {
+    "id": "card-1765848718340-3mrwo9etk",
+    "type": "qa",
+    "sourceContentId": "1765848718338-jm8a3wdl8",
+    "sourceFile": "9.备忘/tag.md",
+    "anchorLink": "[[tag#^extract-1765848718338-gjv43y]]",
+    "front": "有趣的视角 #view/启发 [connection",
+    "back": "[[另一篇笔记]]]",
+    "deck": "9.备忘",
+    "tags": [
+      "#view/"
+    ],
+    "scheduling": {
+      "interval": 1,
+      "ease": 2.3,
+      "due": 1765849064998,
+      "lapses": 1,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 0,
+      "averageTime": 4.172,
+      "difficulty": 0.6,
+      "lastReview": 1765849004998
+    },
+    "metadata": {
+      "createdAt": 1765848718340,
+      "updatedAt": 1765849004998
+    }
+  },
+  {
+    "id": "card-1765848718373-vf5pq6u88",
+    "type": "cloze",
+    "sourceContentId": "1765848718372-0wzum13r7",
+    "sourceFile": "7-world/德语/b.德语语法视频课.md",
+    "anchorLink": "[[b.德语语法视频课#^extract-1765848718372-b9xkfa]]",
+    "front": "==[...]==我   ==**dich**==你  Sie您",
+    "back": [
+      "**mich**"
+    ],
+    "cloze": {
+      "original": "==**mich**==我   ==**dich**==你  Sie您",
+      "deletions": [
+        {
+          "index": 2,
+          "answer": "**mich**"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 1,
+      "ease": 2.3,
+      "due": 1765849072356,
+      "lapses": 1,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 0,
+      "averageTime": 7.347,
+      "difficulty": 0.6,
+      "lastReview": 1765849012356
+    },
+    "metadata": {
+      "createdAt": 1765848718373,
+      "updatedAt": 1765849012356
+    }
+  },
+  {
+    "id": "card-1765848718374-vkixdxma9",
+    "type": "cloze",
+    "sourceContentId": "1765848718372-xhfcjt2qm",
+    "sourceFile": "7-world/德语/b.德语语法视频课.md",
+    "anchorLink": "[[b.德语语法视频课#^extract-1765848718372-d0puik]]",
+    "front": "==**mich**==我   ==[...]==你  Sie您",
+    "back": [
+      "**dich**"
+    ],
+    "cloze": {
+      "original": "==**mich**==我   ==**dich**==你  Sie您",
+      "deletions": [
+        {
+          "index": 18,
+          "answer": "**dich**"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 1,
+      "ease": 2.3,
+      "due": 1765849075486,
+      "lapses": 1,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 0,
+      "averageTime": 3.121,
+      "difficulty": 0.6,
+      "lastReview": 1765849015486
+    },
+    "metadata": {
+      "createdAt": 1765848718374,
+      "updatedAt": 1765849015486
+    }
+  },
+  {
+    "id": "card-1765848718375-z92e6noju",
+    "type": "cloze",
+    "sourceContentId": "1765848718372-kstnei2qx",
+    "sourceFile": "7-world/德语/b.德语语法视频课.md",
+    "anchorLink": "[[b.德语语法视频课#^extract-1765848718372-8ou79w]]",
+    "front": "==[...]==他/in/   es 它    sie她",
+    "back": [
+      "ihn"
+    ],
+    "cloze": {
+      "original": "==ihn==他/in/   es 它    sie她",
+      "deletions": [
+        {
+          "index": 2,
+          "answer": "ihn"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 1,
+      "ease": 2.5,
+      "due": 1765935417997,
       "lapses": 0,
       "reps": 1,
       "state": "learning"
     },
     "stats": {
       "totalReviews": 1,
-      "correctCount": 0.5,
-      "averageTime": 929.96,
-      "difficulty": 0.55,
-      "lastReview": 1765778300093
+      "correctCount": 1,
+      "averageTime": 2.502,
+      "difficulty": 0.45,
+      "lastReview": 1765849017997
     },
     "metadata": {
-      "createdAt": 1765726338652,
-      "updatedAt": 1765778300093
+      "createdAt": 1765848718375,
+      "updatedAt": 1765849017997
     }
   },
   {
-    "id": "card-1765726338656-ls47kco6i",
+    "id": "card-1765848718377-a2cv52lyn",
     "type": "cloze",
-    "sourceContentId": "1765726338633-1y5gtc8ce",
-    "sourceFile": "1.Rough/特色t.md",
-    "anchorLink": "[[特色t#^extract-1765726338633-4e9x2b]]",
-    "front": "JavaScript 中的 ==[...]== 处理异步操作。",
+    "sourceContentId": "1765848718372-dufjj4rpd",
+    "sourceFile": "7-world/德语/b.德语语法视频课.md",
+    "anchorLink": "[[b.德语语法视频课#^extract-1765848718372-xcfm8x]]",
+    "front": "==[...]==我们     ==euch==你们/ɔixi/  **sie他们",
     "back": [
-      "事件循环"
+      "uns"
     ],
     "cloze": {
-      "original": "JavaScript 中的 ==事件循环== 处理异步操作。",
+      "original": "==uns==我们     ==euch==你们/ɔixi/  **sie他们",
+      "deletions": [
+        {
+          "index": 2,
+          "answer": "uns"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 1,
+      "ease": 2.5,
+      "due": 1765935421083,
+      "lapses": 0,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 3.079,
+      "difficulty": 0.45,
+      "lastReview": 1765849021083
+    },
+    "metadata": {
+      "createdAt": 1765848718377,
+      "updatedAt": 1765849021083
+    }
+  },
+  {
+    "id": "card-1765848718379-m1zct9930",
+    "type": "cloze",
+    "sourceContentId": "1765848718372-2juql6eof",
+    "sourceFile": "7-world/德语/b.德语语法视频课.md",
+    "anchorLink": "[[b.德语语法视频课#^extract-1765848718372-75qlay]]",
+    "front": "==uns==我们     ==[...]==你们/ɔixi/  **sie他们",
+    "back": [
+      "euch"
+    ],
+    "cloze": {
+      "original": "==uns==我们     ==euch==你们/ɔixi/  **sie他们",
       "deletions": [
         {
           "index": 16,
-          "answer": "事件循环"
+          "answer": "euch"
         }
       ]
     },
-    "deck": "1.Rough",
+    "deck": "德语",
     "tags": [],
     "scheduling": {
-      "interval": 1,
+      "interval": 10,
       "ease": 2.5,
-      "due": 1765869362558,
+      "due": 1765854120028,
       "lapses": 0,
       "reps": 1,
       "state": "learning"
     },
     "stats": {
       "totalReviews": 1,
-      "correctCount": 1,
-      "averageTime": 5.179,
-      "difficulty": 0.45,
-      "lastReview": 1765782962558
+      "correctCount": 0.5,
+      "averageTime": 6.768,
+      "difficulty": 0.55,
+      "lastReview": 1765853520028
     },
     "metadata": {
-      "createdAt": 1765726338656,
-      "updatedAt": 1765782962558
+      "createdAt": 1765848718379,
+      "updatedAt": 1765853520028
     }
   },
   {
-    "id": "card-1765726483067-io4r6m0db",
+    "id": "card-1765848718380-ea20yjucc",
     "type": "cloze",
-    "sourceContentId": "1765726483064-wqrzpvoaa",
-    "sourceFile": "1.Rough/特色t.md",
-    "anchorLink": "[[特色t#^extract-1765726483064-wl2s7p]]",
-    "front": "[...]",
+    "sourceContentId": "1765848718372-zupyggirj",
+    "sourceFile": "7-world/德语/b.德语语法视频课.md",
+    "anchorLink": "[[b.德语语法视频课#^extract-1765848718372-9y4z0b]]",
+    "front": "| he    | er  | ==[...]== | sein  | ihm   |",
     "back": [
-      "cc :: dd"
+      "ihn"
     ],
     "cloze": {
-      "original": "cc :: dd",
+      "original": "| he    | er  | ==ihn== | sein  | ihm   |",
       "deletions": [
         {
-          "index": 0,
-          "answer": "cc :: dd"
+          "index": 18,
+          "answer": "ihn"
         }
       ]
     },
-    "deck": "1.Rough",
+    "deck": "德语",
     "tags": [],
     "scheduling": {
-      "interval": 1,
+      "interval": 10,
       "ease": 2.5,
-      "due": 1765869412908,
+      "due": 1765854126095,
       "lapses": 0,
       "reps": 1,
       "state": "learning"
     },
     "stats": {
       "totalReviews": 1,
-      "correctCount": 1,
-      "averageTime": 50.341,
-      "difficulty": 0.45,
-      "lastReview": 1765783012908
+      "correctCount": 0.5,
+      "averageTime": 6.052,
+      "difficulty": 0.55,
+      "lastReview": 1765853526095
     },
     "metadata": {
-      "createdAt": 1765726483067,
-      "updatedAt": 1765783012908
+      "createdAt": 1765848718380,
+      "updatedAt": 1765853526095
     }
   },
   {
-    "id": "card-1765727296866-whfo1ewkf",
+    "id": "card-1765848718387-8b3vfv6om",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-4466yr9fc",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-g4dukm]]",
+    "front": "#### - Nouns ending in ==[...]==:",
+    "back": [
+      "**‑ling**"
+    ],
+    "cloze": {
+      "original": "#### - Nouns ending in ==**‑ling**==:",
+      "deletions": [
+        {
+          "index": 25,
+          "answer": "**‑ling**"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 10,
+      "ease": 2.5,
+      "due": 1765854133340,
+      "lapses": 0,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 0.5,
+      "averageTime": 7.228,
+      "difficulty": 0.55,
+      "lastReview": 1765853533340
+    },
+    "metadata": {
+      "createdAt": 1765848718387,
+      "updatedAt": 1765853533340
+    }
+  },
+  {
+    "id": "card-1765848718388-ia6frrm4c",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-cryue12qe",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-hzhpq4]]",
+    "front": "#### - Nouns ending in ==[...]==:",
+    "back": [
+      "**‑ich/ig**"
+    ],
+    "cloze": {
+      "original": "#### - Nouns ending in ==**‑ich/ig**==:",
+      "deletions": [
+        {
+          "index": 25,
+          "answer": "**‑ich/ig**"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 10,
+      "ease": 2.5,
+      "due": 1765854140436,
+      "lapses": 0,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 0.5,
+      "averageTime": 7.08,
+      "difficulty": 0.55,
+      "lastReview": 1765853540436
+    },
+    "metadata": {
+      "createdAt": 1765848718388,
+      "updatedAt": 1765853540436
+    }
+  },
+  {
+    "id": "card-1765848718389-uk72nw4gl",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-u7eradzrp",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-dudsgj]]",
+    "front": "#### - Nouns ending in ==[...]==:",
+    "back": [
+      "**‑er**"
+    ],
+    "cloze": {
+      "original": "#### - Nouns ending in ==**‑er**==:",
+      "deletions": [
+        {
+          "index": 25,
+          "answer": "**‑er**"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848718389,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848718389,
+      "updatedAt": 1765848718389
+    }
+  },
+  {
+    "id": "card-1765848718390-ubwu6t779",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-edc7knq6d",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-j3cn81]]",
+    "front": "#### - Foreign words ending in ==[...]==:",
+    "back": [
+      "**‑us**"
+    ],
+    "cloze": {
+      "original": "#### - Foreign words ending in ==**‑us**==:",
+      "deletions": [
+        {
+          "index": 33,
+          "answer": "**‑us**"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848718390,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848718390,
+      "updatedAt": 1765848718390
+    }
+  },
+  {
+    "id": "card-1765848718391-dm3pheovm",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-62xfkm85s",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-5wt9s3]]",
+    "front": "#### - Verb infinitives turned into nouns without ==[...]==:动词不定式变成不带 **-en** 的名词",
+    "back": [
+      "**‑en**"
+    ],
+    "cloze": {
+      "original": "#### - Verb infinitives turned into nouns without ==**‑en**==:动词不定式变成不带 **-en** 的名词",
+      "deletions": [
+        {
+          "index": 52,
+          "answer": "**‑en**"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848718391,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848718391,
+      "updatedAt": 1765848718391
+    }
+  },
+  {
+    "id": "card-1765848718392-vtddhlg2m",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-441zfs0em",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-t5on5b]]",
+    "front": "#### - Nouns ending in ==[...]==:",
+    "back": [
+      "‑um"
+    ],
+    "cloze": {
+      "original": "#### - Nouns ending in ==‑um==:",
+      "deletions": [
+        {
+          "index": 25,
+          "answer": "‑um"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848718392,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848718392,
+      "updatedAt": 1765848718392
+    }
+  },
+  {
+    "id": "card-1765848718393-49paldo7n",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-fvravrq6o",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-6q31ko]]",
+    "front": "#### - Nouns ending in ==[...]==:",
+    "back": [
+      "‑ment"
+    ],
+    "cloze": {
+      "original": "#### - Nouns ending in ==‑ment==:",
+      "deletions": [
+        {
+          "index": 25,
+          "answer": "‑ment"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848718393,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848718393,
+      "updatedAt": 1765848718393
+    }
+  },
+  {
+    "id": "card-1765848718394-9yx1zip0d",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-t5zbp7cwk",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-3owngx]]",
+    "front": "#### - Foreign words ending in ==[...]==:",
+    "back": [
+      "‑ma"
+    ],
+    "cloze": {
+      "original": "#### - Foreign words ending in ==‑ma==:",
+      "deletions": [
+        {
+          "index": 33,
+          "answer": "‑ma"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848718394,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848718394,
+      "updatedAt": 1765848718394
+    }
+  },
+  {
+    "id": "card-1765848718398-rdb9kw2kh",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-f6flaaewb",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-7in728]]",
+    "front": "#### - Some nouns beginning in ==[...]==:",
+    "back": [
+      "Ge‑"
+    ],
+    "cloze": {
+      "original": "#### - Some nouns beginning in ==Ge‑==:",
+      "deletions": [
+        {
+          "index": 33,
+          "answer": "Ge‑"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848718398,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848718398,
+      "updatedAt": 1765848718398
+    }
+  },
+  {
+    "id": "card-1765848718399-g1sldcj9w",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-ufxyh5wa2",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-p0t7m4]]",
+    "front": "### - ==[...]== Nouns ending :",
+    "back": [
+      "**‑ung**"
+    ],
+    "cloze": {
+      "original": "### - ==**‑ung**== Nouns ending :",
+      "deletions": [
+        {
+          "index": 8,
+          "answer": "**‑ung**"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848718399,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848718399,
+      "updatedAt": 1765848718399
+    }
+  },
+  {
+    "id": "card-1765848718400-ardnfubh8",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-5mf050yfy",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-o572z7]]",
+    "front": "#### -  ==[...]== Nouns ending",
+    "back": [
+      "**‑schaft**"
+    ],
+    "cloze": {
+      "original": "#### -  ==**‑schaft**== Nouns ending",
+      "deletions": [
+        {
+          "index": 10,
+          "answer": "**‑schaft**"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848718400,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848718400,
+      "updatedAt": 1765848718400
+    }
+  },
+  {
+    "id": "card-1765848718401-ebhx6taqe",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-yphcar09g",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-0dbjxz]]",
+    "front": "#### -  ==[...]== Nouns ending",
+    "back": [
+      "**‑ion**"
+    ],
+    "cloze": {
+      "original": "#### -  ==**‑ion**== Nouns ending",
+      "deletions": [
+        {
+          "index": 10,
+          "answer": "**‑ion**"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848718401,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848718401,
+      "updatedAt": 1765848718401
+    }
+  },
+  {
+    "id": "card-1765848718402-c2zcitknm",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-yu0s4z7op",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-s6tz9a]]",
+    "front": "#### - ==[...]== Nouns ending",
+    "back": [
+      "**‑heit/keit**"
+    ],
+    "cloze": {
+      "original": "#### - ==**‑heit/keit**== Nouns ending",
+      "deletions": [
+        {
+          "index": 9,
+          "answer": "**‑heit/keit**"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848718402,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848718402,
+      "updatedAt": 1765848718402
+    }
+  },
+  {
+    "id": "card-1765848718403-5oot0oddj",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-ckphtecse",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-nvdjth]]",
+    "front": "#### -  ==[...]== Nouns ending",
+    "back": [
+      "**‑tät**"
+    ],
+    "cloze": {
+      "original": "#### -  ==**‑tät**== Nouns ending",
+      "deletions": [
+        {
+          "index": 10,
+          "answer": "**‑tät**"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848718403,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848718403,
+      "updatedAt": 1765848718403
+    }
+  },
+  {
+    "id": "card-1765848718406-pshgjulow",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-n5r66sm0e",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-kpkiqs]]",
+    "front": "#### -  ==[...]== Nouns ending",
+    "back": [
+      "**‑ik**"
+    ],
+    "cloze": {
+      "original": "#### -  ==**‑ik**== Nouns ending",
+      "deletions": [
+        {
+          "index": 10,
+          "answer": "**‑ik**"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848718406,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848718406,
+      "updatedAt": 1765848718406
+    }
+  },
+  {
+    "id": "card-1765848718407-fsao2y3ky",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-bsselrbyy",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-5za1gn]]",
+    "front": "#### - ==[...]== Nouns ending",
+    "back": [
+      "**‑ade**, **‑age**, **‑euse,** **‑ere**, **‑ie**"
+    ],
+    "cloze": {
+      "original": "#### - ==**‑ade**, **‑age**, **‑euse,** **‑ere**, **‑ie**== Nouns ending",
+      "deletions": [
+        {
+          "index": 9,
+          "answer": "**‑ade**, **‑age**, **‑euse,** **‑ere**, **‑ie**"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848718407,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848718407,
+      "updatedAt": 1765848718407
+    }
+  },
+  {
+    "id": "card-1765848718408-byn6srhnn",
+    "type": "cloze",
+    "sourceContentId": "1765848718386-u6rihozzi",
+    "sourceFile": "7-world/德语/b.德语语法.md",
+    "anchorLink": "[[b.德语语法#^extract-1765848718386-t70zcu]]",
+    "front": "#### - ==[...]== Nouns ending",
+    "back": [
+      "**‑anz**, **‑enz**"
+    ],
+    "cloze": {
+      "original": "#### - ==**‑anz**, **‑enz**== Nouns ending",
+      "deletions": [
+        {
+          "index": 9,
+          "answer": "**‑anz**, **‑enz**"
+        }
+      ]
+    },
+    "deck": "德语",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848718408,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848718408,
+      "updatedAt": 1765848718408
+    }
+  },
+  {
+    "id": "card-1765848720874-u7l3dht3g",
     "type": "qa",
-    "sourceContentId": "1765727296859-62o9gup4o",
+    "sourceContentId": "1765848720871-6o49e8zwr",
+    "sourceFile": "4.Projects/II.tasks/b1.5anki卡片优化.md",
+    "anchorLink": "[[b1.5anki卡片优化#^extract-1765848720871-758s2s]]",
+    "front": "QA卡片",
+    "back": "完形填空 ==高亮==",
+    "deck": "II.tasks",
+    "tags": [
+      "#- task"
+    ],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848720874,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848720874,
+      "updatedAt": 1765848720874
+    }
+  },
+  {
+    "id": "card-1765848720876-98uxtfmyr",
+    "type": "cloze",
+    "sourceContentId": "1765848720872-22aztupja",
+    "sourceFile": "4.Projects/II.tasks/b1.5anki卡片优化.md",
+    "anchorLink": "[[b1.5anki卡片优化#^extract-1765848720872-r6zsf5]]",
+    "front": "完形填空 ==[...]==",
+    "back": [
+      "高亮"
+    ],
+    "cloze": {
+      "original": "完形填空 ==高亮==",
+      "deletions": [
+        {
+          "index": 7,
+          "answer": "高亮"
+        }
+      ]
+    },
+    "deck": "II.tasks",
+    "tags": [
+      "#- task"
+    ],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848720876,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848720876,
+      "updatedAt": 1765848720876
+    }
+  },
+  {
+    "id": "card-1765848720907-po78jx7oo",
+    "type": "cloze",
+    "sourceContentId": "1765848720906-uh8oj3w5r",
+    "sourceFile": "3.learn/1.language/3-Spanish.md",
+    "anchorLink": "[[3-Spanish#^extract-1765848720906-r8yskq]]",
+    "front": "==[...]==（animal）",
+    "back": [
+      "- al"
+    ],
+    "cloze": {
+      "original": "==- al==（animal）",
+      "deletions": [
+        {
+          "index": 2,
+          "answer": "- al"
+        }
+      ]
+    },
+    "deck": "1.language",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848720907,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848720907,
+      "updatedAt": 1765848720907
+    }
+  },
+  {
+    "id": "card-1765848720908-qhmvja0mq",
+    "type": "cloze",
+    "sourceContentId": "1765848720906-e9g07op0w",
+    "sourceFile": "3.learn/1.language/3-Spanish.md",
+    "anchorLink": "[[3-Spanish#^extract-1765848720906-fpalv6]]",
+    "front": "==[...]== （actor）",
+    "back": [
+      "- or"
+    ],
+    "cloze": {
+      "original": "==- or== （actor）",
+      "deletions": [
+        {
+          "index": 2,
+          "answer": "- or"
+        }
+      ]
+    },
+    "deck": "1.language",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848720908,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848720908,
+      "updatedAt": 1765848720908
+    }
+  },
+  {
+    "id": "card-1765848720909-r4efl9oop",
+    "type": "cloze",
+    "sourceContentId": "1765848720906-9r0jjty8p",
+    "sourceFile": "3.learn/1.language/3-Spanish.md",
+    "anchorLink": "[[3-Spanish#^extract-1765848720906-xmbewq]]",
+    "front": "==[...]==（cable）",
+    "back": [
+      "- ble"
+    ],
+    "cloze": {
+      "original": "==- ble==（cable）",
+      "deletions": [
+        {
+          "index": 2,
+          "answer": "- ble"
+        }
+      ]
+    },
+    "deck": "1.language",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848720909,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848720909,
+      "updatedAt": 1765848720909
+    }
+  },
+  {
+    "id": "card-1765848720918-cd0r8oozi",
+    "type": "qa",
+    "sourceContentId": "1765848720917-w4lhclazq",
+    "sourceFile": "3.learn/1.language/2.1-Deutsch recite.md",
+    "anchorLink": "[[2.1-Deutsch recite#^extract-1765848720917-y5wqcz]]",
+    "front": "家里有男女父母和小孩，==儿子==女儿兄弟姐妹，叔叔和阿姨",
+    "back": "familie have mann frau Eltern kind sohn tochter bruder schwester onkel tante",
+    "deck": "1.language",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848720918,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848720918,
+      "updatedAt": 1765848720918
+    }
+  },
+  {
+    "id": "card-1765848720919-09wbg27a2",
+    "type": "qa",
+    "sourceContentId": "1765848720917-a8y9kx51s",
+    "sourceFile": "3.learn/1.language/2.1-Deutsch recite.md",
+    "anchorLink": "[[2.1-Deutsch recite#^extract-1765848720917-1ncn3d]]",
+    "front": "still too young for all,but from many and his",
+    "back": "noch zu jung für a==ll,aber== von viele und sein",
+    "deck": "1.language",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848720919,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848720919,
+      "updatedAt": 1765848720919
+    }
+  },
+  {
+    "id": "card-1765848720920-66ws4onvn",
+    "type": "cloze",
+    "sourceContentId": "1765848720917-hyz4r0ghk",
+    "sourceFile": "3.learn/1.language/2.1-Deutsch recite.md",
+    "anchorLink": "[[2.1-Deutsch recite#^extract-1765848720917-uj2hvj]]",
+    "front": "家里有男女父母和小孩，==[...]==女儿兄弟姐妹，叔叔和阿姨::familie have mann frau Eltern kind sohn tochter bruder schwester onkel tante",
+    "back": [
+      "儿子"
+    ],
+    "cloze": {
+      "original": "家里有男女父母和小孩，==儿子==女儿兄弟姐妹，叔叔和阿姨::familie have mann frau Eltern kind sohn tochter bruder schwester onkel tante",
+      "deletions": [
+        {
+          "index": 13,
+          "answer": "儿子"
+        }
+      ]
+    },
+    "deck": "1.language",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848720920,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848720920,
+      "updatedAt": 1765848720920
+    }
+  },
+  {
+    "id": "card-1765848720921-q8liv3jtm",
+    "type": "cloze",
+    "sourceContentId": "1765848720917-bco9rh3ui",
+    "sourceFile": "3.learn/1.language/2.1-Deutsch recite.md",
+    "anchorLink": "[[2.1-Deutsch recite#^extract-1765848720917-p2z05a]]",
+    "front": "still too young for all,but from many and his::noch zu jung für a==[...]== von viele und sein",
+    "back": [
+      "ll,aber"
+    ],
+    "cloze": {
+      "original": "still too young for all,but from many and his::noch zu jung für a==ll,aber== von viele und sein",
+      "deletions": [
+        {
+          "index": 67,
+          "answer": "ll,aber"
+        }
+      ]
+    },
+    "deck": "1.language",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848720921,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848720921,
+      "updatedAt": 1765848720921
+    }
+  },
+  {
+    "id": "card-1765848720937-fzxik7kyn",
+    "type": "cloze",
+    "sourceContentId": "1765848720936-6cpo9h2hv",
+    "sourceFile": "3.learn/1.language/1-EN&SP&DE&CH.md",
+    "anchorLink": "[[1-EN&SP&DE&CH#^extract-1765848720936-kwwxcx]]",
+    "front": "| ==[...]==  | ge(hay)              | hèi         | gi      |          |                        |",
+    "back": [
+      "g"
+    ],
+    "cloze": {
+      "original": "| ==g==  | ge(hay)              | hèi         | gi      |          |                        |",
+      "deletions": [
+        {
+          "index": 4,
+          "answer": "g"
+        }
+      ]
+    },
+    "deck": "1.language",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848720937,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848720937,
+      "updatedAt": 1765848720937
+    }
+  },
+  {
+    "id": "card-1765848720938-cpq34hvar",
+    "type": "cloze",
+    "sourceContentId": "1765848720936-l1bh114v8",
+    "sourceFile": "3.learn/1.language/1-EN&SP&DE&CH.md",
+    "anchorLink": "[[1-EN&SP&DE&CH#^extract-1765848720936-fapbgp]]",
+    "front": "| ==[...]==  | jota(ho-tah)         | ho-dah      | yot     | Jalepeno | Jalapeno/Mexico pepper |",
+    "back": [
+      "j"
+    ],
+    "cloze": {
+      "original": "| ==j==  | jota(ho-tah)         | ho-dah      | yot     | Jalepeno | Jalapeno/Mexico pepper |",
+      "deletions": [
+        {
+          "index": 4,
+          "answer": "j"
+        }
+      ]
+    },
+    "deck": "1.language",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848720938,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848720938,
+      "updatedAt": 1765848720938
+    }
+  },
+  {
+    "id": "card-1765848723473-65ltggn7i",
+    "type": "cloze",
+    "sourceContentId": "1765848723472-0ujuw6dpq",
+    "sourceFile": "2.Read/douban/book/百万富翁快车道.md",
+    "anchorLink": "[[百万富翁快车道#^extract-1765848723472-j6kgdz]]",
+    "front": "==[...]==",
+    "back": [
+      "如果吸引了你的注意，就赢了一半。另一半要靠满足消费者需求赢得。"
+    ],
+    "cloze": {
+      "original": "==如果吸引了你的注意，就赢了一半。另一半要靠满足消费者需求赢得。==",
+      "deletions": [
+        {
+          "index": 2,
+          "answer": "如果吸引了你的注意，就赢了一半。另一半要靠满足消费者需求赢得。"
+        }
+      ]
+    },
+    "deck": "book",
+    "tags": [
+      "#- book"
+    ],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848723473,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848723473,
+      "updatedAt": 1765848723473
+    }
+  },
+  {
+    "id": "card-1765848723509-aeetixjcy",
+    "type": "cloze",
+    "sourceContentId": "1765848723508-0kyhtazbf",
+    "sourceFile": "2.Read/douban/book/原子習慣.md",
+    "anchorLink": "[[原子習慣#^extract-1765848723508-nzchgt]]",
+    "front": "负面想法：==[...]==",
+    "back": [
+      "越是认为自己没有价值、头脑蠢笨、相貌丑陋，越会让自己用这种方式诠释人生，受困于这种负面循环里。看待别人的方式也是同理。一旦习惯认为别人爱生气，不公平或自私，就会走到哪里都看见这种人。"
+    ],
+    "cloze": {
+      "original": "负面想法：==越是认为自己没有价值、头脑蠢笨、相貌丑陋，越会让自己用这种方式诠释人生，受困于这种负面循环里。看待别人的方式也是同理。一旦习惯认为别人爱生气，不公平或自私，就会走到哪里都看见这种人。==",
+      "deletions": [
+        {
+          "index": 7,
+          "answer": "越是认为自己没有价值、头脑蠢笨、相貌丑陋，越会让自己用这种方式诠释人生，受困于这种负面循环里。看待别人的方式也是同理。一旦习惯认为别人爱生气，不公平或自私，就会走到哪里都看见这种人。"
+        }
+      ]
+    },
+    "deck": "book",
+    "tags": [
+      "#- book"
+    ],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848723509,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848723509,
+      "updatedAt": 1765848723509
+    }
+  },
+  {
+    "id": "card-1765848723511-ko9fytgnq",
+    "type": "cloze",
+    "sourceContentId": "1765848723508-x0exlcclx",
+    "sourceFile": "2.Read/douban/book/原子習慣.md",
+    "anchorLink": "[[原子習慣#^extract-1765848723508-kod810]]",
+    "front": "進健身房五分鐘也許不會幫你改善體能，==[...]==。",
+    "back": [
+      "卻可以強化你的身分認同"
+    ],
+    "cloze": {
+      "original": "進健身房五分鐘也許不會幫你改善體能，==卻可以強化你的身分認同==。",
+      "deletions": [
+        {
+          "index": 20,
+          "answer": "卻可以強化你的身分認同"
+        }
+      ]
+    },
+    "deck": "book",
+    "tags": [
+      "#- book"
+    ],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848723511,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848723511,
+      "updatedAt": 1765848723511
+    }
+  },
+  {
+    "id": "card-1765848723547-gojx4mfly",
+    "type": "qa",
+    "sourceContentId": "1765848723546-vg3aewyyi",
     "sourceFile": "1.Rough/特色t.md",
-    "anchorLink": "[[特色t#^extract-1765727296859-heqlst]]",
+    "anchorLink": "[[特色t#^extract-1765848723546-4zq6lk]]",
     "front": "简称额",
     "back": "男外出",
     "deck": "1.Rough",
     "tags": [],
     "scheduling": {
-      "interval": 10,
+      "interval": 0,
       "ease": 2.5,
-      "due": 1765785855767,
+      "due": 1765848723547,
       "lapses": 0,
-      "reps": 1,
-      "state": "learning"
+      "reps": 0,
+      "state": "new"
     },
     "stats": {
-      "totalReviews": 1,
-      "correctCount": 0.5,
-      "averageTime": 2242.852,
-      "difficulty": 0.55,
-      "lastReview": 1765785255766
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
     },
     "metadata": {
-      "createdAt": 1765727296866,
-      "updatedAt": 1765785255766
+      "createdAt": 1765848723547,
+      "updatedAt": 1765848723547
     }
   },
   {
-    "id": "card-1765727296867-ha3uztbv2",
+    "id": "card-1765848723548-qvt98zr1c",
     "type": "qa",
-    "sourceContentId": "1765727296859-x75njj758",
+    "sourceContentId": "1765848723546-rjpm9gvpn",
     "sourceFile": "1.Rough/特色t.md",
-    "anchorLink": "[[特色t#^extract-1765727296859-0t40v8]]",
+    "anchorLink": "[[特色t#^extract-1765848723546-yccomk]]",
     "front": "什么是闭包？",
     "back": "闭包是指函数可以访问其外部作用域的变量",
     "deck": "1.Rough",
     "tags": [],
     "scheduling": {
-      "interval": 10,
+      "interval": 0,
       "ease": 2.5,
-      "due": 1765786388778,
+      "due": 1765848723548,
       "lapses": 0,
-      "reps": 1,
-      "state": "learning"
+      "reps": 0,
+      "state": "new"
     },
     "stats": {
-      "totalReviews": 1,
-      "correctCount": 0.5,
-      "averageTime": 6.628,
-      "difficulty": 0.55,
-      "lastReview": 1765785788778
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
     },
     "metadata": {
-      "createdAt": 1765727296867,
-      "updatedAt": 1765785788778
+      "createdAt": 1765848723548,
+      "updatedAt": 1765848723548
     }
   },
   {
-    "id": "card-1765727296868-zwln3xrty",
+    "id": "card-1765848723550-m3sgan1jv",
     "type": "qa",
-    "sourceContentId": "1765727296860-yhs5dbul7",
+    "sourceContentId": "1765848723546-h9groa1er",
     "sourceFile": "1.Rough/特色t.md",
-    "anchorLink": "[[特色t#^extract-1765727296860-wurc3b]]",
+    "anchorLink": "[[特色t#^extract-1765848723546-zy8oim]]",
     "front": "aa",
     "back": "bb",
     "deck": "1.Rough",
     "tags": [],
     "scheduling": {
-      "interval": 10,
+      "interval": 0,
       "ease": 2.5,
-      "due": 1765786392113,
+      "due": 1765848723550,
       "lapses": 0,
-      "reps": 1,
-      "state": "learning"
+      "reps": 0,
+      "state": "new"
     },
     "stats": {
-      "totalReviews": 1,
-      "correctCount": 0.5,
-      "averageTime": 3.329,
-      "difficulty": 0.55,
-      "lastReview": 1765785792113
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
     },
     "metadata": {
-      "createdAt": 1765727296869,
-      "updatedAt": 1765785792113
+      "createdAt": 1765848723550,
+      "updatedAt": 1765848723550
     }
   },
   {
-    "id": "card-1765727296870-ym3njvpkp",
+    "id": "card-1765848723551-6opb1wo6g",
     "type": "qa",
-    "sourceContentId": "1765727296860-t4dreysxl",
+    "sourceContentId": "1765848723546-qpekyglqe",
     "sourceFile": "1.Rough/特色t.md",
-    "anchorLink": "[[特色t#^extract-1765727296860-ete751]]",
+    "anchorLink": "[[特色t#^extract-1765848723546-z1sw5q]]",
     "front": "cc",
     "back": "dd",
     "deck": "1.Rough",
     "tags": [],
     "scheduling": {
-      "interval": 1,
-      "ease": 2.3,
-      "due": 1765786421143,
-      "lapses": 1,
-      "reps": 1,
-      "state": "learning"
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848723551,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
     },
     "stats": {
-      "totalReviews": 1,
+      "totalReviews": 0,
       "correctCount": 0,
-      "averageTime": 84.418,
-      "difficulty": 0.6,
-      "lastReview": 1765786361143
+      "averageTime": 0,
+      "difficulty": 0.5
     },
     "metadata": {
-      "createdAt": 1765727296870,
-      "updatedAt": 1765786361143
+      "createdAt": 1765848723551,
+      "updatedAt": 1765848723551
     }
   },
   {
-    "id": "card-1765727296871-52swfytzw",
+    "id": "card-1765848723552-v23d8gz14",
     "type": "cloze",
-    "sourceContentId": "1765727296860-o25y3wuw3",
+    "sourceContentId": "1765848723546-tj6ash0r2",
     "sourceFile": "1.Rough/特色t.md",
-    "anchorLink": "[[特色t#^extract-1765727296860-0eo3lc]]",
+    "anchorLink": "[[特色t#^extract-1765848723546-tqf79d]]",
     "front": "港==[...]==",
     "back": [
       "风坑"
@@ -414,31 +1767,30 @@
     "deck": "1.Rough",
     "tags": [],
     "scheduling": {
-      "interval": 1,
-      "ease": 2.3,
-      "due": 1765788998466,
-      "lapses": 1,
-      "reps": 1,
-      "state": "learning"
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848723552,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
     },
     "stats": {
-      "totalReviews": 1,
+      "totalReviews": 0,
       "correctCount": 0,
-      "averageTime": 2577.319,
-      "difficulty": 0.6,
-      "lastReview": 1765788938465
+      "averageTime": 0,
+      "difficulty": 0.5
     },
     "metadata": {
-      "createdAt": 1765727296871,
-      "updatedAt": 1765788938465
+      "createdAt": 1765848723552,
+      "updatedAt": 1765848723552
     }
   },
   {
-    "id": "card-1765727296872-0m7yukc40",
+    "id": "card-1765848723554-iah603mi1",
     "type": "cloze",
-    "sourceContentId": "1765727296860-hd7knha70",
+    "sourceContentId": "1765848723546-1spczof61",
     "sourceFile": "1.Rough/特色t.md",
-    "anchorLink": "[[特色t#^extract-1765727296860-o1xxxr]]",
+    "anchorLink": "[[特色t#^extract-1765848723546-2s8v3b]]",
     "front": "JavaScript 中的 ==[...]== 处理异步操作。",
     "back": [
       "事件循环"
@@ -457,7 +1809,7 @@
     "scheduling": {
       "interval": 0,
       "ease": 2.5,
-      "due": 1765727296872,
+      "due": 1765848723554,
       "lapses": 0,
       "reps": 0,
       "state": "new"
@@ -469,8 +1821,136 @@
       "difficulty": 0.5
     },
     "metadata": {
-      "createdAt": 1765727296872,
-      "updatedAt": 1765727296872
+      "createdAt": 1765848723554,
+      "updatedAt": 1765848723554
+    }
+  },
+  {
+    "id": "card-1765848723565-eumd4ncpg",
+    "type": "cloze",
+    "sourceContentId": "1765848723564-ftmoharbx",
+    "sourceFile": "1.Rough/test.md",
+    "anchorLink": "[[test#^extract-1765848723564-qt57n0]]",
+    "front": "请基==[...]==下功能拆解出清晰的架构方案（无需实现代码）：**",
+    "back": [
+      "于以"
+    ],
+    "cloze": {
+      "original": "请基==于以==下功能拆解出清晰的架构方案（无需实现代码）：**",
+      "deletions": [
+        {
+          "index": 4,
+          "answer": "于以"
+        }
+      ]
+    },
+    "deck": "1.Rough",
+    "tags": [
+      "#test"
+    ],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848723565,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848723565,
+      "updatedAt": 1765848723565
+    }
+  },
+  {
+    "id": "card-1765848723568-994sd7c5i",
+    "type": "cloze",
+    "sourceContentId": "1765848723564-wi4hfpi35",
+    "sourceFile": "1.Rough/test.md",
+    "anchorLink": "[[test#^extract-1765848723564-r6kcbd]]",
+    "front": "- 为每条提==[...]==并能跳转原文 #todo/每天任务",
+    "back": [
+      "取内容建立锚点"
+    ],
+    "cloze": {
+      "original": "- 为每条提==取内容建立锚点==并能跳转原文 #todo/每天任务",
+      "deletions": [
+        {
+          "index": 8,
+          "answer": "取内容建立锚点"
+        }
+      ]
+    },
+    "deck": "1.Rough",
+    "tags": [
+      "#test",
+      "#todo/"
+    ],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848723568,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848723568,
+      "updatedAt": 1765848723568
+    }
+  },
+  {
+    "id": "card-1765848723569-9ey4xlxxy",
+    "type": "cloze",
+    "sourceContentId": "1765848723564-48e071cbr",
+    "sourceFile": "1.Rough/test.md",
+    "anchorLink": "[[test#^extract-1765848723564-8p0oq4]]",
+    "front": "- 支持每条记录的独立批注与==[...]== #flashcards/Deutsch/recite",
+    "back": [
+      "角标显示"
+    ],
+    "cloze": {
+      "original": "- 支持每条记录的独立批注与==角标显示== #flashcards/Deutsch/recite",
+      "deletions": [
+        {
+          "index": 16,
+          "answer": "角标显示"
+        }
+      ]
+    },
+    "deck": "1.Rough",
+    "tags": [
+      "#test",
+      "#flashcards/Deutsch/recite"
+    ],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1765848723569,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1765848723569,
+      "updatedAt": 1765848723569
     }
   }
 ]

@@ -47,75 +47,71 @@ export class ExtractionEngine {
   /**
    * 提取选中的文本
    */
-/**
- * 提取选中的文本
- */
-private async extractSelectedText(
-  editor: Editor, 
-  file: TFile, 
-  extractType: 'text' | 'QA' | 'cloze'
-): Promise<void> {
-  const selection = editor.getSelection();
-  if (!selection) {
-    new Notice('No text selected');
-    return;
-  }
-
-  const cursor = editor.getCursor('from');
-  const content = await this.app.vault.read(file);
-  const offset = this.getOffsetFromCursor(content, cursor.line, cursor.ch);
-
-  try {
-    let unit: ContentUnit;
-
-    switch (extractType) {
-      case 'text':
-        unit = this.createTextUnit(file, selection, offset, content);
-        break;
-      case 'QA':
-        unit = this.createQAUnit(file, selection, offset, content);
-        break;
-      case 'cloze':
-        unit = this.createClozeUnit(file, selection, offset, content);
-        break;
+  private async extractSelectedText(
+    editor: Editor, 
+    file: TFile, 
+    extractType: 'text' | 'QA' | 'cloze'
+  ): Promise<void> {
+    const selection = editor.getSelection();
+    if (!selection) {
+      new Notice('No text selected');
+      return;
     }
 
-    // 🔧 1. 先保存 ContentUnit
-    await this.dataManager.saveContentUnits([unit]);
-    
-    // 🔧 2. 如果是 QA 或 cloze，创建闪卡
-    if (extractType === 'QA' || extractType === 'cloze') {
-      try {
-        const cardType = extractType === 'QA' ? 'qa' : 'cloze';
-        const flashcard = await this.flashcardManager.createFlashcardFromUnit(unit, {
-          cardType: cardType
-        });
-        
-        
-        // 🔧 3. 再次保存 unit（更新 flashcardIds）
-        await this.dataManager.saveContentUnits([unit]);
-        
-      } catch (error) {
-        console.error('[extractSelectedText] 创建闪卡失败:', error);
+    const cursor = editor.getCursor('from');
+    const content = await this.app.vault.read(file);
+    const offset = this.getOffsetFromCursor(content, cursor.line, cursor.ch);
+
+    try {
+      let unit: ContentUnit;
+
+      switch (extractType) {
+        case 'text':
+          unit = this.createTextUnit(file, selection, offset, content);
+          break;
+        case 'QA':
+          unit = this.createQAUnit(file, selection, offset, content);
+          break;
+        case 'cloze':
+          unit = this.createClozeUnit(file, selection, offset, content);
+          break;
       }
+
+      // 1. 先保存 ContentUnit
+      await this.dataManager.saveContentUnits([unit]);
+      
+      // 2. 如果是 QA 或 cloze，创建闪卡
+      if (extractType === 'QA' || extractType === 'cloze') {
+        try {
+          const cardType = extractType === 'QA' ? 'qa' : 'cloze';
+          const flashcard = await this.flashcardManager.createFlashcardFromUnit(unit, {
+            cardType: cardType
+          });
+          
+          // 3. 再次保存 unit（更新 flashcardIds）
+          await this.dataManager.saveContentUnits([unit]);
+          
+        } catch (error) {
+          console.error('[extractSelectedText] 创建闪卡失败:', error);
+        }
+      }
+      
+      const typeNames = {
+        text: 'text',
+        QA: 'QA card',
+        cloze: 'cloze card'
+      };
+      
+      new Notice(`✅ Extracted as ${typeNames[extractType]}`);
+      
+      // 4. 刷新所有视图
+      this.refreshAllViews();
+      
+    } catch (error) {
+      console.error('Error extracting selection:', error);
+      new Notice(`❌ Error: ${error.message}`);
     }
-    
-    const typeNames = {
-      text: 'text',
-      QA: 'QA card',
-      cloze: 'cloze card'
-    };
-    
-    new Notice(`✅ Extracted as ${typeNames[extractType]}`);
-    
-    // 🔧 4. 刷新所有视图
-    this.refreshAllViews();
-    
-  } catch (error) {
-    console.error('Error extracting selection:', error);
-    new Notice(`❌ Error: ${error.message}`);
   }
-}
 
   /**
    * 创建纯文本单元
@@ -261,7 +257,7 @@ private async extractSelectedText(
     let offset = 0;
     
     for (let i = 0; i < line; i++) {
-      offset += lines[i].length + 1; // +1 for newline
+      offset += lines[i].length + 1;
     }
     
     offset += ch;
@@ -276,20 +272,13 @@ private async extractSelectedText(
       const content = await this.app.vault.read(file);
       const units = await this.extractContent(file, content);
       
-      
       if (units.length > 0) {
-        // 🔧 不需要再次保存，因为 extractContent 内部已经保存过了
-        // 但需要确保 flashcardIds 已更新，所以再保存一次
         await this.dataManager.saveContentUnits(units);
-        
-        units.forEach(u => {
-        });
         
         const qaCount = units.filter(u => u.type === 'QA').length;
         const clozeCount = units.filter(u => u.type === 'cloze').length;
         new Notice(`Extracted ${qaCount} QA cards and ${clozeCount} cloze cards from ${file.name}`);
         
-        // 🔧 延迟刷新视图
         setTimeout(() => {
           this.refreshAllViews();
         }, 100);
@@ -304,7 +293,7 @@ private async extractSelectedText(
   }
   
   /**
-   * 🆕 刷新所有相关视图
+   * 刷新所有相关视图
    */
   private refreshAllViews() {
     this.app.workspace.iterateAllLeaves(leaf => {
@@ -315,7 +304,6 @@ private async extractSelectedText(
       }
     });
   }
-  
 
   /**
    * 扫描整个 Vault
@@ -339,49 +327,77 @@ private async extractSelectedText(
   }
 
   /**
-   * 🔧 关键修改: extractContent 改为 async，自动创建闪卡
+   * 🔧 修改: 先保存 units，再创建闪卡
    */
-/**
- * 🔧 修改: 先保存 units，再创建闪卡
- */
-private async extractContent(file: TFile, content: string): Promise<ContentUnit[]> {
-  const units: ContentUnit[] = [];
-  
-  // 1️⃣ 先提取所有 units（不创建闪卡）
-  const qaUnits = this.extractQACards(file, content);
-  units.push(...qaUnits);
-  
-  const clozeUnits = this.extractClozeCards(file, content);
-  units.push(...clozeUnits);
-  
-  // 2️⃣ 先保存所有 units 到 DataManager
-  if (units.length > 0) {
-    await this.dataManager.saveContentUnits(units);
-  }
-  
-  // 3️⃣ 再为每个 unit 创建闪卡
-  for (const unit of units) {
+  private async extractContent(file: TFile, content: string): Promise<ContentUnit[]> {
+    const units: ContentUnit[] = [];
     
-    try {
-      
-      const cardType = unit.type === 'QA' ? 'qa' : 'cloze';
-      const flashcard = await this.flashcardManager.createFlashcardFromUnit(unit, {
-        cardType: cardType
-      });
-      
-      
-    } catch (error) {
+    // 1️⃣ 先提取所有 units（不创建闪卡）
+    const qaUnits = this.extractQACards(file, content);
+    units.push(...qaUnits);
+    
+    const clozeUnits = this.extractClozeCards(file, content);
+    units.push(...clozeUnits);
+    
+    // 2️⃣ 先保存所有 units 到 DataManager
+    if (units.length > 0) {
+      await this.dataManager.saveContentUnits(units);
     }
+    
+    // 3️⃣ 再为每个 unit 创建闪卡
+    for (const unit of units) {
+      try {
+        const cardType = unit.type === 'QA' ? 'qa' : 'cloze';
+        const flashcard = await this.flashcardManager.createFlashcardFromUnit(unit, {
+          cardType: cardType
+        });
+      } catch (error) {
+        console.error('[extractContent] 创建闪卡失败:', error);
+      }
+    }
+    
+    return units;
   }
-  
-    units.filter(u => u.flashcardIds.length > 0).length;
-  
-  return units;
-}
 
   /**
-   * 提取 QA 卡片 (格式: Question :: Answer)
-   * 保持原有逻辑不变
+   * ✅ 检查是否为任务完成标记
+   * 排除: [completion:: date], [due:: date] 等任务相关的 :: 格式
+   */
+  private isTaskCompletion(line: string): boolean {
+    // 匹配任务标记: - [ ] 或 - [x] 开头的行,且包含 :: 
+    const taskPattern = /^[\s]*-\s*\[[x\s]\].*::/i;
+    return taskPattern.test(line);
+  }
+
+  /**
+   * ✅ 检查是否为日期/时间字段
+   * 排除: date1:: 2021-02-26T15:15, date2:: 2021-04-17 18:00 等格式
+   */
+  private isDateTimeField(question: string, answer: string): boolean {
+    // 检查问题部分是否包含常见的日期/时间字段名
+    const dateFieldPattern = /\b(date\d*|time\d*|created|updated|modified|scheduled|due|completion)\b/i;
+    
+    // 检查答案部分是否为日期/时间格式
+    const dateTimePattern = /^\s*\d{4}-\d{2}-\d{2}(T|\s)\d{2}:\d{2}|\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/;
+    const dateOnlyPattern = /^\s*\d{4}-\d{2}-\d{2}\s*$/;
+    
+    return dateFieldPattern.test(question) && 
+           (dateTimePattern.test(answer) || dateOnlyPattern.test(answer));
+  }
+
+  /**
+   * ✅ 检查是否为 Excalidraw 高亮
+   * 排除: ==switch to excalidraw view...== 这类特定高亮
+   */
+  private isExcalidrawHighlight(matchText: string, line: string): boolean {
+    // 如果高亮内容包含 excalidraw 相关关键词
+    const excalidrawKeywords = /excalidraw|drawing|sketch/i;
+    return excalidrawKeywords.test(matchText) || excalidrawKeywords.test(line);
+  }
+
+  /**
+   * ✅ 提取 QA 卡片 (格式: Question :: Answer)
+   * 新增: 过滤任务完成标记和日期时间字段
    */
   private extractQACards(file: TFile, content: string): ContentUnit[] {
     const units: ContentUnit[] = [];
@@ -389,8 +405,22 @@ private async extractContent(file: TFile, content: string): Promise<ContentUnit[
     let match;
 
     while ((match = qaRegex.exec(content)) !== null) {
+      const fullMatch = match[0];
       const question = match[1].trim();
       const answer = match[2].trim();
+      
+      // ✅ 跳过任务完成标记
+      if (this.isTaskCompletion(fullMatch)) {
+        console.log('[extractQACards] 跳过任务标记:', fullMatch);
+        continue;
+      }
+      
+      // ✅ 跳过日期时间字段
+      if (this.isDateTimeField(question, answer)) {
+        console.log('[extractQACards] 跳过日期时间字段:', fullMatch);
+        continue;
+      }
+      
       const position = this.calculatePosition(content, match.index);
 
       const unit: ContentUnit = {
@@ -398,12 +428,12 @@ private async extractContent(file: TFile, content: string): Promise<ContentUnit[
         type: 'QA',
         content: question,
         answer: answer,
-        fullContext: match[0],
+        fullContext: fullMatch,
         source: {
           file: file.path,
           position: {
             start: match.index,
-            end: match.index + match[0].length,
+            end: match.index + fullMatch.length,
             line: position.line
           },
           heading: this.findHeading(content, match.index),
@@ -419,7 +449,7 @@ private async extractContent(file: TFile, content: string): Promise<ContentUnit[
           updatedAt: Date.now(),
           tags: this.extractTags(content, match.index)
         },
-        flashcardIds: [] // 🔧 会在创建闪卡后自动更新
+        flashcardIds: []
       };
 
       units.push(unit);
@@ -429,8 +459,8 @@ private async extractContent(file: TFile, content: string): Promise<ContentUnit[
   }
 
   /**
-   * 提取完形填空卡 (格式: ==highlight==)
-   * 保持原有逻辑不变
+   * ✅ 提取完形填空卡 (格式: ==highlight==)
+   * 新增: 过滤 Excalidraw 高亮
    */
   private extractClozeCards(file: TFile, content: string): ContentUnit[] {
     const units: ContentUnit[] = [];
@@ -439,8 +469,21 @@ private async extractContent(file: TFile, content: string): Promise<ContentUnit[
 
     while ((match = highlightRegex.exec(content)) !== null) {
       const extractedText = match[1];
+      const fullMatch = match[0];
       const position = this.calculatePosition(content, match.index);
-      const fullSentence = this.extractFullSentence(content, match.index, match[0].length);
+      
+      // 获取当前行内容
+      const lineStart = content.lastIndexOf('\n', match.index) + 1;
+      const lineEnd = content.indexOf('\n', match.index);
+      const currentLine = content.substring(lineStart, lineEnd === -1 ? content.length : lineEnd);
+      
+      // ✅ 跳过 Excalidraw 高亮
+      if (this.isExcalidrawHighlight(extractedText, currentLine)) {
+        console.log('[extractClozeCards] 跳过 Excalidraw 高亮:', extractedText);
+        continue;
+      }
+      
+      const fullSentence = this.extractFullSentence(content, match.index, fullMatch.length);
 
       const unit: ContentUnit = {
         id: this.generateId(),
@@ -451,7 +494,7 @@ private async extractContent(file: TFile, content: string): Promise<ContentUnit[
           file: file.path,
           position: {
             start: match.index,
-            end: match.index + match[0].length,
+            end: match.index + fullMatch.length,
             line: position.line
           },
           heading: this.findHeading(content, match.index),
@@ -467,7 +510,7 @@ private async extractContent(file: TFile, content: string): Promise<ContentUnit[
           updatedAt: Date.now(),
           tags: this.extractTags(content, match.index)
         },
-        flashcardIds: [] // 🔧 会在创建闪卡后自动更新
+        flashcardIds: []
       };
 
       units.push(unit);
@@ -476,15 +519,12 @@ private async extractContent(file: TFile, content: string): Promise<ContentUnit[
     return units;
   }
 
-
   /**
    * 提取包含高亮的完整句子
    */
   private extractFullSentence(content: string, highlightStart: number, highlightLength: number): string {
-    // 句子结束符
-    const sentenceEnds = /[.!?。！？\n]/;
+    const sentenceEnds = /[.!?。！?\n]/;
     
-    // 向前找句子开头
     let start = highlightStart;
     while (start > 0) {
       const char = content[start - 1];
@@ -494,12 +534,11 @@ private async extractContent(file: TFile, content: string): Promise<ContentUnit[
       start--;
     }
     
-    // 向后找句子结尾
     let end = highlightStart + highlightLength;
     while (end < content.length) {
       const char = content[end];
       if (sentenceEnds.test(char)) {
-        end++; // 包含结束符
+        end++;
         break;
       }
       end++;
@@ -538,16 +577,13 @@ private async extractContent(file: TFile, content: string): Promise<ContentUnit[
     const yamlMatch = content.match(/^---\n([\s\S]*?)\n---/);
     if (yamlMatch) {
       const yamlContent = yamlMatch[1];
-      // 匹配 tags: [tag1, tag2] 或 tags: tag1
       const tagsMatch = yamlContent.match(/^tags:\s*(.+)$/m);
       if (tagsMatch) {
         const tagContent = tagsMatch[1].trim();
-        // 处理数组格式 [tag1, tag2]
         if (tagContent.startsWith('[')) {
           const arrayTags = tagContent.match(/[\w/-]+/g);
           arrayTags?.forEach(tag => tags.add(`#${tag}`));
         } else {
-          // 处理单个 tag 或逗号分隔
           tagContent.split(',').forEach(tag => {
             const cleaned = tag.trim();
             if (cleaned) tags.add(`#${cleaned}`);
@@ -557,12 +593,10 @@ private async extractContent(file: TFile, content: string): Promise<ContentUnit[
     }
     
     // 2. 提取句子末尾的 inline tags
-    // 找到当前高亮所在的行
     const lines = content.substring(0, position).split('\n');
     const currentLine = lines.length - 1;
     const lineContent = content.split('\n')[currentLine] || '';
     
-    // 匹配支持多级路径的 tag: #tag 或 #tag/subtag/subsubtag
     const inlineTagRegex = /#[\w/-]+/g;
     const inlineTags = lineContent.match(inlineTagRegex);
     inlineTags?.forEach(tag => tags.add(tag));
