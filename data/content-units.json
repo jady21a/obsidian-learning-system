@@ -1,1515 +1,5 @@
 [
   {
-    "id": "1765848718325-whunov3q9",
-    "type": "QA",
-    "content": "aa",
-    "answer": "bb",
-    "fullContext": "aa::bb",
-    "source": {
-      "file": "9.备忘/软件设备/2.obsidian.md",
-      "position": {
-        "start": 1108,
-        "end": 1114,
-        "line": 106
-      },
-      "heading": "## Spaced Repetition",
-      "anchorLink": "[[2.obsidian#^extract-1765848718325-dg65rd]]"
-    },
-    "extractRule": {
-      "ruleId": "QA",
-      "ruleName": "QA Card",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718325,
-      "updatedAt": 1765848718325,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718326-956x9wwwh"
-    ]
-  },
-  {
-    "id": "1765848718325-2uxezkoyw",
-    "type": "QA",
-    "content": "aa",
-    "answer": ":bb",
-    "fullContext": "aa:::bb",
-    "source": {
-      "file": "9.备忘/软件设备/2.obsidian.md",
-      "position": {
-        "start": 1130,
-        "end": 1137,
-        "line": 110
-      },
-      "heading": "## Spaced Repetition",
-      "anchorLink": "[[2.obsidian#^extract-1765848718325-czrj5v]]"
-    },
-    "extractRule": {
-      "ruleId": "QA",
-      "ruleName": "QA Card",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718325,
-      "updatedAt": 1765848718325,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718330-ku26b82kd"
-    ]
-  },
-  {
-    "id": "1765848718325-cv6uvgex6",
-    "type": "cloze",
-    "content": "高亮",
-    "fullContext": "如果有==高亮==就会显示为完形填空",
-    "source": {
-      "file": "9.备忘/软件设备/2.obsidian.md",
-      "position": {
-        "start": 1079,
-        "end": 1085,
-        "line": 102
-      },
-      "heading": "## Spaced Repetition",
-      "anchorLink": "[[2.obsidian#^extract-1765848718325-gv2kgm]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718325,
-      "updatedAt": 1765848718325,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718331-aicnkl37a"
-    ]
-  },
-  {
-    "id": "1765848718338-38o2p1ezb",
-    "type": "QA",
-    "content": "这个结论值得商榷 #view/存疑 [reason",
-    "answer": "缺少实证数据]",
-    "fullContext": "这个结论值得商榷 #view/存疑 [reason::缺少实证数据]",
-    "source": {
-      "file": "9.备忘/tag.md",
-      "position": {
-        "start": 406,
-        "end": 440,
-        "line": 36
-      },
-      "heading": "### 语言",
-      "anchorLink": "[[tag#^extract-1765848718338-erp58m]]"
-    },
-    "extractRule": {
-      "ruleId": "QA",
-      "ruleName": "QA Card",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718338,
-      "updatedAt": 1765848718338,
-      "tags": [
-        "#view/"
-      ]
-    },
-    "flashcardIds": [
-      "card-1765848718339-z0jerri2q"
-    ]
-  },
-  {
-    "id": "1765848718338-jm8a3wdl8",
-    "type": "QA",
-    "content": "有趣的视角 #view/启发 [connection",
-    "answer": "[[另一篇笔记]]]",
-    "fullContext": "有趣的视角 #view/启发 [connection::[[另一篇笔记]]]",
-    "source": {
-      "file": "9.备忘/tag.md",
-      "position": {
-        "start": 441,
-        "end": 479,
-        "line": 37
-      },
-      "heading": "### 语言",
-      "anchorLink": "[[tag#^extract-1765848718338-gjv43y]]"
-    },
-    "extractRule": {
-      "ruleId": "QA",
-      "ruleName": "QA Card",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718338,
-      "updatedAt": 1765848718338,
-      "tags": [
-        "#view/"
-      ]
-    },
-    "flashcardIds": [
-      "card-1765848718340-3mrwo9etk"
-    ]
-  },
-  {
-    "id": "1765848718372-0wzum13r7",
-    "type": "cloze",
-    "content": "**mich**",
-    "fullContext": "==**mich**==我   ==**dich**==你  Sie您",
-    "source": {
-      "file": "7-world/德语/b.德语语法视频课.md",
-      "position": {
-        "start": 546,
-        "end": 558,
-        "line": 54
-      },
-      "heading": "#### 人称代词第四格A",
-      "anchorLink": "[[b.德语语法视频课#^extract-1765848718372-b9xkfa]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718372,
-      "updatedAt": 1765848718372,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718373-vf5pq6u88"
-    ]
-  },
-  {
-    "id": "1765848718372-xhfcjt2qm",
-    "type": "cloze",
-    "content": "**dich**",
-    "fullContext": "==**mich**==我   ==**dich**==你  Sie您",
-    "source": {
-      "file": "7-world/德语/b.德语语法视频课.md",
-      "position": {
-        "start": 562,
-        "end": 574,
-        "line": 54
-      },
-      "heading": "#### 人称代词第四格A",
-      "anchorLink": "[[b.德语语法视频课#^extract-1765848718372-d0puik]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718372,
-      "updatedAt": 1765848718372,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718374-vkixdxma9"
-    ]
-  },
-  {
-    "id": "1765848718372-kstnei2qx",
-    "type": "cloze",
-    "content": "ihn",
-    "fullContext": "==ihn==他/in/   es 它    sie她",
-    "source": {
-      "file": "7-world/德语/b.德语语法视频课.md",
-      "position": {
-        "start": 582,
-        "end": 589,
-        "line": 55
-      },
-      "heading": "#### 人称代词第四格A",
-      "anchorLink": "[[b.德语语法视频课#^extract-1765848718372-8ou79w]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718372,
-      "updatedAt": 1765848718372,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718375-z92e6noju"
-    ]
-  },
-  {
-    "id": "1765848718372-dufjj4rpd",
-    "type": "cloze",
-    "content": "uns",
-    "fullContext": "==uns==我们     ==euch==你们/ɔixi/  **sie他们",
-    "source": {
-      "file": "7-world/德语/b.德语语法视频课.md",
-      "position": {
-        "start": 610,
-        "end": 617,
-        "line": 56
-      },
-      "heading": "#### 人称代词第四格A",
-      "anchorLink": "[[b.德语语法视频课#^extract-1765848718372-xcfm8x]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718372,
-      "updatedAt": 1765848718372,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718377-a2cv52lyn"
-    ]
-  },
-  {
-    "id": "1765848718372-2juql6eof",
-    "type": "cloze",
-    "content": "euch",
-    "fullContext": "==uns==我们     ==euch==你们/ɔixi/  **sie他们",
-    "source": {
-      "file": "7-world/德语/b.德语语法视频课.md",
-      "position": {
-        "start": 624,
-        "end": 632,
-        "line": 56
-      },
-      "heading": "#### 人称代词第四格A",
-      "anchorLink": "[[b.德语语法视频课#^extract-1765848718372-75qlay]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718372,
-      "updatedAt": 1765848718372,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718379-m1zct9930"
-    ]
-  },
-  {
-    "id": "1765848718372-zupyggirj",
-    "type": "cloze",
-    "content": "ihn",
-    "fullContext": "| he    | er  | ==ihn== | sein  | ihm   |",
-    "source": {
-      "file": "7-world/德语/b.德语语法视频课.md",
-      "position": {
-        "start": 1036,
-        "end": 1043,
-        "line": 73
-      },
-      "heading": "### 总结表",
-      "anchorLink": "[[b.德语语法视频课#^extract-1765848718372-9y4z0b]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718372,
-      "updatedAt": 1765848718372,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718380-ea20yjucc"
-    ]
-  },
-  {
-    "id": "1765848718386-4466yr9fc",
-    "type": "cloze",
-    "content": "**‑ling**",
-    "fullContext": "#### - Nouns ending in ==**‑ling**==:",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 510,
-        "end": 523,
-        "line": 15
-      },
-      "heading": "#### - Nouns ending in ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-g4dukm]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765854767416,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718387-8b3vfv6om"
-    ],
-    "annotationId": "ann-1765854767415-mk6ycjqbh"
-  },
-  {
-    "id": "1765848718386-cryue12qe",
-    "type": "cloze",
-    "content": "**‑ich/ig**",
-    "fullContext": "#### - Nouns ending in ==**‑ich/ig**==:",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 605,
-        "end": 620,
-        "line": 17
-      },
-      "heading": "#### - Nouns ending in ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-hzhpq4]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765848718386,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718388-ia6frrm4c"
-    ]
-  },
-  {
-    "id": "1765848718386-u7eradzrp",
-    "type": "cloze",
-    "content": "**‑er**",
-    "fullContext": "#### - Nouns ending in ==**‑er**==:",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 685,
-        "end": 696,
-        "line": 19
-      },
-      "heading": "#### - Nouns ending in ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-dudsgj]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765848718386,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718389-uk72nw4gl"
-    ]
-  },
-  {
-    "id": "1765848718386-edc7knq6d",
-    "type": "cloze",
-    "content": "**‑us**",
-    "fullContext": "#### - Foreign words ending in ==**‑us**==:",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 773,
-        "end": 784,
-        "line": 21
-      },
-      "heading": "#### - Foreign words ending in ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-j3cn81]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765848718386,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718390-ubwu6t779"
-    ]
-  },
-  {
-    "id": "1765848718386-62xfkm85s",
-    "type": "cloze",
-    "content": "**‑en**",
-    "fullContext": "#### - Verb infinitives turned into nouns without ==**‑en**==:动词不定式变成不带 **-en** 的名词",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 889,
-        "end": 900,
-        "line": 23
-      },
-      "heading": "#### - Verb infinitives turned into nouns without ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-5wt9s3]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765848718386,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718391-dm3pheovm"
-    ]
-  },
-  {
-    "id": "1765848718386-441zfs0em",
-    "type": "cloze",
-    "content": "‑um",
-    "fullContext": "#### - Nouns ending in ==‑um==:",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 1118,
-        "end": 1125,
-        "line": 31
-      },
-      "heading": "#### - Nouns ending in ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-t5on5b]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765848718386,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718392-vtddhlg2m"
-    ]
-  },
-  {
-    "id": "1765848718386-fvravrq6o",
-    "type": "cloze",
-    "content": "‑ment",
-    "fullContext": "#### - Nouns ending in ==‑ment==:",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 1207,
-        "end": 1216,
-        "line": 33
-      },
-      "heading": "#### - Nouns ending in ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-6q31ko]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765848718386,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718393-49paldo7n"
-    ]
-  },
-  {
-    "id": "1765848718386-t5zbp7cwk",
-    "type": "cloze",
-    "content": "‑ma",
-    "fullContext": "#### - Foreign words ending in ==‑ma==:",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 1304,
-        "end": 1311,
-        "line": 35
-      },
-      "heading": "#### - Foreign words ending in ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-3owngx]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765848718386,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718394-9yx1zip0d"
-    ]
-  },
-  {
-    "id": "1765848718386-f6flaaewb",
-    "type": "cloze",
-    "content": "Ge‑",
-    "fullContext": "#### - Some nouns beginning in ==Ge‑==:",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 1461,
-        "end": 1468,
-        "line": 39
-      },
-      "heading": "#### - Some nouns beginning in ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-7in728]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765848718386,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718398-rdb9kw2kh"
-    ]
-  },
-  {
-    "id": "1765848718386-ufxyh5wa2",
-    "type": "cloze",
-    "content": "**‑ung**",
-    "fullContext": "### - ==**‑ung**== Nouns ending :",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 1721,
-        "end": 1733,
-        "line": 47
-      },
-      "heading": "### - ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-p0t7m4]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765848718386,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718399-g1sldcj9w"
-    ]
-  },
-  {
-    "id": "1765848718386-5mf050yfy",
-    "type": "cloze",
-    "content": "**‑schaft**",
-    "fullContext": "#### -  ==**‑schaft**== Nouns ending",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 1808,
-        "end": 1823,
-        "line": 51
-      },
-      "heading": "#### -  ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-o572z7]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765848718386,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718400-ardnfubh8"
-    ]
-  },
-  {
-    "id": "1765848718386-yphcar09g",
-    "type": "cloze",
-    "content": "**‑ion**",
-    "fullContext": "#### -  ==**‑ion**== Nouns ending",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 1896,
-        "end": 1908,
-        "line": 53
-      },
-      "heading": "#### -  ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-0dbjxz]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765848718386,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718401-ebhx6taqe"
-    ]
-  },
-  {
-    "id": "1765848718386-yu0s4z7op",
-    "type": "cloze",
-    "content": "**‑heit/keit**",
-    "fullContext": "#### - ==**‑heit/keit**== Nouns ending",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 1981,
-        "end": 1999,
-        "line": 55
-      },
-      "heading": "#### - ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-s6tz9a]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765848718386,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718402-c2zcitknm"
-    ]
-  },
-  {
-    "id": "1765848718386-ckphtecse",
-    "type": "cloze",
-    "content": "**‑tät**",
-    "fullContext": "#### -  ==**‑tät**== Nouns ending",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 2076,
-        "end": 2088,
-        "line": 57
-      },
-      "heading": "#### -  ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-nvdjth]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765848718386,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718403-5oot0oddj"
-    ]
-  },
-  {
-    "id": "1765848718386-n5r66sm0e",
-    "type": "cloze",
-    "content": "**‑ik**",
-    "fullContext": "#### -  ==**‑ik**== Nouns ending",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 2162,
-        "end": 2173,
-        "line": 59
-      },
-      "heading": "#### -  ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-kpkiqs]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765848718386,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718406-pshgjulow"
-    ]
-  },
-  {
-    "id": "1765848718386-bsselrbyy",
-    "type": "cloze",
-    "content": "**‑ade**, **‑age**, **‑euse,** **‑ere**, **‑ie**",
-    "fullContext": "#### - ==**‑ade**, **‑age**, **‑euse,** **‑ere**, **‑ie**== Nouns ending",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 2237,
-        "end": 2289,
-        "line": 61
-      },
-      "heading": "#### - ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-5za1gn]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765848718386,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718407-fsao2y3ky"
-    ]
-  },
-  {
-    "id": "1765848718386-u6rihozzi",
-    "type": "cloze",
-    "content": "**‑anz**, **‑enz**",
-    "fullContext": "#### - ==**‑anz**, **‑enz**== Nouns ending",
-    "source": {
-      "file": "7-world/德语/b.德语语法.md",
-      "position": {
-        "start": 2377,
-        "end": 2399,
-        "line": 63
-      },
-      "heading": "#### - ",
-      "anchorLink": "[[b.德语语法#^extract-1765848718386-t70zcu]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848718386,
-      "updatedAt": 1765848718386,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848718408-byn6srhnn"
-    ]
-  },
-  {
-    "id": "1765848720871-6o49e8zwr",
-    "type": "QA",
-    "content": "QA卡片",
-    "answer": "完形填空 ==高亮==",
-    "fullContext": "\tQA卡片 ::\n\t完形填空 ==高亮==",
-    "source": {
-      "file": "4.Projects/II.tasks/b1.5anki卡片优化.md",
-      "position": {
-        "start": 1129,
-        "end": 1150,
-        "line": 57
-      },
-      "heading": "#### 数据提取",
-      "anchorLink": "[[b1.5anki卡片优化#^extract-1765848720871-758s2s]]"
-    },
-    "extractRule": {
-      "ruleId": "QA",
-      "ruleName": "QA Card",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848720871,
-      "updatedAt": 1765854756876,
-      "tags": [
-        "#- task"
-      ]
-    },
-    "flashcardIds": [
-      "card-1765848720874-u7l3dht3g"
-    ],
-    "annotationId": "ann-1765854756873-uoogm3y19"
-  },
-  {
-    "id": "1765848720872-22aztupja",
-    "type": "cloze",
-    "content": "高亮",
-    "fullContext": "完形填空 ==高亮==",
-    "source": {
-      "file": "4.Projects/II.tasks/b1.5anki卡片优化.md",
-      "position": {
-        "start": 1144,
-        "end": 1150,
-        "line": 58
-      },
-      "heading": "#### 数据提取",
-      "anchorLink": "[[b1.5anki卡片优化#^extract-1765848720872-r6zsf5]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848720872,
-      "updatedAt": 1765848720872,
-      "tags": [
-        "#- task"
-      ]
-    },
-    "flashcardIds": [
-      "card-1765848720876-98uxtfmyr"
-    ]
-  },
-  {
-    "id": "1765848720906-uh8oj3w5r",
-    "type": "cloze",
-    "content": "- al",
-    "fullContext": "==- al==（animal）",
-    "source": {
-      "file": "3.learn/1.language/3-Spanish.md",
-      "position": {
-        "start": 1132,
-        "end": 1140,
-        "line": 54
-      },
-      "heading": "### card",
-      "anchorLink": "[[3-Spanish#^extract-1765848720906-r8yskq]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848720906,
-      "updatedAt": 1765848720906,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848720907-po78jx7oo"
-    ]
-  },
-  {
-    "id": "1765848720906-e9g07op0w",
-    "type": "cloze",
-    "content": "- or",
-    "fullContext": "==- or== （actor）",
-    "source": {
-      "file": "3.learn/1.language/3-Spanish.md",
-      "position": {
-        "start": 1290,
-        "end": 1298,
-        "line": 62
-      },
-      "heading": "### card",
-      "anchorLink": "[[3-Spanish#^extract-1765848720906-fpalv6]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848720906,
-      "updatedAt": 1765848720906,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848720908-qhmvja0mq"
-    ]
-  },
-  {
-    "id": "1765848720906-9r0jjty8p",
-    "type": "cloze",
-    "content": "- ble",
-    "fullContext": "==- ble==（cable）",
-    "source": {
-      "file": "3.learn/1.language/3-Spanish.md",
-      "position": {
-        "start": 1342,
-        "end": 1351,
-        "line": 65
-      },
-      "heading": "### card",
-      "anchorLink": "[[3-Spanish#^extract-1765848720906-xmbewq]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848720906,
-      "updatedAt": 1765848720906,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848720909-r4efl9oop"
-    ]
-  },
-  {
-    "id": "1765848720917-w4lhclazq",
-    "type": "QA",
-    "content": "家里有男女父母和小孩，==儿子==女儿兄弟姐妹，叔叔和阿姨",
-    "answer": "familie have mann frau Eltern kind sohn tochter bruder schwester onkel tante",
-    "fullContext": "家里有男女父母和小孩，==儿子==女儿兄弟姐妹，叔叔和阿姨::familie have mann frau Eltern kind sohn tochter bruder schwester onkel tante",
-    "source": {
-      "file": "3.learn/1.language/2.1-Deutsch recite.md",
-      "position": {
-        "start": 36,
-        "end": 143,
-        "line": 3
-      },
-      "heading": "## 连词成句",
-      "anchorLink": "[[2.1-Deutsch recite#^extract-1765848720917-y5wqcz]]"
-    },
-    "extractRule": {
-      "ruleId": "QA",
-      "ruleName": "QA Card",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848720917,
-      "updatedAt": 1765848720917,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848720918-cd0r8oozi"
-    ]
-  },
-  {
-    "id": "1765848720917-a8y9kx51s",
-    "type": "QA",
-    "content": "still too young for all,but from many and his",
-    "answer": "noch zu jung für a==ll,aber== von viele und sein",
-    "fullContext": "still too young for all,but from many and his::noch zu jung für a==ll,aber== von viele und sein",
-    "source": {
-      "file": "3.learn/1.language/2.1-Deutsch recite.md",
-      "position": {
-        "start": 174,
-        "end": 269,
-        "line": 7
-      },
-      "heading": "## 连词成句",
-      "anchorLink": "[[2.1-Deutsch recite#^extract-1765848720917-1ncn3d]]"
-    },
-    "extractRule": {
-      "ruleId": "QA",
-      "ruleName": "QA Card",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848720917,
-      "updatedAt": 1765848720917,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848720919-09wbg27a2"
-    ]
-  },
-  {
-    "id": "1765848720917-hyz4r0ghk",
-    "type": "cloze",
-    "content": "儿子",
-    "fullContext": "家里有男女父母和小孩，==儿子==女儿兄弟姐妹，叔叔和阿姨::familie have mann frau Eltern kind sohn tochter bruder schwester onkel tante",
-    "source": {
-      "file": "3.learn/1.language/2.1-Deutsch recite.md",
-      "position": {
-        "start": 47,
-        "end": 53,
-        "line": 3
-      },
-      "heading": "## 连词成句",
-      "anchorLink": "[[2.1-Deutsch recite#^extract-1765848720917-uj2hvj]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848720917,
-      "updatedAt": 1765848720917,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848720920-66ws4onvn"
-    ]
-  },
-  {
-    "id": "1765848720917-bco9rh3ui",
-    "type": "cloze",
-    "content": "ll,aber",
-    "fullContext": "still too young for all,but from many and his::noch zu jung für a==ll,aber== von viele und sein",
-    "source": {
-      "file": "3.learn/1.language/2.1-Deutsch recite.md",
-      "position": {
-        "start": 239,
-        "end": 250,
-        "line": 7
-      },
-      "heading": "## 连词成句",
-      "anchorLink": "[[2.1-Deutsch recite#^extract-1765848720917-p2z05a]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848720917,
-      "updatedAt": 1765848720917,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848720921-q8liv3jtm"
-    ]
-  },
-  {
-    "id": "1765848720936-6cpo9h2hv",
-    "type": "cloze",
-    "content": "g",
-    "fullContext": "| ==g==  | ge(hay)              | hèi         | gi      |          |                        |",
-    "source": {
-      "file": "3.learn/1.language/1-EN&SP&DE&CH.md",
-      "position": {
-        "start": 757,
-        "end": 762,
-        "line": 11
-      },
-      "anchorLink": "[[1-EN&SP&DE&CH#^extract-1765848720936-kwwxcx]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848720936,
-      "updatedAt": 1765848720936,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848720937-fzxik7kyn"
-    ]
-  },
-  {
-    "id": "1765848720936-l1bh114v8",
-    "type": "cloze",
-    "content": "j",
-    "fullContext": "| ==j==  | jota(ho-tah)         | ho-dah      | yot     | Jalepeno | Jalapeno/Mexico pepper |",
-    "source": {
-      "file": "3.learn/1.language/1-EN&SP&DE&CH.md",
-      "position": {
-        "start": 1039,
-        "end": 1044,
-        "line": 14
-      },
-      "anchorLink": "[[1-EN&SP&DE&CH#^extract-1765848720936-fapbgp]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848720936,
-      "updatedAt": 1765848720936,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848720938-cpq34hvar"
-    ]
-  },
-  {
-    "id": "1765848723472-0ujuw6dpq",
-    "type": "cloze",
-    "content": "如果吸引了你的注意，就赢了一半。另一半要靠满足消费者需求赢得。",
-    "fullContext": "==如果吸引了你的注意，就赢了一半。另一半要靠满足消费者需求赢得。==",
-    "source": {
-      "file": "2.Read/douban/book/百万富翁快车道.md",
-      "position": {
-        "start": 7868,
-        "end": 7903,
-        "line": 332
-      },
-      "heading": "### 打造品牌",
-      "anchorLink": "[[百万富翁快车道#^extract-1765848723472-j6kgdz]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848723472,
-      "updatedAt": 1765848723472,
-      "tags": [
-        "#- book"
-      ]
-    },
-    "flashcardIds": [
-      "card-1765848723473-65ltggn7i"
-    ]
-  },
-  {
-    "id": "1765848723508-0kyhtazbf",
-    "type": "cloze",
-    "content": "越是认为自己没有价值、头脑蠢笨、相貌丑陋，越会让自己用这种方式诠释人生，受困于这种负面循环里。看待别人的方式也是同理。一旦习惯认为别人爱生气，不公平或自私，就会走到哪里都看见这种人。",
-    "fullContext": "负面想法：==越是认为自己没有价值、头脑蠢笨、相貌丑陋，越会让自己用这种方式诠释人生，受困于这种负面循环里。看待别人的方式也是同理。一旦习惯认为别人爱生气，不公平或自私，就会走到哪里都看见这种人。==",
-    "source": {
-      "file": "2.Read/douban/book/原子習慣.md",
-      "position": {
-        "start": 3739,
-        "end": 3834,
-        "line": 139
-      },
-      "heading": "## 1.习惯的力量",
-      "anchorLink": "[[原子習慣#^extract-1765848723508-nzchgt]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848723508,
-      "updatedAt": 1765848723508,
-      "tags": [
-        "#- book"
-      ]
-    },
-    "flashcardIds": [
-      "card-1765848723509-aeetixjcy"
-    ]
-  },
-  {
-    "id": "1765848723508-x0exlcclx",
-    "type": "cloze",
-    "content": "卻可以強化你的身分認同",
-    "fullContext": "進健身房五分鐘也許不會幫你改善體能，==卻可以強化你的身分認同==。",
-    "source": {
-      "file": "2.Read/douban/book/原子習慣.md",
-      "position": {
-        "start": 11616,
-        "end": 11631,
-        "line": 468
-      },
-      "heading": "#### b.如何每天坚持好习惯",
-      "anchorLink": "[[原子習慣#^extract-1765848723508-kod810]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848723508,
-      "updatedAt": 1765848723508,
-      "tags": [
-        "#- book"
-      ]
-    },
-    "flashcardIds": [
-      "card-1765848723511-ko9fytgnq"
-    ]
-  },
-  {
-    "id": "1765848723546-vg3aewyyi",
-    "type": "QA",
-    "content": "简称额",
-    "answer": "男外出",
-    "fullContext": "简称额::男外出",
-    "source": {
-      "file": "1.Rough/特色t.md",
-      "position": {
-        "start": 37,
-        "end": 45,
-        "line": 8
-      },
-      "anchorLink": "[[特色t#^extract-1765848723546-4zq6lk]]"
-    },
-    "extractRule": {
-      "ruleId": "QA",
-      "ruleName": "QA Card",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848723546,
-      "updatedAt": 1765860757868,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848723547-gojx4mfly"
-    ],
-    "annotationId": "ann-1765860757855-4umb6fsh2"
-  },
-  {
-    "id": "1765848723546-rjpm9gvpn",
-    "type": "QA",
-    "content": "什么是闭包？",
-    "answer": "闭包是指函数可以访问其外部作用域的变量",
-    "fullContext": "什么是闭包？ :: 闭包是指函数可以访问其外部作用域的变量",
-    "source": {
-      "file": "1.Rough/特色t.md",
-      "position": {
-        "start": 56,
-        "end": 85,
-        "line": 11
-      },
-      "heading": "# 我的学习笔记",
-      "anchorLink": "[[特色t#^extract-1765848723546-yccomk]]"
-    },
-    "extractRule": {
-      "ruleId": "QA",
-      "ruleName": "QA Card",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848723546,
-      "updatedAt": 1765860767625,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848723548-qvt98zr1c"
-    ],
-    "annotationId": "ann-1765860767618-coyy7izt7"
-  },
-  {
-    "id": "1765848723546-h9groa1er",
-    "type": "QA",
-    "content": "aa",
-    "answer": "bb",
-    "fullContext": "aa :: bb",
-    "source": {
-      "file": "1.Rough/特色t.md",
-      "position": {
-        "start": 119,
-        "end": 127,
-        "line": 15
-      },
-      "heading": "# 我的学习笔记",
-      "anchorLink": "[[特色t#^extract-1765848723546-zy8oim]]"
-    },
-    "extractRule": {
-      "ruleId": "QA",
-      "ruleName": "QA Card",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848723546,
-      "updatedAt": 1765860806888,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848723550-m3sgan1jv"
-    ]
-  },
-  {
-    "id": "1765848723546-qpekyglqe",
-    "type": "QA",
-    "content": "cc",
-    "answer": "dd",
-    "fullContext": "cc::dd",
-    "source": {
-      "file": "1.Rough/特色t.md",
-      "position": {
-        "start": 129,
-        "end": 135,
-        "line": 17
-      },
-      "heading": "# 我的学习笔记",
-      "anchorLink": "[[特色t#^extract-1765848723546-z1sw5q]]"
-    },
-    "extractRule": {
-      "ruleId": "QA",
-      "ruleName": "QA Card",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848723546,
-      "updatedAt": 1765860814776,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848723551-6opb1wo6g"
-    ]
-  },
-  {
-    "id": "1765848723546-tj6ash0r2",
-    "type": "cloze",
-    "content": "风坑",
-    "fullContext": "港==风坑==",
-    "source": {
-      "file": "1.Rough/特色t.md",
-      "position": {
-        "start": 1,
-        "end": 7,
-        "line": 0
-      },
-      "anchorLink": "[[特色t#^extract-1765848723546-tqf79d]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848723546,
-      "updatedAt": 1765860826009,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848723552-v23d8gz14"
-    ]
-  },
-  {
-    "id": "1765848723546-1spczof61",
-    "type": "cloze",
-    "content": "事件循环",
-    "fullContext": "JavaScript 中的 ==事件循环== 处理异步操作。",
-    "source": {
-      "file": "1.Rough/特色t.md",
-      "position": {
-        "start": 101,
-        "end": 109,
-        "line": 13
-      },
-      "heading": "# 我的学习笔记",
-      "anchorLink": "[[特色t#^extract-1765848723546-2s8v3b]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848723546,
-      "updatedAt": 1765861237452,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765848723554-iah603mi1"
-    ]
-  },
-  {
-    "id": "1765848723564-ftmoharbx",
-    "type": "cloze",
-    "content": "于以",
-    "fullContext": "请基==于以==下功能拆解出清晰的架构方案（无需实现代码）：**",
-    "source": {
-      "file": "1.Rough/test.md",
-      "position": {
-        "start": 114,
-        "end": 120,
-        "line": 6
-      },
-      "anchorLink": "[[test#^extract-1765848723564-qt57n0]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848723564,
-      "updatedAt": 1765856647433,
-      "tags": [
-        "#test"
-      ]
-    },
-    "flashcardIds": [
-      "card-1765848723565-eumd4ncpg"
-    ],
-    "annotationId": "ann-1765856647429-gb11rmpt8"
-  },
-  {
-    "id": "1765848723564-wi4hfpi35",
-    "type": "cloze",
-    "content": "取内容建立锚点",
-    "fullContext": "- 为每条提==取内容建立锚点==并能跳转原文 #todo/每天任务",
-    "source": {
-      "file": "1.Rough/test.md",
-      "position": {
-        "start": 200,
-        "end": 211,
-        "line": 11
-      },
-      "anchorLink": "[[test#^extract-1765848723564-r6kcbd]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848723564,
-      "updatedAt": 1765848723564,
-      "tags": [
-        "#test",
-        "#todo/"
-      ]
-    },
-    "flashcardIds": [
-      "card-1765848723568-994sd7c5i"
-    ]
-  },
-  {
-    "id": "1765848723564-48e071cbr",
-    "type": "cloze",
-    "content": "角标显示",
-    "fullContext": "- 支持每条记录的独立批注与==角标显示== #flashcards/Deutsch/recite",
-    "source": {
-      "file": "1.Rough/test.md",
-      "position": {
-        "start": 287,
-        "end": 295,
-        "line": 16
-      },
-      "anchorLink": "[[test#^extract-1765848723564-8p0oq4]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765848723564,
-      "updatedAt": 1765848723564,
-      "tags": [
-        "#test",
-        "#flashcards/Deutsch/recite"
-      ]
-    },
-    "flashcardIds": [
-      "card-1765848723569-9ey4xlxxy"
-    ]
-  },
-  {
     "id": "1765853435785-sor1yzb64",
     "type": "text",
     "content": "ole.log",
@@ -1564,5 +54,275 @@
       ]
     },
     "flashcardIds": []
+  },
+  {
+    "id": "1765953475924-xafsf374x",
+    "type": "cloze",
+    "content": "于以",
+    "fullContext": "请基==于以==下功能拆解出清晰的架构方案（无需实现代码）：**",
+    "source": {
+      "file": "1.Rough/test.md",
+      "position": {
+        "start": 114,
+        "end": 120,
+        "line": 6
+      },
+      "anchorLink": "[[test#^extract-1765953475924-bmz44q]]"
+    },
+    "extractRule": {
+      "ruleId": "cloze",
+      "ruleName": "Cloze Deletion",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765953475924,
+      "updatedAt": 1765953498695,
+      "tags": [
+        "#test"
+      ]
+    },
+    "flashcardIds": [
+      "card-1765953475926-752ryul2o"
+    ],
+    "annotationId": "ann-1765953498690-mbde4v2j2"
+  },
+  {
+    "id": "1765953475924-w8wt0am0r",
+    "type": "cloze",
+    "content": "取内容建立锚点",
+    "fullContext": "- 为每条提==取内容建立锚点==并能跳转原文 #todo/每天任务",
+    "source": {
+      "file": "1.Rough/test.md",
+      "position": {
+        "start": 200,
+        "end": 211,
+        "line": 11
+      },
+      "anchorLink": "[[test#^extract-1765953475924-n12dvv]]"
+    },
+    "extractRule": {
+      "ruleId": "cloze",
+      "ruleName": "Cloze Deletion",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765953475924,
+      "updatedAt": 1765953475924,
+      "tags": [
+        "#test",
+        "#todo/"
+      ]
+    },
+    "flashcardIds": [
+      "card-1765953475928-wcqjs2np1"
+    ]
+  },
+  {
+    "id": "1765953475924-6ec0yxcpq",
+    "type": "cloze",
+    "content": "角标显示",
+    "fullContext": "- 支持每条记录的独立批注与==角标显示== #flashcards/Deutsch/recite",
+    "source": {
+      "file": "1.Rough/test.md",
+      "position": {
+        "start": 287,
+        "end": 295,
+        "line": 16
+      },
+      "anchorLink": "[[test#^extract-1765953475924-x2d3o1]]"
+    },
+    "extractRule": {
+      "ruleId": "cloze",
+      "ruleName": "Cloze Deletion",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765953475924,
+      "updatedAt": 1765953475924,
+      "tags": [
+        "#test",
+        "#flashcards/Deutsch/recite"
+      ]
+    },
+    "flashcardIds": [
+      "card-1765953475929-e8wr2n82m"
+    ]
+  },
+  {
+    "id": "1765953535974-85x1tsrxr",
+    "type": "QA",
+    "content": "简称额",
+    "answer": "男外出",
+    "fullContext": "简称额::男外出",
+    "source": {
+      "file": "1.Rough/特色t.md",
+      "position": {
+        "start": 37,
+        "end": 45,
+        "line": 8
+      },
+      "anchorLink": "[[特色t#^extract-1765953535974-rq7f5n]]"
+    },
+    "extractRule": {
+      "ruleId": "QA",
+      "ruleName": "QA Card",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765953535974,
+      "updatedAt": 1765954060634,
+      "tags": []
+    },
+    "flashcardIds": [
+      "card-1765953535981-cve12ja24"
+    ],
+    "annotationId": "ann-1765954060629-iw3725f64"
+  },
+  {
+    "id": "1765953535975-tvla20fyf",
+    "type": "QA",
+    "content": "什么是闭包？",
+    "answer": "闭包是指函数可以访问其外部作用域的变量",
+    "fullContext": "什么是闭包？ :: 闭包是指函数可以访问其外部作用域的变量",
+    "source": {
+      "file": "1.Rough/特色t.md",
+      "position": {
+        "start": 56,
+        "end": 85,
+        "line": 11
+      },
+      "heading": "# 我的学习笔记",
+      "anchorLink": "[[特色t#^extract-1765953535975-uqys1j]]"
+    },
+    "extractRule": {
+      "ruleId": "QA",
+      "ruleName": "QA Card",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765953535975,
+      "updatedAt": 1765953535975,
+      "tags": []
+    },
+    "flashcardIds": [
+      "card-1765953535982-vrbaby6ku"
+    ]
+  },
+  {
+    "id": "1765953535975-rx4fz29t1",
+    "type": "QA",
+    "content": "aa",
+    "answer": "bb",
+    "fullContext": "aa :: bb",
+    "source": {
+      "file": "1.Rough/特色t.md",
+      "position": {
+        "start": 119,
+        "end": 127,
+        "line": 15
+      },
+      "heading": "# 我的学习笔记",
+      "anchorLink": "[[特色t#^extract-1765953535975-4ypg2j]]"
+    },
+    "extractRule": {
+      "ruleId": "QA",
+      "ruleName": "QA Card",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765953535975,
+      "updatedAt": 1765953535975,
+      "tags": []
+    },
+    "flashcardIds": [
+      "card-1765953535984-ylgm6pak9"
+    ]
+  },
+  {
+    "id": "1765953535975-82qd56tjr",
+    "type": "QA",
+    "content": "cc",
+    "answer": "dd",
+    "fullContext": "cc::dd",
+    "source": {
+      "file": "1.Rough/特色t.md",
+      "position": {
+        "start": 129,
+        "end": 135,
+        "line": 17
+      },
+      "heading": "# 我的学习笔记",
+      "anchorLink": "[[特色t#^extract-1765953535975-palkkx]]"
+    },
+    "extractRule": {
+      "ruleId": "QA",
+      "ruleName": "QA Card",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765953535975,
+      "updatedAt": 1765953535975,
+      "tags": []
+    },
+    "flashcardIds": [
+      "card-1765953535985-4t9wbmmp1"
+    ]
+  },
+  {
+    "id": "1765953535975-azght0q74",
+    "type": "cloze",
+    "content": "风坑",
+    "fullContext": "港==风坑==",
+    "source": {
+      "file": "1.Rough/特色t.md",
+      "position": {
+        "start": 1,
+        "end": 7,
+        "line": 0
+      },
+      "anchorLink": "[[特色t#^extract-1765953535975-za51el]]"
+    },
+    "extractRule": {
+      "ruleId": "cloze",
+      "ruleName": "Cloze Deletion",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765953535975,
+      "updatedAt": 1765953535975,
+      "tags": []
+    },
+    "flashcardIds": [
+      "card-1765953535988-keuk7brhq"
+    ]
+  },
+  {
+    "id": "1765953535975-xac4b7yxo",
+    "type": "cloze",
+    "content": "事件循环",
+    "fullContext": "JavaScript 中的 ==事件循环== 处理异步操作。",
+    "source": {
+      "file": "1.Rough/特色t.md",
+      "position": {
+        "start": 101,
+        "end": 109,
+        "line": 13
+      },
+      "heading": "# 我的学习笔记",
+      "anchorLink": "[[特色t#^extract-1765953535975-6e9gml]]"
+    },
+    "extractRule": {
+      "ruleId": "cloze",
+      "ruleName": "Cloze Deletion",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1765953535975,
+      "updatedAt": 1765953535975,
+      "tags": []
+    },
+    "flashcardIds": [
+      "card-1765953535989-0gp1jiqfd"
+    ]
   }
 ]

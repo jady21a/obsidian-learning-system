@@ -152,9 +152,31 @@ export  class SidebarOverviewView extends ItemView {
     this.render();
   }
 
+//render拆分函数
+private resetInteractionState(container: HTMLElement) {
+  container.style.pointerEvents = 'auto';
+  const toolbar = container.querySelector('.sidebar-toolbar') as HTMLElement;
+  if (toolbar) {
+    toolbar.style.pointerEvents = 'auto';
+    toolbar.style.position = 'relative';
+    toolbar.style.zIndex = '100';
+  }
+}
+private saveScrollPosition(container:HTMLElement){
+  if (this.displayMode === 'sidebar') {
+    const contentList = container.querySelector('.sidebar-content-list') as HTMLElement;
+    if (contentList) {
+      this.savedScrollPosition = contentList.scrollTop;
+    }
+  }
+  
+}
+
+
   /**
    * 主渲染方法
    */
+  
   private render() {
 
       // 🔧 验证数据是否已加载
@@ -174,21 +196,9 @@ export  class SidebarOverviewView extends ItemView {
     
    
     // 如果是侧边栏模式，总是保存当前滚动位置
-    if (this.displayMode === 'sidebar') {
-      const contentList = container.querySelector('.sidebar-content-list') as HTMLElement;
-      if (contentList) {
-        this.savedScrollPosition = contentList.scrollTop;
-      }
-      
-    }
+    this.saveScrollPosition(container);
     // 🔧 清除所有可能阻塞交互的样式
-container.style.pointerEvents = 'auto';
-const toolbar = container.querySelector('.sidebar-toolbar') as HTMLElement;
-if (toolbar) {
-  toolbar.style.pointerEvents = 'auto';
-  toolbar.style.position = 'relative';
-  toolbar.style.zIndex = '100';
-}
+    this.resetInteractionState(container)
       // ✅ 如果是主界面模式且没有选中，初始化默认选中
   if (this.displayMode === 'main' && !this.selectedFile && this.viewType === 'notes') {
     const units = this.getFilteredUnits();
@@ -308,7 +318,9 @@ if (toolbar) {
       chip.addEventListener('click', () => {
         if (this.filterMode !== mode) {
           this.filterMode = mode;
-    this.autoSelectAll();
+          this.selectedUnitIds.clear();
+          this.selectedCardIds.clear();
+          this.batchMode = false;
           this.shouldRestoreScroll = false;
           this.render();
         }
@@ -330,75 +342,40 @@ if (toolbar) {
         cls: `group-btn ${this.groupMode === mode ? 'active' : ''}`,
         text: icon
       });
-      btn.setAttribute('aria-label', tooltip);
       btn.addEventListener('click', () => {
         if (this.groupMode !== mode) {
           this.groupMode = mode;
-    this.autoSelectAll();
-      
+          
+          // 🔧 重新设置 selectedFile
+          if (this.displayMode === 'sidebar') {
+            // 侧边栏模式：保持当前文件
+            const activeFile = this.app.workspace.getActiveFile();
+            this.selectedFile = activeFile ? activeFile.path : null;
+          } else {
+            // 主界面模式：清空选择
+            this.selectedFile = null;
+          }
+          
+          this.selectedUnitIds.clear();
+          this.selectedCardIds.clear();
+          this.batchMode = false;
           this.render();
         }
       });
     });
 
 
-
-// 统计信息和全选按钮容器(并列显示)
+// 统计信息和批量操作按钮
 const statsRow = toolbar.createDiv({ cls: 'stats-row' });
 
-// 全选/完成按钮
-const selectAllBtn = statsRow.createEl('button', {
-  text: this.isAllSelected() ? '✓' : '☐',
-  cls: `select-all-btn-sidebar ${this.isAllSelected() ? 'completed' : ''}`,
-   title: this.isAllSelected() ? '取消全选' : '全选'
-});
-const shouldDisable = !this.selectedFile && this.groupMode !== 'file';
-if (shouldDisable) {
-  selectAllBtn.disabled = true;
-  selectAllBtn.style.opacity = '0.5';
-  selectAllBtn.style.cursor = 'not-allowed';
-  selectAllBtn.title = '请先选择一个分组';
-}
-selectAllBtn.addEventListener('click', () => {
-  this.toggleSelectAll();
-});
+// 全选按钮
+this.createSelectAllButton(statsRow, 'sidebar');
+
+// 批量操作按钮
+this.createBatchActionButtons(statsRow, 'sidebar');
 
 
 
-// 批量操作按钮(批量模式下始终显示)
-if (this.batchMode) {
-  if (this.viewType === 'notes') {
-    const createBtn = statsRow.createEl('button', {
-      text: `⚡(${this.selectedUnitIds.size})`,
-      cls: 'batch-create-cards-btn-sidebar',
-      title: '批量制卡'
-    });
-    createBtn.addEventListener('click', () => {
-      if (this.selectedUnitIds.size === 0) {
-        new Notice('⚠️ 请先选择要创建闪卡的笔记');
-        return;
-      }
-      this.batchCreateFlashcards();
-    });
-  }
-
-  const deleteBtn = statsRow.createEl('button', {
-    text: `🗑️(${this.viewType === 'cards' ? this.selectedCardIds.size : this.selectedUnitIds.size})`,
-    cls: 'batch-delete-btn-sidebar',
-    title: '批量删除'
-  });
-  deleteBtn.addEventListener('click', () => {
-    const count = this.viewType === 'cards' ? this.selectedCardIds.size : this.selectedUnitIds.size;
-    if (count === 0) {
-      new Notice('⚠️ 请先选择要删除的项目');
-      return;
-    }
-    if (this.viewType === 'cards') {
-      this.batchDeleteFlashcards();
-    } else {
-      this.batchDeleteNotes();
-    }
-  });
   // 取消按钮（批量模式下始终显示）
 if (this.batchMode) {
   const cancelBtn = statsRow.createEl('button', {
@@ -410,7 +387,7 @@ if (this.batchMode) {
     this.clearSelection();
   });
 }
-}
+
 
 
   }
@@ -707,9 +684,10 @@ noteText.addEventListener('click', () => {
       btn.addEventListener('click', () => {
         if (this.groupMode !== mode) {
           this.groupMode = mode;
-          this.selectedFile = null; // 重置选中
-    this.autoSelectAll();
-      
+          this.selectedFile = null; // 🔧 清空选择
+          this.selectedUnitIds.clear();
+          this.selectedCardIds.clear();
+          this.batchMode = false;
           this.render();
           
           // 刷新文件列表和右侧面板
@@ -727,7 +705,6 @@ noteText.addEventListener('click', () => {
         }
       });
     });
-  
 
   }
   private renderFixedEntries(container: HTMLElement) {
@@ -741,9 +718,9 @@ noteText.addEventListener('click', () => {
     allNotesBtn.addEventListener('click', () => {
       this.viewType = 'notes';
       this.selectedFile = null;
-      this.autoSelectAll();
-
-  
+      this.selectedUnitIds.clear();
+      this.selectedCardIds.clear();
+      this.batchMode = false;
       this.render();
     });
 
@@ -755,7 +732,9 @@ noteText.addEventListener('click', () => {
     cardListBtn.addEventListener('click', () => {
       this.viewType = 'cards';
       this.selectedFile = null;
-      this.autoSelectAll();
+      this.selectedUnitIds.clear();
+      this.selectedCardIds.clear();
+      this.batchMode = false;
       this.render();
     });
   }
@@ -839,6 +818,7 @@ noteText.addEventListener('click', () => {
   }
 
   private renderRightPanel(container: HTMLElement) {
+
     if (this.viewType === 'cards') {
       if (!this.selectedFile) {
         const flashcards = this.plugin.flashcardManager.getAllFlashcards();
@@ -897,62 +877,14 @@ noteText.addEventListener('click', () => {
     
     const title = header.createEl('h2', { text: this.selectedFile || '内容' });
     
-    // 按钮容器
-    const headerActions = header.createDiv({ cls: 'header-actions' });
-    
-    // 批量操作按钮(批量模式下始终显示)
-    if (this.batchMode) {
-      if (this.viewType === 'notes') {
-        const createBtn = headerActions.createEl('button', {
-          text: `⚡ 批量制卡 (${this.selectedUnitIds.size})`,
-          cls: 'batch-create-cards-btn-header'
-        });
-        createBtn.addEventListener('click', () => {
-          if (this.selectedUnitIds.size === 0) {
-            new Notice('⚠️ 请先选择要创建闪卡的笔记');
-            return;
-          }
-          this.batchCreateFlashcards();
-        });
-      }
-    
-      const deleteBtn = headerActions.createEl('button', {
-        text: `🗑️ 删除 (${this.viewType === 'cards' ? this.selectedCardIds.size : this.selectedUnitIds.size})`,
-        cls: 'batch-delete-btn-header'
-      });
-      deleteBtn.addEventListener('click', () => {
-        const count = this.viewType === 'cards' ? this.selectedCardIds.size : this.selectedUnitIds.size;
-        if (count === 0) {
-          new Notice('⚠️ 请先选择要删除的项目');
-          return;
-        }
-        if (this.viewType === 'cards') {
-          this.batchDeleteFlashcards();
-        } else {
-          this.batchDeleteNotes();
-        }
-      });
-    }
-    
-    // 取消按钮（批量模式下始终显示）
-    if (this.batchMode) {
-      const cancelBtn = headerActions.createEl('button', {
-        text: '✕ 取消',
-        cls: 'cancel-selection-btn-header'
-      });
-      cancelBtn.addEventListener('click', () => {
-        this.clearSelection();
-      });
-    }
-    
-    // 全选/完成按钮
-    const selectAllBtn = headerActions.createEl('button', {
-      text: this.isAllSelected() ? '✓ 选择' : '☐ 全选',
-      cls: `select-all-btn-header ${this.isAllSelected() ? 'completed' : ''}`
-    });
-    selectAllBtn.addEventListener('click', () => {
-      this.toggleSelectAll();
-    });
+// 按钮容器
+const headerActions = header.createDiv({ cls: 'header-actions' });
+// 批量操作按钮
+this.createBatchActionButtons(headerActions, 'header');
+// 全选按钮
+this.createSelectAllButton(headerActions, 'header');
+
+
 
     const gridContainer = container.createDiv({ cls: 'content-grid' });
     
@@ -991,43 +923,16 @@ noteText.addEventListener('click', () => {
     
     header.createEl('h2', { text: this.selectedFile || '闪卡' });
 
-  // 按钮容器
-  const headerActions = header.createDiv({ cls: 'header-actions' });
+// 按钮容器
+const headerActions = header.createDiv({ cls: 'header-actions' });
 
-  // 批量操作按钮(批量模式下始终显示)
-  if (this.batchMode) {
-    const deleteBtn = headerActions.createEl('button', {
-      text: `🗑️ 删除 (${this.selectedCardIds.size})`,
-      cls: `batch-delete-btn-header ${this.selectedCardIds.size === 0 ? 'disabled' : ''}`
-    });
-    deleteBtn.addEventListener('click', () => {
-      if (this.selectedCardIds.size === 0) {
-        new Notice('⚠️ 请先选择要删除的闪卡');
-        return;
-      }
-      this.batchDeleteFlashcards();
-    });
-  }
+// 批量操作按钮
+this.createBatchActionButtons(headerActions, 'header');
 
-  // 取消按钮（批量模式下始终显示）
-  if (this.batchMode) {
-    const cancelBtn = headerActions.createEl('button', {
-      text: '✕ 取消',
-      cls: 'cancel-selection-btn-header'
-    });
-    cancelBtn.addEventListener('click', () => {
-      this.clearSelection();
-    });
-  }
+// 全选按钮
+this.createSelectAllButton(headerActions, 'header');
 
-  // 全选/完成按钮
-  const selectAllBtn = headerActions.createEl('button', {
-    text: this.isAllSelected() ? '✓ 完成' : '☐ 全选',
-    cls: `select-all-btn-header ${this.isAllSelected() ? 'completed' : ''}`
-  });
-  selectAllBtn.addEventListener('click', () => {
-    this.toggleSelectAll();
-  });
+
 
 
     const gridContainer = container.createDiv({ cls: 'content-grid' });
@@ -1486,7 +1391,6 @@ textarea.addEventListener('keydown', async (e) => {
    * 保存内联批注
    */
   private async saveInlineAnnotation(editorEl: HTMLElement, unit: ContentUnit, text: string) {
-    console.log('🔍 [saveInlineAnnotation] 开始保存', { unitId: unit.id, text });
     
     const trimmedText = text.trim();
     const annotation = this.plugin.annotationManager.getContentAnnotation(unit.id);
@@ -1505,23 +1409,17 @@ textarea.addEventListener('keydown', async (e) => {
     }
     
     const card = editorEl.closest('.compact-card, .grid-card') as HTMLElement;
-    console.log('🔍 [saveInlineAnnotation] 找到 card:', !!card);
     
     editorEl.remove();
-    console.log('🔍 [saveInlineAnnotation] 编辑器已移除');
     
     if (trimmedText && card) {
       const content = card.querySelector('.card-content, .grid-card-content') as HTMLElement;
-      console.log('🔍 [saveInlineAnnotation] 找到 content:', !!content);
       
       if (content) {
-        console.log('🔍 [saveInlineAnnotation] 准备重建批注预览');
         this.recreateAnnotationPreview(content, card, unit, trimmedText);
-        console.log('🔍 [saveInlineAnnotation] 批注预览已重建');
               // 🔧 新增：更新 indicator
       const indicator = card.querySelector('.card-indicator') as HTMLElement;
       if (indicator && !indicator.classList.contains('has-annotation')) {
-        console.log('🔍 [saveInlineAnnotation] 更新 indicator 添加批注样式');
         indicator.classList.add('has-annotation');
       }
     }
@@ -1529,7 +1427,6 @@ textarea.addEventListener('keydown', async (e) => {
     // 🔧 如果删除了批注，移除 indicator 的批注样式
     const indicator = card.querySelector('.card-indicator') as HTMLElement;
     if (indicator && indicator.classList.contains('has-annotation')) {
-      console.log('🔍 [saveInlineAnnotation] 更新 indicator 移除批注样式');
       indicator.classList.remove('has-annotation');
       }
     }
@@ -1559,11 +1456,9 @@ textarea.addEventListener('keydown', async (e) => {
     unit: ContentUnit, 
     annotationText: string
   ) {
-    console.log('🔍 [recreateAnnotationPreview] 开始重建', { unitId: unit.id });
     
     const existingPreview = contentEl.querySelector('.annotation-preview, .grid-annotation');
     if (existingPreview) {
-      console.log('🔍 [recreateAnnotationPreview] 移除旧预览');
       existingPreview.remove();
     }
     
@@ -1580,11 +1475,9 @@ textarea.addEventListener('keydown', async (e) => {
       annEl.textContent = `💬 ${displayText}`;
     }
     
-    console.log('🔍 [recreateAnnotationPreview] 批注元素已创建，className:', annEl.className);
     
     // 点击事件
     annEl.addEventListener('click', (e) => {
-      console.log('🔍 [批注预览] 被点击');
       e.stopPropagation();
       this.toggleInlineAnnotation(cardEl, unit);
     });
@@ -1592,7 +1485,6 @@ textarea.addEventListener('keydown', async (e) => {
     // 🔧 新增：Tab 键事件
     annEl.addEventListener('keydown', (e) => {
       if (e.key === 'Tab') {
-        console.log('🔍 [批注预览] Tab 键被按下');
         e.preventDefault();
         e.stopPropagation();
         this.toggleInlineAnnotation(cardEl, unit);
@@ -1601,23 +1493,18 @@ textarea.addEventListener('keydown', async (e) => {
     
     const noteText = contentEl.querySelector('.note-text, .grid-note-text') as HTMLElement;
     if (noteText) {
-      console.log('🔍 [recreateAnnotationPreview] 插入到 note-text 后面');
       noteText.insertAdjacentElement('afterend', annEl);
       
       const inserted = contentEl.querySelector('.annotation-preview, .grid-annotation');
-      console.log('🔍 [recreateAnnotationPreview] 插入后检查，元素是否在DOM中:', !!inserted, inserted);
     } else {
-      console.log('🔍 [recreateAnnotationPreview] 直接追加到 content');
       contentEl.appendChild(annEl);
     }
     
-    console.log('🔍 [recreateAnnotationPreview] 重建完成');
     
     // 🔧 设置 tabindex 使其可以接收焦点
     annEl.setAttribute('tabindex', '0');
     annEl.focus();
     
-    console.log('🔍 [recreateAnnotationPreview] 已聚焦到批注预览');
   }
 
   /**
@@ -2200,245 +2087,89 @@ private async batchDeleteNotes() {
    * 检查是否全选
    */
   private isAllSelected(): boolean {
+    const visible = this.getVisibleItems();
+    
     if (this.viewType === 'cards') {
-      const flashcards = this.plugin.flashcardManager.getAllFlashcards();
-      
-      if (this.displayMode === 'main' && this.selectedFile) {
-        const filteredCards = flashcards.filter(card => {
-          if (this.groupMode === 'file') {
-            return card.sourceFile === this.selectedFile;
-          } else if (this.groupMode === 'tag') {
-            const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
-            return unit?.metadata.tags.includes(this.selectedFile!) || 
-                   card.tags?.includes(this.selectedFile!) || 
-                   card.deck === this.selectedFile;
-          } else if (this.groupMode === 'date') {
-            return this.formatDate(new Date(card.metadata.createdAt)) === this.selectedFile;
-          }
-          return false;
-        });
-        return filteredCards.length > 0 && this.selectedCardIds.size === filteredCards.length;
-      }
-      
-      return flashcards.length > 0 && this.selectedCardIds.size === flashcards.length;
+      const cards = visible.cards || [];
+      return cards.length > 0 && this.selectedCardIds.size === cards.length;
     } else {
-      let visibleUnits: ContentUnit[];
-      
-      if (this.displayMode === 'sidebar') {
-        // 🔧 侧边栏：获取当前渲染列表中的所有笔记
-        let units = this.getFilteredUnits();
-        
-        if (this.selectedFile) {
-          // 有选中文件:根据 groupMode 过滤
-          if (this.groupMode === 'file') {
-            visibleUnits = units.filter(unit => unit.source.file === this.selectedFile);
-          } else if (this.groupMode === 'tag') {
-            // 🔧 关键修改:按标签筛选时,只选择包含该标签的笔记
-            visibleUnits = units.filter(unit => unit.metadata.tags.includes(this.selectedFile!));
-          } else if (this.groupMode === 'date') {
-            visibleUnits = units.filter(unit => 
-              this.formatDate(new Date(unit.metadata.createdAt)) === this.selectedFile
-            );
-          } else {
-            visibleUnits = units;
-          }
-        } else {
-          visibleUnits = units;
-        }
-      } else {
-        // 主界面
-        if (!this.selectedFile) {
-          return false;
-        }
-        
-        const units = this.getFilteredUnits();
-        if (this.groupMode === 'file') {
-          visibleUnits = units.filter(unit => unit.source.file === this.selectedFile);
-        } else if (this.groupMode === 'tag') {
-          visibleUnits = units.filter(unit => 
-            unit.metadata.tags.includes(this.selectedFile!)
-          );
-        } else if (this.groupMode === 'date') {
-          visibleUnits = units.filter(unit => 
-            this.formatDate(new Date(unit.metadata.createdAt)) === this.selectedFile
-          );
-        } else {
-          visibleUnits = units;
-        }
-      }
-      
-      return visibleUnits.length > 0 && this.selectedUnitIds.size === visibleUnits.length;
+      const units = visible.units || [];
+      return units.length > 0 && this.selectedUnitIds.size === units.length;
     }
   }
 
   /**
    * 切换全选/取消
    */
-  private toggleSelectAll() {
-    if (this.viewType === 'cards') {
-      const flashcards = this.plugin.flashcardManager.getAllFlashcards();
-      
-      const filteredCards = this.selectedFile ? flashcards.filter(card => {
-        if (this.groupMode === 'file') {
-          return card.sourceFile === this.selectedFile;
-        } else if (this.groupMode === 'tag') {
-          const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
-          return unit?.metadata.tags.includes(this.selectedFile!) || 
-                 card.tags?.includes(this.selectedFile!) || 
-                 card.deck === this.selectedFile;
-        } else if (this.groupMode === 'date') {
-          return this.formatDate(new Date(card.metadata.createdAt)) === this.selectedFile;
-        }
-        return false;
-      }) : flashcards;
-      
-      if (this.selectedCardIds.size === filteredCards.length && filteredCards.length > 0) {
-        this.selectedCardIds.clear();
-      } else {
-        filteredCards.forEach(card => {
-          this.selectedCardIds.add(card.id);
-        });
-      }
+ /**
+ * 切换全选/取消
+ */
+ private toggleSelectAll() {
+  
+  const visible = this.getVisibleItems();
+  
+  if (this.viewType === 'cards') {
+    const cards = visible.cards || [];
+    
+    if (cards.length === 0) {
+      new Notice('⚠️ 没有可选择的闪卡');
+      return;
+    }
+    
+    if (this.selectedCardIds.size === cards.length) {
+      this.selectedCardIds.clear();
     } else {
-      let visibleUnits: ContentUnit[];
-      
-      if (this.displayMode === 'sidebar') {
-        let units = this.getFilteredUnits(); // 已包含 filterMode 过滤（如 annotated）
-        
-        if (this.selectedFile) {
-          // 🔧 根据当前分组模式过滤
-          if (this.groupMode === 'file') {
-            visibleUnits = units.filter(unit => unit.source.file === this.selectedFile);
-          } else if (this.groupMode === 'tag') {
-            // 🔧 按标签筛选：只选择包含该标签的笔记
-            visibleUnits = units.filter(unit => 
-              unit.metadata.tags.includes(this.selectedFile!)
-            );
-          } else if (this.groupMode === 'date') {
-            visibleUnits = units.filter(unit => 
-              this.formatDate(new Date(unit.metadata.createdAt)) === this.selectedFile
-            );
-          } else {
-            visibleUnits = units;
-          }
-        } else {
-          // 🔧 没有选中分组：显示所有过滤后的笔记
-          visibleUnits = units;
-        }
-
+      cards.forEach(card => this.selectedCardIds.add(card.id));
+    }
+  } else {
+    const units = visible.units || [];
+    
+    
+    if (units.length === 0) {
+      // 🔧 改进提示信息
+      if (this.displayMode === 'sidebar' && (this.groupMode === 'tag' || this.groupMode === 'date')) {
+        new Notice('⚠️ 没有可选择的笔记');
+      } else if (this.groupMode === 'annotation' && !this.selectedFile) {
+        new Notice('⚠️ 请先选择"有批注"或"无批注"分组');
+      } else if (this.displayMode === 'main' && !this.selectedFile) {
+        new Notice('⚠️ 请先选择一个分组');
       } else {
-        // 主界面：必须选中左侧分组
-        if (!this.selectedFile) {
-          new Notice('⚠️ 请先选择一个分组');
-          return;
-        }
-        
-        const units = this.getFilteredUnits();
-        if (this.groupMode === 'file') {
-          visibleUnits = units.filter(unit => unit.source.file === this.selectedFile);
-        } else if (this.groupMode === 'tag') {
-          visibleUnits = units.filter(unit => 
-            unit.metadata.tags.includes(this.selectedFile!)
-          );
-        } else if (this.groupMode === 'date') {
-          visibleUnits = units.filter(unit => 
-            this.formatDate(new Date(unit.metadata.createdAt)) === this.selectedFile
-          );
-        } else {
-          visibleUnits = units;
-        }
+        new Notice('⚠️ 没有可选择的笔记');
       }
-      
-      if (this.selectedUnitIds.size === visibleUnits.length && visibleUnits.length > 0) {
-        // 取消全选
-        this.selectedUnitIds.clear();
-      } else {
-        // 全选当前可见的所有笔记
-        visibleUnits.forEach(unit => {
-          this.selectedUnitIds.add(unit.id);
-        });
-      }
+      return;
+    }
+    
+    if (this.selectedUnitIds.size === units.length) {
+      this.selectedUnitIds.clear();
+    } else {
+      units.forEach(unit => this.selectedUnitIds.add(unit.id));
+    }
+  }
+  
+  this.batchMode = (this.selectedUnitIds.size > 0 || this.selectedCardIds.size > 0);
+  this.render();
+}
+  /**
+ * 自动全选当前可见项目
+ */
+  private autoSelectAll() {
+    this.selectedUnitIds.clear();
+    this.selectedCardIds.clear();
+    
+    const visible = this.getVisibleItems();
+    
+    if (this.viewType === 'cards') {
+      const cards = visible.cards || [];
+      cards.forEach(card => this.selectedCardIds.add(card.id));
+    } else {
+      const units = visible.units || [];
+      units.forEach(unit => this.selectedUnitIds.add(unit.id));
     }
     
     if (this.selectedUnitIds.size > 0 || this.selectedCardIds.size > 0) {
       this.batchMode = true;
     }
-    
-    this.render();
   }
-  /**
- * 自动全选当前可见项目
- */
-private autoSelectAll() {
-  // 先清空
-  this.selectedUnitIds.clear();
-  this.selectedCardIds.clear();
-  
-  if (this.viewType === 'cards') {
-    // 闪卡视图：全选所有闪卡
-    const flashcards = this.plugin.flashcardManager.getAllFlashcards();
-    
-    const filteredCards = this.selectedFile ? flashcards.filter(card => {
-      if (this.groupMode === 'file') {
-        return card.sourceFile === this.selectedFile;
-      } else if (this.groupMode === 'tag') {
-        const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
-        return unit?.metadata.tags.includes(this.selectedFile!) || 
-               card.tags?.includes(this.selectedFile!) || 
-               card.deck === this.selectedFile;
-      } else if (this.groupMode === 'date') {
-        return this.formatDate(new Date(card.metadata.createdAt)) === this.selectedFile;
-      }
-      return false;
-    }) : flashcards;
-    
-    filteredCards.forEach(card => {
-      this.selectedCardIds.add(card.id);
-    });
-  } else {
-    // 笔记视图：全选当前可见的笔记
-    let visibleUnits: ContentUnit[];
-    
-    if (this.displayMode === 'sidebar') {
-      let units = this.getFilteredUnits();
-      
-      if (this.selectedFile) {
-        visibleUnits = units.filter(unit => unit.source.file === this.selectedFile);
-      } else {
-        visibleUnits = units;
-      }
-    } else {
-      // 主界面模式
-      if (this.selectedFile) {
-        const units = this.getFilteredUnits();
-        if (this.groupMode === 'file') {
-          visibleUnits = units.filter(unit => unit.source.file === this.selectedFile);
-        } else if (this.groupMode === 'tag') {
-          visibleUnits = units.filter(unit => 
-            unit.metadata.tags.includes(this.selectedFile!)
-          );
-        } else if (this.groupMode === 'date') {
-          visibleUnits = units.filter(unit => 
-            this.formatDate(new Date(unit.metadata.createdAt)) === this.selectedFile
-          );
-        } else {
-          visibleUnits = units;
-        }
-      } else {
-        visibleUnits = this.getFilteredUnits();
-      }
-    }
-    
-    visibleUnits.forEach(unit => {
-      this.selectedUnitIds.add(unit.id);
-    });
-  }
-  
-  // 如果有选中项，开启批量模式
-  if (this.selectedUnitIds.size > 0 || this.selectedCardIds.size > 0) {
-    this.batchMode = true;
-  }
-}
 /**
  * 清除所有选择
  */
@@ -2592,29 +2323,27 @@ private groupFlashcards(flashcards: Flashcard[]): Array<{ groupKey: string; card
   const grouped = new Map<string, Flashcard[]>();
 
   flashcards.forEach(card => {
-    let keys: string[] = []; // 改为数组，支持一个卡片属于多个分组
+    let keys: string[] = [];
     
     // 获取关联的笔记单元
     const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
 
     switch (this.groupMode) {
       case 'file':
-        // 按文件分组 - 使用卡片的 sourceFile
         keys = [card.sourceFile];
         break;
 
-        case 'annotation':
-          const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
-          if (unit && unit.annotationId) {
-            keys = ['有批注'];
-          } else {
-            keys = ['无批注'];
-          }
-          break;
-        
-        
+      case 'annotation':
+        // ✅ 删除这行重复声明
+        // const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+        if (unit && unit.annotationId) {
+          keys = ['有批注'];
+        } else {
+          keys = ['无批注'];
+        }
+        break;
+      
       case 'tag':
-        // 按标签分组
         // 优先使用笔记单元的标签
         if (unit && unit.metadata.tags.length > 0) {
           keys = unit.metadata.tags;
@@ -2634,7 +2363,6 @@ private groupFlashcards(flashcards: Flashcard[]): Array<{ groupKey: string; card
         break;
         
       case 'date':
-        // 按日期分组
         keys = [this.formatDate(new Date(card.metadata.createdAt))];
         break;
         
@@ -2653,22 +2381,22 @@ private groupFlashcards(flashcards: Flashcard[]): Array<{ groupKey: string; card
 
   // 转换为数组并排序
   const result = Array.from(grouped.entries())
-  .map(([groupKey, cards]) => ({ groupKey, cards }))
-  .sort((a, b) => {
-      // 🔧 如果是批注分组，"有批注"排在前面
-  if (this.groupMode === 'annotation') {
-    if (a.groupKey === '有批注') return -1;
-    if (b.groupKey === '有批注') return 1;
-    return 0;
-  }
+    .map(([groupKey, cards]) => ({ groupKey, cards }))
+    .sort((a, b) => {
+      // 如果是批注分组，"有批注"排在前面
+      if (this.groupMode === 'annotation') {
+        if (a.groupKey === '有批注') return -1;
+        if (b.groupKey === '有批注') return 1;
+        return 0;
+      }
 
-    // 如果是日期分组，按日期降序排列
-    if (this.groupMode === 'date') {
-      return b.groupKey.localeCompare(a.groupKey); // 日期字符串降序
-    }
-    // 其他分组按数量降序
-    return b.cards.length - a.cards.length;
-  });
+      // 如果是日期分组，按日期降序排列
+      if (this.groupMode === 'date') {
+        return b.groupKey.localeCompare(a.groupKey);
+      }
+      // 其他分组按数量降序
+      return b.cards.length - a.cards.length;
+    });
 
   return result;
 }
@@ -2707,6 +2435,265 @@ private groupFlashcards(flashcards: Flashcard[]): Array<{ groupKey: string; card
       default: return '📁';
     }
   }
+
+  /**
+ * 创建全选按钮（统一样式和行为）
+ */
+  private createSelectAllButton(container: HTMLElement, styleClass: 'sidebar' | 'header'): HTMLElement {
+    console.log('🔍 [createSelectAllButton] ========== 开始创建按钮 ==========');
+    console.log('🔍 [createSelectAllButton] styleClass:', styleClass);
+    console.log('🔍 [createSelectAllButton] this.displayMode:', this.displayMode);
+    console.log('🔍 [createSelectAllButton] this.groupMode:', this.groupMode);
+    console.log('🔍 [createSelectAllButton] this.selectedFile:', this.selectedFile);
+    console.log('🔍 [createSelectAllButton] this.viewType:', this.viewType);
+    
+    const btnClass = styleClass === 'sidebar' 
+      ? 'select-all-btn-sidebar' 
+      : 'select-all-btn-header';
+    
+    const isAllChecked = this.isAllSelected();
+    const visible = this.getVisibleItems();
+    console.log('🔍 [createSelectAllButton] visible:', visible);
+    
+    const itemCount = this.viewType === 'cards' 
+      ? (visible.cards?.length || 0) 
+      : (visible.units?.length || 0);
+    
+    console.log('🔍 [createSelectAllButton] itemCount:', itemCount);
+    console.log('🔍 [createSelectAllButton] isAllChecked:', isAllChecked);
+    
+    const selectAllBtn = container.createEl('button', {
+      text: isAllChecked ? '✓ 完成' : '☐ 全选',
+      cls: `${btnClass} ${isAllChecked ? 'completed' : ''}`,
+      title: isAllChecked ? '取消全选' : `全选当前 ${itemCount} 项`
+    });
+    
+    // 禁用条件
+    const shouldDisable = (
+      itemCount === 0 ||
+      (this.groupMode === 'annotation' && this.displayMode === 'main' && !this.selectedFile)
+    );
+    
+    console.log('🔍 [createSelectAllButton] shouldDisable 计算过程:');
+    console.log('  - itemCount === 0:', itemCount === 0);
+    console.log('  - groupMode === annotation:', this.groupMode === 'annotation');
+    console.log('  - displayMode === main:', this.displayMode === 'main');
+    console.log('  - !selectedFile:', !this.selectedFile);
+    console.log('  - 最终 shouldDisable:', shouldDisable);
+    
+    if (shouldDisable) {
+      selectAllBtn.disabled = true;
+      selectAllBtn.style.opacity = '0.5';
+      selectAllBtn.style.cursor = 'not-allowed';
+      selectAllBtn.title = itemCount === 0 
+        ? '没有可选项' 
+        : '请先选择"有批注"或"无批注"';
+      console.log('🔍 [createSelectAllButton] ❌ 按钮已禁用');
+    } else {
+      console.log('🔍 [createSelectAllButton] ✅ 按钮可用');
+    }
+    
+    selectAllBtn.addEventListener('click', () => {
+      console.log('🔍 [全选按钮] 点击事件触发！');
+      this.toggleSelectAll();
+    });
+    
+    console.log('🔍 [createSelectAllButton] ========== 按钮创建完成 ==========\n');
+    
+    return selectAllBtn;
+  }
+/**
+ * 创建批量操作按钮组（制卡、删除、取消）
+ */
+private createBatchActionButtons(
+  container: HTMLElement, 
+  styleClass: 'sidebar' | 'header'
+): void {
+  if (!this.batchMode) return;
+  
+  const btnPrefix = styleClass === 'sidebar' ? 'sidebar' : 'header';
+  
+  // 制卡按钮（仅笔记视图）
+  if (this.viewType === 'notes') {
+    const createBtn = container.createEl('button', {
+      text: styleClass === 'sidebar' 
+        ? `⚡(${this.selectedUnitIds.size})` 
+        : `⚡ 批量制卡 (${this.selectedUnitIds.size})`,
+      cls: `batch-create-cards-btn-${btnPrefix}`,
+      title: '批量制卡'
+    });
+    createBtn.addEventListener('click', () => {
+      if (this.selectedUnitIds.size === 0) {
+        new Notice('⚠️ 请先选择要创建闪卡的笔记');
+        return;
+      }
+      this.batchCreateFlashcards();
+    });
+  }
+  
+  // 删除按钮
+  const count = this.viewType === 'cards' 
+    ? this.selectedCardIds.size 
+    : this.selectedUnitIds.size;
+  
+  const deleteBtn = container.createEl('button', {
+    text: styleClass === 'sidebar' 
+      ? `🗑️(${count})` 
+      : `🗑️ 删除 (${count})`,
+    cls: `batch-delete-btn-${btnPrefix}`,
+    title: '批量删除'
+  });
+  deleteBtn.addEventListener('click', () => {
+    if (count === 0) {
+      new Notice('⚠️ 请先选择要删除的项目');
+      return;
+    }
+    if (this.viewType === 'cards') {
+      this.batchDeleteFlashcards();
+    } else {
+      this.batchDeleteNotes();
+    }
+  });
+  
+  // 取消按钮
+  const cancelBtn = container.createEl('button', {
+    text: styleClass === 'sidebar' ? '✕' : '✕ 取消',
+    cls: `cancel-selection-btn-${btnPrefix}`,
+    title: '关闭批量模式'
+  });
+  cancelBtn.addEventListener('click', () => {
+    this.clearSelection();
+  });
+}
+
+// 提取全选功能
+/**
+ * 获取当前可见的所有项（笔记或闪卡）
+ */
+private getVisibleItems(): { units?: ContentUnit[]; cards?: Flashcard[] } {
+  console.log('🔍 [getVisibleItems] ========== 开始执行 ==========');
+  console.log('🔍 [getVisibleItems] viewType:', this.viewType);
+  console.log('🔍 [getVisibleItems] displayMode:', this.displayMode);
+  console.log('🔍 [getVisibleItems] groupMode:', this.groupMode);
+  console.log('🔍 [getVisibleItems] selectedFile:', this.selectedFile);
+
+  if (this.viewType === 'cards') {
+    // 闪卡视图逻辑
+    const allFlashcards = this.plugin.flashcardManager.getAllFlashcards();
+    
+    if (this.displayMode === 'sidebar') {
+      // 侧边栏模式：返回所有闪卡或当前分组的闪卡
+      if (!this.selectedFile) {
+        return { cards: allFlashcards };
+      }
+      
+      const filteredCards = allFlashcards.filter(card => {
+        if (this.groupMode === 'file') {
+          return card.sourceFile === this.selectedFile;
+        } else if (this.groupMode === 'annotation') {
+          const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+          const hasAnnotation = this.selectedFile === '有批注';
+          return hasAnnotation ? (unit && !!unit.annotationId) : (!unit || !unit.annotationId);
+        } else if (this.groupMode === 'tag') {
+          const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+          return (unit && unit.metadata.tags.includes(this.selectedFile!)) ||
+                 (card.tags && card.tags.includes(this.selectedFile!)) ||
+                 (card.deck === this.selectedFile);
+        } else if (this.groupMode === 'date') {
+          return this.formatDate(new Date(card.metadata.createdAt)) === this.selectedFile;
+        }
+        return false;
+      });
+      return { cards: filteredCards };
+    } else {
+      // 主界面模式
+      if (!this.selectedFile) {
+        return { cards: [] };
+      }
+      
+      const filteredCards = allFlashcards.filter(card => {
+        if (this.groupMode === 'file') {
+          return card.sourceFile === this.selectedFile;
+        } else if (this.groupMode === 'annotation') {
+          const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+          const hasAnnotation = this.selectedFile === '有批注';
+          return hasAnnotation ? (unit && !!unit.annotationId) : (!unit || !unit.annotationId);
+        } else if (this.groupMode === 'tag') {
+          const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+          return (unit && unit.metadata.tags.includes(this.selectedFile!)) ||
+                 (card.tags && card.tags.includes(this.selectedFile!)) ||
+                 (card.deck === this.selectedFile) ||
+                 (this.selectedFile === '未分类' && 
+                  (!card.tags || card.tags.length === 0) && 
+                  !card.deck &&
+                  (!unit || !unit.metadata.tags || unit.metadata.tags.length === 0));
+        } else if (this.groupMode === 'date') {
+          return this.formatDate(new Date(card.metadata.createdAt)) === this.selectedFile;
+        }
+        return false;
+      });
+      return { cards: filteredCards };
+    }
+  } else {
+    // 笔记视图
+    let units = this.getFilteredUnits();
+    console.log('🔍 [getVisibleItems] 初始 getFilteredUnits() 返回数量:', units.length);
+    
+    if (this.displayMode === 'sidebar') {
+      console.log('🔍 [getVisibleItems] 进入侧边栏模式处理');
+      
+      if (!this.selectedFile) {
+        console.log('🔍 [getVisibleItems] selectedFile 不存在，返回空数组');
+        return { units: [] };
+      }
+      
+      console.log('🔍 [getVisibleItems] selectedFile 存在:', this.selectedFile);
+      
+      // 🔧 所有模式都只显示当前文件的笔记
+      units = units.filter(unit => unit.source.file === this.selectedFile);
+      console.log('🔍 [getVisibleItems] 按当前文件过滤后数量:', units.length);
+      
+      // 🔧 如果是 annotation 模式，还需要按批注状态再过滤一次
+      if (this.groupMode === 'annotation') {
+        const hasAnnotation = units.some(u => !!u.annotationId);
+        // annotation 模式在侧边栏不使用 '有批注'/'无批注' 这样的 selectedFile
+        // 而是显示当前文件的所有笔记，按是否有批注分组
+        // 所以这里不需要额外过滤
+        console.log('🔍 [getVisibleItems] annotation 模式，保持当前文件所有笔记');
+      }
+      
+      console.log('🔍 [getVisibleItems] 侧边栏最终返回 units 数量:', units.length);
+      return { units };
+    } else {
+      // 主界面模式
+      console.log('🔍 [getVisibleItems] 进入主界面模式处理');
+      
+      if (!this.selectedFile) {
+        console.log('🔍 [getVisibleItems] selectedFile 不存在，返回空数组');
+        return { units: [] };
+      }
+      
+      if (this.groupMode === 'file') {
+        units = units.filter(unit => unit.source.file === this.selectedFile);
+      } else if (this.groupMode === 'annotation') {
+        const hasAnnotation = this.selectedFile === '有批注';
+        units = units.filter(unit => hasAnnotation ? !!unit.annotationId : !unit.annotationId);
+      } else if (this.groupMode === 'tag') {
+        units = units.filter(unit => unit.metadata.tags.includes(this.selectedFile!));
+      } else if (this.groupMode === 'date') {
+        units = units.filter(unit => 
+          this.formatDate(new Date(unit.metadata.createdAt)) === this.selectedFile
+        );
+      }
+      
+      console.log('🔍 [getVisibleItems] 主界面最终返回 units 数量:', units.length);
+      return { units };
+    }
+  }
+}
+
+
+
 
   /**
    * 添加样式
