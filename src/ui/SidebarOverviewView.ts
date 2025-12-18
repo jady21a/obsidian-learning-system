@@ -274,6 +274,7 @@ private saveScrollPosition(container:HTMLElement){
 
   private renderSidebarToolbar(container: HTMLElement) {
     const toolbar = container.createDiv({ cls: 'sidebar-toolbar' });
+    
     // 搜索框
     const searchContainer = toolbar.createDiv({ cls: 'search-container' });
     const searchInput = searchContainer.createEl('input', {
@@ -283,24 +284,21 @@ private saveScrollPosition(container:HTMLElement){
     });
     searchInput.value = this.searchQuery;
     
-    // 使用防抖优化搜索
     searchInput.addEventListener('input', (e) => {
       const value = (e.target as HTMLInputElement).value;
       this.searchQuery = value;
       
-      // 清除之前的定时器
       if (this.searchDebounceTimer !== null) {
         window.clearTimeout(this.searchDebounceTimer);
       }
       
-      // 设置新的定时器
       this.searchDebounceTimer = window.setTimeout(() => {
         this.selectedUnitIds.clear();
         this.selectedCardIds.clear();
         this.refreshContent();
-      }, 300); // 300ms 防抖
+      }, 300);
     });
-
+  
     // 过滤器
     const filters = toolbar.createDiv({ cls: 'filter-chips' });
     
@@ -309,7 +307,7 @@ private saveScrollPosition(container:HTMLElement){
       { mode: 'annotated' as FilterMode, icon: '💬', label: 'comment' },
       { mode: 'flashcards' as FilterMode, icon: '🃏', label: 'flashcards' }
     ];
-
+  
     filterOptions.forEach(({ mode, icon, label }) => {
       const chip = filters.createDiv({
         cls: `filter-chip ${this.filterMode === mode ? 'active' : ''}`,
@@ -326,17 +324,16 @@ private saveScrollPosition(container:HTMLElement){
         }
       });
     });
-
+  
     // 分组模式切换
     const groupSwitcher = toolbar.createDiv({ cls: 'group-switcher' });
     
     const groupOptions = [
       { mode: 'file' as GroupMode, icon: '📁', tooltip: '按文件' },
-      // { mode: 'annotation' as GroupMode, icon: '💬', tooltip: '批注' },
       { mode: 'tag' as GroupMode, icon: '🏷️', tooltip: '按标签' },
       { mode: 'date' as GroupMode, icon: '📅', tooltip: '按日期' }
     ];
-
+  
     groupOptions.forEach(({ mode, icon, tooltip }) => {
       const btn = groupSwitcher.createDiv({
         cls: `group-btn ${this.groupMode === mode ? 'active' : ''}`,
@@ -346,13 +343,10 @@ private saveScrollPosition(container:HTMLElement){
         if (this.groupMode !== mode) {
           this.groupMode = mode;
           
-          // 🔧 重新设置 selectedFile
           if (this.displayMode === 'sidebar') {
-            // 侧边栏模式：保持当前文件
             const activeFile = this.app.workspace.getActiveFile();
             this.selectedFile = activeFile ? activeFile.path : null;
           } else {
-            // 主界面模式：清空选择
             this.selectedFile = null;
           }
           
@@ -363,34 +357,18 @@ private saveScrollPosition(container:HTMLElement){
         }
       });
     });
-
-
-// 统计信息和批量操作按钮
-const statsRow = toolbar.createDiv({ cls: 'stats-row' });
-
-// 全选按钮
-this.createSelectAllButton(statsRow, 'sidebar');
-
-// 批量操作按钮
-this.createBatchActionButtons(statsRow, 'sidebar');
-
-
-
-  // 取消按钮（批量模式下始终显示）
-if (this.batchMode) {
-  const cancelBtn = statsRow.createEl('button', {
-    text: '✕',
-    cls: 'cancel-selection-btn-sidebar',
-    title: '关闭'
-  });
-  cancelBtn.addEventListener('click', () => {
-    this.clearSelection();
-  });
-}
-
-
-
+  
+    // 统计信息和批量操作按钮
+    const statsRow = toolbar.createDiv({ cls: 'stats-row' });
+  
+    // 全选按钮
+    this.createSelectAllButton(statsRow, 'sidebar');
+  
+    // 批量操作按钮
+    this.createBatchActionButtons(statsRow, 'sidebar');
+  
   }
+
 
   /**
    * 渲染紧凑内容列表（侧边栏模式）
@@ -661,8 +639,8 @@ noteText.addEventListener('click', () => {
           fileListContainer.empty();
           this.renderFileListContent(fileListContainer);
         }
-        this.selectedUnitIds.clear();
-        this.selectedCardIds.clear();
+        // this.selectedUnitIds.clear();
+        // this.selectedCardIds.clear();
       }, 300); // 300ms 防抖
     });
   
@@ -2104,7 +2082,11 @@ private async batchDeleteNotes() {
  /**
  * 切换全选/取消
  */
- private toggleSelectAll() {
+/**
+ * 全选当前可见项
+ */
+private toggleSelectAll() {
+  console.log('🔍 [toggleSelectAll] ========== 开始执行 ==========');
   
   const visible = this.getVisibleItems();
   
@@ -2116,17 +2098,13 @@ private async batchDeleteNotes() {
       return;
     }
     
-    if (this.selectedCardIds.size === cards.length) {
-      this.selectedCardIds.clear();
-    } else {
-      cards.forEach(card => this.selectedCardIds.add(card.id));
-    }
+    // 🔧 改为：只执行全选，不做取消
+    cards.forEach(card => this.selectedCardIds.add(card.id));
+    
   } else {
     const units = visible.units || [];
     
-    
     if (units.length === 0) {
-      // 🔧 改进提示信息
       if (this.displayMode === 'sidebar' && (this.groupMode === 'tag' || this.groupMode === 'date')) {
         new Notice('⚠️ 没有可选择的笔记');
       } else if (this.groupMode === 'annotation' && !this.selectedFile) {
@@ -2139,14 +2117,34 @@ private async batchDeleteNotes() {
       return;
     }
     
-    if (this.selectedUnitIds.size === units.length) {
-      this.selectedUnitIds.clear();
-    } else {
-      units.forEach(unit => this.selectedUnitIds.add(unit.id));
-    }
+    // 🔧 改为：只执行全选，不做取消
+    units.forEach(unit => this.selectedUnitIds.add(unit.id));
   }
   
-  this.batchMode = (this.selectedUnitIds.size > 0 || this.selectedCardIds.size > 0);
+  this.batchMode = true;
+  this.render();
+}
+
+/**
+ * 取消全选（仅取消全选状态，保持批量模式）
+ */
+private cancelSelectAll() {
+  // 获取当前可见的所有项
+  const visible = this.getVisibleItems();
+  
+  if (this.viewType === 'cards') {
+    const cards = visible.cards || [];
+    // 从选中集合中移除当前可见的所有卡片
+    cards.forEach(card => this.selectedCardIds.delete(card.id));
+  } else {
+    const units = visible.units || [];
+    // 从选中集合中移除当前可见的所有笔记
+    units.forEach(unit => this.selectedUnitIds.delete(unit.id));
+  }
+  
+  // 🔧 关键修改：不退出批量模式，即使选中数为0
+  // 保持 batchMode = true，让用户可以继续手动选择
+  
   this.render();
 }
   /**
@@ -2440,46 +2438,28 @@ private groupFlashcards(flashcards: Flashcard[]): Array<{ groupKey: string; card
  * 创建全选按钮（统一样式和行为）
  */
   private createSelectAllButton(container: HTMLElement, styleClass: 'sidebar' | 'header'): HTMLElement {
-    console.log('🔍 [createSelectAllButton] ========== 开始创建按钮 ==========');
-    console.log('🔍 [createSelectAllButton] styleClass:', styleClass);
-    console.log('🔍 [createSelectAllButton] this.displayMode:', this.displayMode);
-    console.log('🔍 [createSelectAllButton] this.groupMode:', this.groupMode);
-    console.log('🔍 [createSelectAllButton] this.selectedFile:', this.selectedFile);
-    console.log('🔍 [createSelectAllButton] this.viewType:', this.viewType);
-    
     const btnClass = styleClass === 'sidebar' 
       ? 'select-all-btn-sidebar' 
       : 'select-all-btn-header';
     
     const isAllChecked = this.isAllSelected();
     const visible = this.getVisibleItems();
-    console.log('🔍 [createSelectAllButton] visible:', visible);
     
     const itemCount = this.viewType === 'cards' 
       ? (visible.cards?.length || 0) 
       : (visible.units?.length || 0);
     
-    console.log('🔍 [createSelectAllButton] itemCount:', itemCount);
-    console.log('🔍 [createSelectAllButton] isAllChecked:', isAllChecked);
-    
+    // 🔧 修改按钮文本逻辑
     const selectAllBtn = container.createEl('button', {
-      text: isAllChecked ? '✓ 完成' : '☐ 全选',
+      text: isAllChecked ? '✓ 取消全选' : '☐ 全选',  // 改为"取消全选"
       cls: `${btnClass} ${isAllChecked ? 'completed' : ''}`,
-      title: isAllChecked ? '取消全选' : `全选当前 ${itemCount} 项`
+      title: isAllChecked ? '取消当前页面的全选' : `全选当前 ${itemCount} 项`
     });
     
-    // 禁用条件
     const shouldDisable = (
       itemCount === 0 ||
       (this.groupMode === 'annotation' && this.displayMode === 'main' && !this.selectedFile)
     );
-    
-    console.log('🔍 [createSelectAllButton] shouldDisable 计算过程:');
-    console.log('  - itemCount === 0:', itemCount === 0);
-    console.log('  - groupMode === annotation:', this.groupMode === 'annotation');
-    console.log('  - displayMode === main:', this.displayMode === 'main');
-    console.log('  - !selectedFile:', !this.selectedFile);
-    console.log('  - 最终 shouldDisable:', shouldDisable);
     
     if (shouldDisable) {
       selectAllBtn.disabled = true;
@@ -2488,17 +2468,16 @@ private groupFlashcards(flashcards: Flashcard[]): Array<{ groupKey: string; card
       selectAllBtn.title = itemCount === 0 
         ? '没有可选项' 
         : '请先选择"有批注"或"无批注"';
-      console.log('🔍 [createSelectAllButton] ❌ 按钮已禁用');
-    } else {
-      console.log('🔍 [createSelectAllButton] ✅ 按钮可用');
     }
     
+    // 🔧 修改点击事件
     selectAllBtn.addEventListener('click', () => {
-      console.log('🔍 [全选按钮] 点击事件触发！');
-      this.toggleSelectAll();
+      if (isAllChecked) {
+        this.cancelSelectAll();  // 如果已全选，执行取消全选
+      } else {
+        this.toggleSelectAll();  // 否则执行全选
+      }
     });
-    
-    console.log('🔍 [createSelectAllButton] ========== 按钮创建完成 ==========\n');
     
     return selectAllBtn;
   }
@@ -2555,15 +2534,15 @@ private createBatchActionButtons(
     }
   });
   
-  // 取消按钮
-  const cancelBtn = container.createEl('button', {
-    text: styleClass === 'sidebar' ? '✕' : '✕ 取消',
-    cls: `cancel-selection-btn-${btnPrefix}`,
-    title: '关闭批量模式'
-  });
-  cancelBtn.addEventListener('click', () => {
-    this.clearSelection();
-  });
+// 取消按钮（完全退出批量模式）
+const cancelBtn = container.createEl('button', {
+  text: styleClass === 'sidebar' ? '✕' : '✕ 退出',  // 改为更明确的"退出"
+  cls: `cancel-selection-btn-${btnPrefix}`,
+  title: '退出批量模式并清空所有选择'  // 改为更明确的提示
+});
+cancelBtn.addEventListener('click', () => {
+  this.clearSelection();  // 完全清空
+});
 }
 
 // 提取全选功能
