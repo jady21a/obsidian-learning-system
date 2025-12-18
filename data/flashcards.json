@@ -23,22 +23,23 @@
       "#test"
     ],
     "scheduling": {
-      "interval": 0,
+      "interval": 10,
       "ease": 2.5,
-      "due": 1765953475926,
+      "due": 1766023108976,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "learning"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "difficulty": 0.5
+      "totalReviews": 1,
+      "correctCount": 0.5,
+      "averageTime": 42.94,
+      "difficulty": 0.55,
+      "lastReview": 1766022508976
     },
     "metadata": {
       "createdAt": 1765953475926,
-      "updatedAt": 1765953475926
+      "updatedAt": 1766022508976
     }
   },
   {
@@ -66,22 +67,23 @@
       "#todo/"
     ],
     "scheduling": {
-      "interval": 0,
+      "interval": 1,
       "ease": 2.5,
-      "due": 1765953475928,
+      "due": 1766108913445,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "learning"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "difficulty": 0.5
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 4.46,
+      "difficulty": 0.45,
+      "lastReview": 1766022513445
     },
     "metadata": {
       "createdAt": 1765953475928,
-      "updatedAt": 1765953475928
+      "updatedAt": 1766022513445
     }
   },
   {
@@ -109,22 +111,23 @@
       "#flashcards/Deutsch/recite"
     ],
     "scheduling": {
-      "interval": 0,
+      "interval": 1,
       "ease": 2.5,
-      "due": 1765953475929,
+      "due": 1766108915038,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "learning"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "difficulty": 0.5
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 1.588,
+      "difficulty": 0.45,
+      "lastReview": 1766022515038
     },
     "metadata": {
       "createdAt": 1765953475929,
-      "updatedAt": 1765953475929
+      "updatedAt": 1766022515038
     }
   },
   {
@@ -138,22 +141,23 @@
     "deck": "1.Rough",
     "tags": [],
     "scheduling": {
-      "interval": 0,
+      "interval": 1,
       "ease": 2.5,
-      "due": 1765953535981,
+      "due": 1766108917748,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "learning"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "difficulty": 0.5
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 2.705,
+      "difficulty": 0.45,
+      "lastReview": 1766022517748
     },
     "metadata": {
       "createdAt": 1765953535981,
-      "updatedAt": 1765953535981
+      "updatedAt": 1766022517748
     }
   },
   {
@@ -167,22 +171,23 @@
     "deck": "1.Rough",
     "tags": [],
     "scheduling": {
-      "interval": 0,
+      "interval": 1,
       "ease": 2.5,
-      "due": 1765953535982,
+      "due": 1766108919367,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "learning"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "difficulty": 0.5
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 1.613,
+      "difficulty": 0.45,
+      "lastReview": 1766022519367
     },
     "metadata": {
       "createdAt": 1765953535982,
-      "updatedAt": 1765953535982
+      "updatedAt": 1766022519367
     }
   },
   {
@@ -196,22 +201,23 @@
     "deck": "1.Rough",
     "tags": [],
     "scheduling": {
-      "interval": 0,
+      "interval": 1,
       "ease": 2.5,
-      "due": 1765953535984,
+      "due": 1766108925655,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "learning"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "difficulty": 0.5
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 6.284,
+      "difficulty": 0.45,
+      "lastReview": 1766022525655
     },
     "metadata": {
       "createdAt": 1765953535984,
-      "updatedAt": 1765953535984
+      "updatedAt": 1766022525655
     }
   },
   {
@@ -225,22 +231,23 @@
     "deck": "1.Rough",
     "tags": [],
     "scheduling": {
-      "interval": 0,
+      "interval": 1,
       "ease": 2.5,
-      "due": 1765953535985,
+      "due": 1766108932784,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "learning"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "difficulty": 0.5
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 7.124,
+      "difficulty": 0.45,
+      "lastReview": 1766022532784
     },
     "metadata": {
       "createdAt": 1765953535985,
-      "updatedAt": 1765953535985
+      "updatedAt": 1766022532784
     }
   },
   {
@@ -265,22 +272,23 @@
     "deck": "1.Rough",
     "tags": [],
     "scheduling": {
-      "interval": 0,
+      "interval": 1,
       "ease": 2.5,
-      "due": 1765953535988,
+      "due": 1766108939134,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "learning"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "difficulty": 0.5
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 6.345,
+      "difficulty": 0.45,
+      "lastReview": 1766022539134
     },
     "metadata": {
       "createdAt": 1765953535988,
-      "updatedAt": 1765953535988
+      "updatedAt": 1766022539134
     }
   },
   {
@@ -305,9 +313,73 @@
     "deck": "1.Rough",
     "tags": [],
     "scheduling": {
+      "interval": 1,
+      "ease": 2.5,
+      "due": 1766108942683,
+      "lapses": 0,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 3.544,
+      "difficulty": 0.45,
+      "lastReview": 1766022542683
+    },
+    "metadata": {
+      "createdAt": 1765953535989,
+      "updatedAt": 1766022542683
+    }
+  },
+  {
+    "id": "card-1766022582734-r2udr15lv",
+    "type": "qa",
+    "sourceContentId": "1766022582730-r4skjpznw",
+    "sourceFile": "1.Rough/test.md",
+    "anchorLink": "[[test#^extract-1766022582730-yxmbup]]",
+    "front": "清晰的",
+    "back": "[Answer needed]",
+    "deck": "1.Rough",
+    "tags": [
+      "#test"
+    ],
+    "scheduling": {
+      "interval": 3,
+      "ease": 2.5,
+      "due": 1766282426674,
+      "lapses": 0,
+      "reps": 2,
+      "state": "review"
+    },
+    "stats": {
+      "totalReviews": 2,
+      "correctCount": 2,
+      "averageTime": 602.0264999999999,
+      "difficulty": 0.4,
+      "lastReview": 1766023226674
+    },
+    "metadata": {
+      "createdAt": 1766022582734,
+      "updatedAt": 1766023226674
+    }
+  },
+  {
+    "id": "card-1766023539582-4g58hyfa4",
+    "type": "qa",
+    "sourceContentId": "1765853435785-sor1yzb64",
+    "sourceFile": "1.Rough/test.md",
+    "anchorLink": "[[test#^extract-1765853435785-cs3qtq]]",
+    "front": "What does \"ole.log\" mean?",
+    "back": "得办好",
+    "deck": "1.Rough",
+    "tags": [
+      "#test"
+    ],
+    "scheduling": {
       "interval": 0,
       "ease": 2.5,
-      "due": 1765953535989,
+      "due": 1766023539582,
       "lapses": 0,
       "reps": 0,
       "state": "new"
@@ -319,8 +391,101 @@
       "difficulty": 0.5
     },
     "metadata": {
-      "createdAt": 1765953535989,
-      "updatedAt": 1765953535989
+      "createdAt": 1766023539582,
+      "updatedAt": 1766023539582
+    }
+  },
+  {
+    "id": "card-1766023556765-g729b78ap",
+    "type": "qa",
+    "sourceContentId": "1765853435785-sor1yzb64",
+    "sourceFile": "1.Rough/test.md",
+    "anchorLink": "[[test#^extract-1765853435785-cs3qtq]]",
+    "front": "What does \"ole.log\" mean?",
+    "back": "得办好",
+    "deck": "1.Rough",
+    "tags": [
+      "#test"
+    ],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1766023556765,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1766023556765,
+      "updatedAt": 1766023556765
+    }
+  },
+  {
+    "id": "card-1766023563433-7ud2lxxfn",
+    "type": "qa",
+    "sourceContentId": "1765856706807-dgarxrbnp",
+    "sourceFile": "1.Rough/test.md",
+    "anchorLink": "[[test#^extract-1765856706807-yhqjga]]",
+    "front": "What does \"ksejbf\" mean?",
+    "back": "ksejbf",
+    "deck": "1.Rough",
+    "tags": [
+      "#test"
+    ],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1766023563433,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1766023563433,
+      "updatedAt": 1766023563433
+    }
+  },
+  {
+    "id": "card-1766023635463-w4idfgmtv",
+    "type": "qa",
+    "sourceContentId": "1765953475924-xafsf374x",
+    "sourceFile": "1.Rough/test.md",
+    "anchorLink": "[[test#^extract-1765953475924-bmz44q]]",
+    "front": "What does \"于以\" mean?",
+    "back": "few·",
+    "deck": "1.Rough",
+    "tags": [
+      "#test"
+    ],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1766023635463,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1766023635463,
+      "updatedAt": 1766023635463
     }
   }
 ]

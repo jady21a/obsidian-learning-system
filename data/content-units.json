@@ -20,12 +20,16 @@
     },
     "metadata": {
       "createdAt": 1765853435785,
-      "updatedAt": 1765853435785,
+      "updatedAt": 1766023225554,
       "tags": [
         "#test"
       ]
     },
-    "flashcardIds": []
+    "flashcardIds": [
+      "card-1766023539582-4g58hyfa4",
+      "card-1766023556765-g729b78ap"
+    ],
+    "annotationId": "ann-1766023225483-9kyzlkg2z"
   },
   {
     "id": "1765856706807-dgarxrbnp",
@@ -53,7 +57,9 @@
         "#test"
       ]
     },
-    "flashcardIds": []
+    "flashcardIds": [
+      "card-1766023563433-7ud2lxxfn"
+    ]
   },
   {
     "id": "1765953475924-xafsf374x",
@@ -82,7 +88,8 @@
       ]
     },
     "flashcardIds": [
-      "card-1765953475926-752ryul2o"
+      "card-1765953475926-752ryul2o",
+      "card-1766023635463-w4idfgmtv"
     ],
     "annotationId": "ann-1765953498690-mbde4v2j2"
   },
@@ -323,6 +330,37 @@
     },
     "flashcardIds": [
       "card-1765953535989-0gp1jiqfd"
+    ]
+  },
+  {
+    "id": "1766022582730-r4skjpznw",
+    "type": "QA",
+    "content": "清晰的",
+    "answer": "[Answer needed]",
+    "fullContext": "清晰的",
+    "source": {
+      "file": "1.Rough/test.md",
+      "position": {
+        "start": 126,
+        "end": 129,
+        "line": 6
+      },
+      "anchorLink": "[[test#^extract-1766022582730-yxmbup]]"
+    },
+    "extractRule": {
+      "ruleId": "QA-manual",
+      "ruleName": "Manual QA Card",
+      "extractedBy": "manual"
+    },
+    "metadata": {
+      "createdAt": 1766022582730,
+      "updatedAt": 1766022582730,
+      "tags": [
+        "#test"
+      ]
+    },
+    "flashcardIds": [
+      "card-1766022582734-r2udr15lv"
     ]
   }
 ]

@@ -428,5 +428,15 @@
       "createdAt": 1765954060629,
       "updatedAt": 1765954060629
     }
+  },
+  {
+    "id": "ann-1766023225483-9kyzlkg2z",
+    "targetType": "content",
+    "targetId": "1765853435785-sor1yzb64",
+    "content": "得办好",
+    "metadata": {
+      "createdAt": 1766023225484,
+      "updatedAt": 1766023235276
+    }
   }
 ]

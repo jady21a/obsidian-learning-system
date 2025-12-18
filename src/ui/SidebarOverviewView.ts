@@ -305,9 +305,9 @@ private saveScrollPosition(container:HTMLElement){
     const filters = toolbar.createDiv({ cls: 'filter-chips' });
     
     const filterOptions = [
-      { mode: 'all' as FilterMode, icon: '📝', label: '全部' },
-      { mode: 'annotated' as FilterMode, icon: '💬', label: '批注' },
-      { mode: 'flashcards' as FilterMode, icon: '🃏', label: '闪卡' }
+      { mode: 'all' as FilterMode, icon: '📝', label: 'allnotes' },
+      { mode: 'annotated' as FilterMode, icon: '💬', label: 'comment' },
+      { mode: 'flashcards' as FilterMode, icon: '🃏', label: 'flashcards' }
     ];
 
     filterOptions.forEach(({ mode, icon, label }) => {
@@ -714,7 +714,7 @@ noteText.addEventListener('click', () => {
     const allNotesBtn = entries.createDiv({
       cls: `entry-btn ${this.viewType === 'notes' ? 'active' : ''}`,
     });
-    allNotesBtn.innerHTML = '📝 <span>全部笔记</span>';
+    allNotesBtn.innerHTML = '📝 <span>All Notes</span>';
     allNotesBtn.addEventListener('click', () => {
       this.viewType = 'notes';
       this.selectedFile = null;
@@ -1615,7 +1615,7 @@ private showBatchMenu(event: MouseEvent, unit?: ContentUnit) {
   // 已经在批量模式，显示批量操作选项
   menu.addItem((item) =>
     item
-      .setTitle(this.isAllSelected() ? '☑ 选择' : '☐ 全选')
+      .setTitle(this.isAllSelected() ? '☑ select' : '☐ AllSelect')
       .setIcon('check-square')
       .onClick(() => {
         this.toggleSelectAll();

@@ -1,6 +1,6 @@
 {
     "id": "learning-system",
-    "name": "aa",
+    "name": "Learning System",
     "version": "1.0.0",
     "minAppVersion": "0.15.0",
     "description": "A comprehensive learning system with extraction, annotation, and flashcard features",

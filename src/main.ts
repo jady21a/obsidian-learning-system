@@ -95,7 +95,7 @@ export default class LearningSystemPlugin extends Plugin {
     this.addCommands();
 
     // Ribbon 图标
-    this.addRibbonIcon('layout-list', 'Open Learning Overview', () => {
+    this.addRibbonIcon('layout-list', 'Open Learning Overview(Sidebar)', () => {
       this.activateSidebarOverview();
     });
 
@@ -153,7 +153,7 @@ export default class LearningSystemPlugin extends Plugin {
 
     this.addCommand({
       id: 'open-overview',
-      name: 'Open Learning Overview',
+      name: 'Open Learning Overview(Sidebar)',
       callback: () => {
         this.activateSidebarOverview();
       }
