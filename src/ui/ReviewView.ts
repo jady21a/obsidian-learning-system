@@ -96,15 +96,15 @@ export class ReviewView extends ItemView {
 
   private renderTopActions(container: HTMLElement) {
     const actionsBar = container.createDiv({ cls: 'top-actions-bar' });
-
-    // Jump to source 按钮（只显示图标）
+  
+    // Jump to source 按钮
     const jumpBtn = actionsBar.createEl('button', {
       cls: 'top-action-btn jump-icon-btn',
       attr: { 'aria-label': 'Jump to Source' }
     });
     jumpBtn.innerHTML = '↗';
     jumpBtn.addEventListener('click', () => this.jumpToSource());
-
+  
     // More 菜单
     const moreBtn = actionsBar.createEl('button', {
       cls: 'top-action-btn more-btn',
@@ -112,48 +112,121 @@ export class ReviewView extends ItemView {
     });
     moreBtn.innerHTML = '⋯';
     
-    // 创建下拉菜单
     const dropdown = actionsBar.createDiv({ cls: 'more-dropdown' });
     dropdown.style.display = 'none';
-
-    // 添加编辑选项
-const editOption = dropdown.createEl('div', {
-  cls: 'dropdown-item'
-});
-editOption.innerHTML = '✏️ Edit Card';
-editOption.addEventListener('click', () => {
-  if (!this.currentCard) return;
-  this.editCurrentFlashcard();
-  dropdown.style.display = 'none';
-});
-
-    const deleteOption = dropdown.createEl('div', {
-      cls: 'dropdown-item delete-item'
+  
+    // 编辑选项
+    const editOption = dropdown.createEl('div', {
+      cls: 'dropdown-item'
     });
-    deleteOption.innerHTML = '🗑️ Delete Card';
-    deleteOption.addEventListener('click', async () => {
+    editOption.innerHTML = '✏️ Edit Card';
+    editOption.addEventListener('click', () => {
       if (!this.currentCard) return;
-      if (confirm('确定要删除这张闪卡吗？删除后将从复习队列中移除。')) {
-        await this.deleteFlashcard(this.currentCard.id);
+      this.editCurrentFlashcard();
+      dropdown.style.display = 'none';
+    });
+  
+
+  
+    // 分隔线
+    // dropdown.createEl('div', { cls: 'dropdown-divider' });
+  
+    // **新增: 清除当前卡片统计**
+    const resetCardOption = dropdown.createEl('div', {
+      cls: 'dropdown-item'
+    });
+    resetCardOption.innerHTML = '🔄 Reset Card Stats';
+    resetCardOption.addEventListener('click', async () => {
+      if (!this.currentCard) return;
+      if (confirm('确定要重置这张卡片的学习进度吗？卡片将回到"新卡片"状态。')) {
+        await this.resetCardStats(this.currentCard.id);
       }
       dropdown.style.display = 'none';
     });
-
+  
+    // **新增: 清除当前卡组统计**
+    const resetDeckOption = dropdown.createEl('div', {
+      cls: 'dropdown-item'
+    });
+    resetDeckOption.innerHTML = '📚 Reset Deck Stats';
+    resetDeckOption.addEventListener('click', async () => {
+      if (!this.currentCard) return;
+      const deckName = this.currentCard.deck;
+      if (confirm(`确定要重置卡组"${deckName}"的所有学习进度吗？该卡组的所有卡片将回到"新卡片"状态。`)) {
+        await this.plugin.analyticsEngine.clearDeckStats(deckName);
+        new Notice(`✅ 卡组"${deckName}"的统计已重置`);
+        await this.loadDueCards();
+        this.render();
+      }
+      dropdown.style.display = 'none';
+    });
+        // 删除选项
+        const deleteOption = dropdown.createEl('div', {
+          cls: 'dropdown-item delete-item'
+        });
+        deleteOption.innerHTML = '🗑️ Delete Card';
+        deleteOption.addEventListener('click', async () => {
+          if (!this.currentCard) return;
+          if (confirm('确定要删除这张闪卡吗？删除后将从复习队列中移除。')) {
+            await this.deleteFlashcard(this.currentCard.id);
+          }
+          dropdown.style.display = 'none';
+        });
+  
     // 切换下拉菜单
     moreBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
     });
-
-    // 点击外部关闭菜单
+  
     document.addEventListener('click', () => {
       dropdown.style.display = 'none';
     });
-
+  
     dropdown.addEventListener('click', (e) => {
       e.stopPropagation();
     });
   }
+  
+  // **新增: 重置单张卡片统计的方法**
+private async resetCardStats(cardId: string) {
+  try {
+    const card = this.plugin.flashcardManager.getFlashcard(cardId);
+    if (!card) return;
+
+    card.stats = {
+      totalReviews: 0,
+      correctCount: 0,
+      averageTime: 0,
+      lastReview: 0,
+      difficulty: 0.3
+    };
+    card.scheduling = {
+      interval: 0,
+      ease: 2.5,  // 改为 ease
+      due: Date.now(),
+      lapses: 0,
+      reps: 0,
+      state: 'new'
+    };
+
+    await this.plugin.flashcardManager.updateCard(card);
+    
+    // 清除该卡片的复习日志
+    const logs = this.plugin.flashcardManager['reviewLogs'] || [];
+    this.plugin.flashcardManager['reviewLogs'] = logs.filter(
+      log => log.flashcardId !== cardId
+    );
+    await this.plugin.dataManager.save(); // 改用 dataManager
+    
+    new Notice('✅ 卡片统计已重置');
+    this.currentCard = card;
+    this.render();
+  } catch (error) {
+    console.error('Error resetting card stats:', error);
+    new Notice('❌ 重置统计失败');
+  }
+}
 
   private renderNoDueCards(container: Element) {
     const emptyState = container.createDiv({ cls: 'empty-state' });
@@ -1146,6 +1219,8 @@ editOption.addEventListener('click', () => {
   color: var(--text-muted);
   font-style: italic;
   border: 2px dashed var(--background-modifier-border);
+  /* 下拉菜单分隔线 */
+
 }
     `;
 

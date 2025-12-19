@@ -1,174 +1,19 @@
 [
   {
-    "id": "1765853435785-sor1yzb64",
-    "type": "text",
-    "content": "ole.log",
-    "fullContext": "ole.log",
-    "source": {
-      "file": "1.Rough/test.md",
-      "position": {
-        "start": 344,
-        "end": 351,
-        "line": 18
-      },
-      "anchorLink": "[[test#^extract-1765853435785-cs3qtq]]"
-    },
-    "extractRule": {
-      "ruleId": "text-manual",
-      "ruleName": "Manual Text Extract",
-      "extractedBy": "manual"
-    },
-    "metadata": {
-      "createdAt": 1765853435785,
-      "updatedAt": 1766023225554,
-      "tags": [
-        "#test"
-      ]
-    },
-    "flashcardIds": [
-      "card-1766023539582-4g58hyfa4",
-      "card-1766023556765-g729b78ap"
-    ],
-    "annotationId": "ann-1766023225483-9kyzlkg2z"
-  },
-  {
-    "id": "1765856706807-dgarxrbnp",
-    "type": "text",
-    "content": "ksejbf",
-    "fullContext": "ksejbf",
-    "source": {
-      "file": "1.Rough/test.md",
-      "position": {
-        "start": 393,
-        "end": 399,
-        "line": 54
-      },
-      "anchorLink": "[[test#^extract-1765856706807-yhqjga]]"
-    },
-    "extractRule": {
-      "ruleId": "text-manual",
-      "ruleName": "Manual Text Extract",
-      "extractedBy": "manual"
-    },
-    "metadata": {
-      "createdAt": 1765856706807,
-      "updatedAt": 1765856706807,
-      "tags": [
-        "#test"
-      ]
-    },
-    "flashcardIds": [
-      "card-1766023563433-7ud2lxxfn"
-    ]
-  },
-  {
-    "id": "1765953475924-xafsf374x",
-    "type": "cloze",
-    "content": "于以",
-    "fullContext": "请基==于以==下功能拆解出清晰的架构方案（无需实现代码）：**",
-    "source": {
-      "file": "1.Rough/test.md",
-      "position": {
-        "start": 114,
-        "end": 120,
-        "line": 6
-      },
-      "anchorLink": "[[test#^extract-1765953475924-bmz44q]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765953475924,
-      "updatedAt": 1765953498695,
-      "tags": [
-        "#test"
-      ]
-    },
-    "flashcardIds": [
-      "card-1765953475926-752ryul2o",
-      "card-1766023635463-w4idfgmtv"
-    ],
-    "annotationId": "ann-1765953498690-mbde4v2j2"
-  },
-  {
-    "id": "1765953475924-w8wt0am0r",
-    "type": "cloze",
-    "content": "取内容建立锚点",
-    "fullContext": "- 为每条提==取内容建立锚点==并能跳转原文 #todo/每天任务",
-    "source": {
-      "file": "1.Rough/test.md",
-      "position": {
-        "start": 200,
-        "end": 211,
-        "line": 11
-      },
-      "anchorLink": "[[test#^extract-1765953475924-n12dvv]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765953475924,
-      "updatedAt": 1765953475924,
-      "tags": [
-        "#test",
-        "#todo/"
-      ]
-    },
-    "flashcardIds": [
-      "card-1765953475928-wcqjs2np1"
-    ]
-  },
-  {
-    "id": "1765953475924-6ec0yxcpq",
-    "type": "cloze",
-    "content": "角标显示",
-    "fullContext": "- 支持每条记录的独立批注与==角标显示== #flashcards/Deutsch/recite",
-    "source": {
-      "file": "1.Rough/test.md",
-      "position": {
-        "start": 287,
-        "end": 295,
-        "line": 16
-      },
-      "anchorLink": "[[test#^extract-1765953475924-x2d3o1]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765953475924,
-      "updatedAt": 1765953475924,
-      "tags": [
-        "#test",
-        "#flashcards/Deutsch/recite"
-      ]
-    },
-    "flashcardIds": [
-      "card-1765953475929-e8wr2n82m"
-    ]
-  },
-  {
-    "id": "1765953535974-85x1tsrxr",
+    "id": "1766135199264-vf629dfp0",
     "type": "QA",
-    "content": "简称额",
-    "answer": "男外出",
-    "fullContext": "简称额::男外出",
+    "content": "黄色",
+    "answer": "事实/定义",
+    "fullContext": "黄色::事实/定义",
     "source": {
-      "file": "1.Rough/特色t.md",
+      "file": "9.备忘/tag.md",
       "position": {
-        "start": 37,
-        "end": 45,
-        "line": 8
+        "start": 1018,
+        "end": 1027,
+        "line": 33
       },
-      "anchorLink": "[[特色t#^extract-1765953535974-rq7f5n]]"
+      "heading": "### 阅读",
+      "anchorLink": "[[tag#^extract-1766135199264-31xe00]]"
     },
     "extractRule": {
       "ruleId": "QA",
@@ -176,30 +21,29 @@
       "extractedBy": "auto"
     },
     "metadata": {
-      "createdAt": 1765953535974,
-      "updatedAt": 1765954060634,
+      "createdAt": 1766135199264,
+      "updatedAt": 1766135199264,
       "tags": []
     },
     "flashcardIds": [
-      "card-1765953535981-cve12ja24"
-    ],
-    "annotationId": "ann-1765954060629-iw3725f64"
+      "card-1766135199266-g8w7096t8"
+    ]
   },
   {
-    "id": "1765953535975-tvla20fyf",
+    "id": "1766135199264-zuj1udqvg",
     "type": "QA",
-    "content": "什么是闭包？",
-    "answer": "闭包是指函数可以访问其外部作用域的变量",
-    "fullContext": "什么是闭包？ :: 闭包是指函数可以访问其外部作用域的变量",
+    "content": "橙色",
+    "answer": "不太懂",
+    "fullContext": "橙色::不太懂",
     "source": {
-      "file": "1.Rough/特色t.md",
+      "file": "9.备忘/tag.md",
       "position": {
-        "start": 56,
-        "end": 85,
-        "line": 11
+        "start": 1028,
+        "end": 1035,
+        "line": 34
       },
-      "heading": "# 我的学习笔记",
-      "anchorLink": "[[特色t#^extract-1765953535975-uqys1j]]"
+      "heading": "### 阅读",
+      "anchorLink": "[[tag#^extract-1766135199264-iemcgc]]"
     },
     "extractRule": {
       "ruleId": "QA",
@@ -207,29 +51,29 @@
       "extractedBy": "auto"
     },
     "metadata": {
-      "createdAt": 1765953535975,
-      "updatedAt": 1765953535975,
+      "createdAt": 1766135199264,
+      "updatedAt": 1766135199264,
       "tags": []
     },
     "flashcardIds": [
-      "card-1765953535982-vrbaby6ku"
+      "card-1766135199269-tavcom483"
     ]
   },
   {
-    "id": "1765953535975-rx4fz29t1",
+    "id": "1766135199264-9g2kxwl5k",
     "type": "QA",
-    "content": "aa",
-    "answer": "bb",
-    "fullContext": "aa :: bb",
+    "content": "绿色",
+    "answer": "方法/技巧",
+    "fullContext": "绿色::方法/技巧",
     "source": {
-      "file": "1.Rough/特色t.md",
+      "file": "9.备忘/tag.md",
       "position": {
-        "start": 119,
-        "end": 127,
-        "line": 15
+        "start": 1036,
+        "end": 1045,
+        "line": 35
       },
-      "heading": "# 我的学习笔记",
-      "anchorLink": "[[特色t#^extract-1765953535975-4ypg2j]]"
+      "heading": "### 阅读",
+      "anchorLink": "[[tag#^extract-1766135199264-qmpqa0]]"
     },
     "extractRule": {
       "ruleId": "QA",
@@ -237,29 +81,29 @@
       "extractedBy": "auto"
     },
     "metadata": {
-      "createdAt": 1765953535975,
-      "updatedAt": 1765953535975,
+      "createdAt": 1766135199264,
+      "updatedAt": 1766135199264,
       "tags": []
     },
     "flashcardIds": [
-      "card-1765953535984-ylgm6pak9"
+      "card-1766135199270-enmo0do3i"
     ]
   },
   {
-    "id": "1765953535975-82qd56tjr",
+    "id": "1766135199264-thxpwejn4",
     "type": "QA",
-    "content": "cc",
-    "answer": "dd",
-    "fullContext": "cc::dd",
+    "content": "蓝色",
+    "answer": "作者观点",
+    "fullContext": "蓝色::作者观点",
     "source": {
-      "file": "1.Rough/特色t.md",
+      "file": "9.备忘/tag.md",
       "position": {
-        "start": 129,
-        "end": 135,
-        "line": 17
+        "start": 1046,
+        "end": 1054,
+        "line": 36
       },
-      "heading": "# 我的学习笔记",
-      "anchorLink": "[[特色t#^extract-1765953535975-palkkx]]"
+      "heading": "### 阅读",
+      "anchorLink": "[[tag#^extract-1766135199264-ab2d0y]]"
     },
     "extractRule": {
       "ruleId": "QA",
@@ -267,100 +111,102 @@
       "extractedBy": "auto"
     },
     "metadata": {
-      "createdAt": 1765953535975,
-      "updatedAt": 1765953535975,
+      "createdAt": 1766135199264,
+      "updatedAt": 1766135199264,
       "tags": []
     },
     "flashcardIds": [
-      "card-1765953535985-4t9wbmmp1"
+      "card-1766135199271-600cgmuo5"
     ]
   },
   {
-    "id": "1765953535975-azght0q74",
-    "type": "cloze",
-    "content": "风坑",
-    "fullContext": "港==风坑==",
-    "source": {
-      "file": "1.Rough/特色t.md",
-      "position": {
-        "start": 1,
-        "end": 7,
-        "line": 0
-      },
-      "anchorLink": "[[特色t#^extract-1765953535975-za51el]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765953535975,
-      "updatedAt": 1765953535975,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765953535988-keuk7brhq"
-    ]
-  },
-  {
-    "id": "1765953535975-xac4b7yxo",
-    "type": "cloze",
-    "content": "事件循环",
-    "fullContext": "JavaScript 中的 ==事件循环== 处理异步操作。",
-    "source": {
-      "file": "1.Rough/特色t.md",
-      "position": {
-        "start": 101,
-        "end": 109,
-        "line": 13
-      },
-      "heading": "# 我的学习笔记",
-      "anchorLink": "[[特色t#^extract-1765953535975-6e9gml]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze",
-      "ruleName": "Cloze Deletion",
-      "extractedBy": "auto"
-    },
-    "metadata": {
-      "createdAt": 1765953535975,
-      "updatedAt": 1765953535975,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1765953535989-0gp1jiqfd"
-    ]
-  },
-  {
-    "id": "1766022582730-r4skjpznw",
+    "id": "1766135199264-3eic6c570",
     "type": "QA",
-    "content": "清晰的",
-    "answer": "[Answer needed]",
-    "fullContext": "清晰的",
+    "content": "红色",
+    "answer": "存疑",
+    "fullContext": "红色::存疑",
     "source": {
-      "file": "1.Rough/test.md",
+      "file": "9.备忘/tag.md",
       "position": {
-        "start": 126,
-        "end": 129,
-        "line": 6
+        "start": 1055,
+        "end": 1061,
+        "line": 37
       },
-      "anchorLink": "[[test#^extract-1766022582730-yxmbup]]"
+      "heading": "### 阅读",
+      "anchorLink": "[[tag#^extract-1766135199264-lw7n3z]]"
     },
     "extractRule": {
-      "ruleId": "QA-manual",
-      "ruleName": "Manual QA Card",
-      "extractedBy": "manual"
+      "ruleId": "QA",
+      "ruleName": "QA Card",
+      "extractedBy": "auto"
     },
     "metadata": {
-      "createdAt": 1766022582730,
-      "updatedAt": 1766022582730,
-      "tags": [
-        "#test"
-      ]
+      "createdAt": 1766135199264,
+      "updatedAt": 1766135199264,
+      "tags": []
     },
     "flashcardIds": [
-      "card-1766022582734-r2udr15lv"
+      "card-1766135199271-v37caompv"
+    ]
+  },
+  {
+    "id": "1766135199264-5dq63sy0l",
+    "type": "QA",
+    "content": "紫色",
+    "answer": "启发/洞察",
+    "fullContext": "紫色::启发/洞察",
+    "source": {
+      "file": "9.备忘/tag.md",
+      "position": {
+        "start": 1062,
+        "end": 1071,
+        "line": 38
+      },
+      "heading": "### 阅读",
+      "anchorLink": "[[tag#^extract-1766135199264-rf936z]]"
+    },
+    "extractRule": {
+      "ruleId": "QA",
+      "ruleName": "QA Card",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1766135199264,
+      "updatedAt": 1766135199264,
+      "tags": []
+    },
+    "flashcardIds": [
+      "card-1766135199272-3ovvttidd"
+    ]
+  },
+  {
+    "id": "1766135199264-6icfphm85",
+    "type": "QA",
+    "content": "金色",
+    "answer": "重要概念",
+    "fullContext": "金色::重要概念",
+    "source": {
+      "file": "9.备忘/tag.md",
+      "position": {
+        "start": 1072,
+        "end": 1080,
+        "line": 39
+      },
+      "heading": "### 阅读",
+      "anchorLink": "[[tag#^extract-1766135199264-44r2tm]]"
+    },
+    "extractRule": {
+      "ruleId": "QA",
+      "ruleName": "QA Card",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1766135199264,
+      "updatedAt": 1766135199264,
+      "tags": []
+    },
+    "flashcardIds": [
+      "card-1766135199272-e1b7cu8vv"
     ]
   }
 ]

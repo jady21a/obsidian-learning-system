@@ -8,6 +8,7 @@ import { DataManager } from './core/DataManager';
 import { ExtractionEngine } from './core/ExtractionEngine';
 import { AnnotationManager } from './core/AnnotationManager';
 import { FlashcardManager } from './core/FlashcardManager';
+import { AnalyticsEngine } from './core/AnalyticsEngine';
 
 interface LearningSystemSettings {
   extractionEnabled: boolean;
@@ -27,7 +28,7 @@ export default class LearningSystemPlugin extends Plugin {
   extractionEngine: ExtractionEngine;
   annotationManager: AnnotationManager;
   flashcardManager: FlashcardManager;
-
+  analyticsEngine: AnalyticsEngine;
 
   async onload() {
     console.log('Loading Learning System Plugin');
@@ -105,6 +106,9 @@ export default class LearningSystemPlugin extends Plugin {
 
     // 状态栏 - 显示待复习数量
     this.setupStatusBar();
+    
+    this.analyticsEngine = new AnalyticsEngine(this);
+
 
     console.log('Learning System Plugin loaded');
   }

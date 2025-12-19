@@ -3116,8 +3116,8 @@ private getVisibleItems(): { units?: ContentUnit[]; cards?: Flashcard[] } {
     to bottom,
     transparent 0%,
     transparent 50%,
-        #9333ea 50%,
-    #9333ea 100%
+       #FFF176 50%,
+    #FFF176 100%
 
   );
 }
@@ -3148,8 +3148,8 @@ private getVisibleItems(): { units?: ContentUnit[]; cards?: Flashcard[] } {
     to bottom, 
     #3b82f6 0%, 
     #3b82f6 50%, 
-        #9333ea 50%,
-    #9333ea 100%
+        #FFF176 50%,
+    #FFF176 100%
 
   );
 }
@@ -3202,8 +3202,8 @@ private getVisibleItems(): { units?: ContentUnit[]; cards?: Flashcard[] } {
 }
 
 .type-indicator.type-cloze {
-  background: rgba(147, 51, 234, 0.2);
-    color: #9333ea;
+  background: rgba(255, 241, 118, 0.2);
+    color: #FFF176;
 
 }
 
@@ -3855,8 +3855,8 @@ private getVisibleItems(): { units?: ContentUnit[]; cards?: Flashcard[] } {
 
       .flashcard-type.cloze {
 
-               background: rgba(147, 51, 234, 0.2);
-         color: #9333ea;
+         background: rgba(255, 241, 118, 0.2);
+         color: #FFF176;
       }
 
       .flashcard-date {

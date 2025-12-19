@@ -472,4 +472,90 @@ export class AnalyticsEngine {
       intensity: maxReviews > 0 ? stat.reviewed / maxReviews : 0
     }));
   }
+  /**
+ * 清除所有统计数据
+ */
+async clearAllStats(): Promise<void> {
+  // 清除所有复习日志
+  this.plugin.flashcardManager['reviewLogs'] = [];
+  
+  // 重置所有卡片的统计信息
+  const cards = this.plugin.flashcardManager.getAllFlashcards();
+  for (const card of cards) {
+    card.stats = {
+      totalReviews: 0,
+      correctCount: 0,
+      averageTime: 0,
+      lastReview: 0,
+      difficulty: 0.3
+    };
+    card.scheduling = {
+      interval: 0,
+      ease: 2.5,  // 使用 ease 而不是 easeFactor
+      due: Date.now(),
+      lapses: 0,
+      reps: 0,
+      state: 'new'
+    };
+    await this.plugin.flashcardManager.updateCard(card);
+  }
+  
+  // 使用 dataManager 保存
+  await this.plugin.dataManager.save();
 }
+
+/**
+ * 清除指定天数之前的统计数据
+ */
+async clearStatsBeforeDate(daysAgo: number): Promise<void> {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
+  const cutoffTimestamp = cutoffDate.getTime();
+  
+  // 只保留指定日期之后的复习日志
+  const logs = this.plugin.flashcardManager['reviewLogs'] || [];
+  this.plugin.flashcardManager['reviewLogs'] = logs.filter(
+    log => log.timestamp >= cutoffTimestamp
+  );
+  
+  await this.plugin.dataManager.save();
+}
+
+/**
+ * 清除特定卡组的统计数据
+ */
+async clearDeckStats(deckName: string): Promise<void> {
+  const cards = this.plugin.flashcardManager.getAllFlashcards()
+    .filter(card => card.deck === deckName);
+  
+  for (const card of cards) {
+    card.stats = {
+      totalReviews: 0,
+      correctCount: 0,
+      averageTime: 0,
+      lastReview: 0,
+      difficulty: 0.3
+    };
+    card.scheduling = {
+      interval: 0,
+      ease: 2.5,  // 使用 ease
+      due: Date.now(),
+      lapses: 0,
+      reps: 0,
+      state: 'new'
+    };
+    await this.plugin.flashcardManager.updateCard(card);
+  }
+  
+  // 清除该卡组的复习日志
+  const cardIds = new Set(cards.map(c => c.id));
+  const logs = this.plugin.flashcardManager['reviewLogs'] || [];
+  this.plugin.flashcardManager['reviewLogs'] = logs.filter(
+    log => !cardIds.has(log.flashcardId)
+  );
+  
+  await this.plugin.dataManager.save();
+}
+}
+
+

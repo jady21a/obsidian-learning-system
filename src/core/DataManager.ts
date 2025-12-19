@@ -158,7 +158,11 @@ export class DataManager {
       await this.persist();
     }
   }
-
+  /** 对外统一保存入口 */
+  async save(): Promise<void> {
+    await this.persist();
+  }
+  
   private async persist() {
     try {
       const contentPath = `${this.dataFolder}/content-units.json`;
