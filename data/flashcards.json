@@ -10,23 +10,23 @@
     "deck": "9.备忘",
     "tags": [],
     "scheduling": {
-      "interval": 0,
+      "interval": 4,
       "ease": 2.5,
-      "due": 1766136812315,
+      "due": 1766501796249,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "review"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "lastReview": 0,
-      "difficulty": 0.3
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 9.876,
+      "lastReview": 1766156196249,
+      "difficulty": 0.19999999999999998
     },
     "metadata": {
       "createdAt": 1766135199266,
-      "updatedAt": 1766135199266
+      "updatedAt": 1766156196249
     }
   },
   {
@@ -40,23 +40,23 @@
     "deck": "9.备忘",
     "tags": [],
     "scheduling": {
-      "interval": 0,
+      "interval": 4,
       "ease": 2.5,
-      "due": 1766136803769,
+      "due": 1766501822014,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "review"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "lastReview": 0,
-      "difficulty": 0.3
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 25.761,
+      "lastReview": 1766156222014,
+      "difficulty": 0.19999999999999998
     },
     "metadata": {
       "createdAt": 1766135199269,
-      "updatedAt": 1766135199269
+      "updatedAt": 1766156222014
     }
   },
   {
@@ -72,7 +72,7 @@
     "scheduling": {
       "interval": 0,
       "ease": 2.5,
-      "due": 1766136803770,
+      "due": 1766156170297,
       "lapses": 0,
       "reps": 0,
       "state": "new"
@@ -102,7 +102,7 @@
     "scheduling": {
       "interval": 0,
       "ease": 2.5,
-      "due": 1766136803770,
+      "due": 1766156170299,
       "lapses": 0,
       "reps": 0,
       "state": "new"
@@ -132,7 +132,7 @@
     "scheduling": {
       "interval": 0,
       "ease": 2.5,
-      "due": 1766136803771,
+      "due": 1766156170301,
       "lapses": 0,
       "reps": 0,
       "state": "new"
@@ -162,7 +162,7 @@
     "scheduling": {
       "interval": 0,
       "ease": 2.5,
-      "due": 1766136803772,
+      "due": 1766156170303,
       "lapses": 0,
       "reps": 0,
       "state": "new"
@@ -192,7 +192,7 @@
     "scheduling": {
       "interval": 0,
       "ease": 2.5,
-      "due": 1766136803773,
+      "due": 1766156170306,
       "lapses": 0,
       "reps": 0,
       "state": "new"

@@ -188,67 +188,116 @@ export class CardScheduler {
   /**
    * 评估用户答案（用于输入答案模式）
    */
-  evaluateAnswer(
-    correctAnswer: string | string[],
-    userAnswer: string | string[]
-  ): {
-    correctness: 'correct' | 'partial' | 'wrong';
-    similarity: number;
-  } {
-    // 处理数组（完形填空）
-    if (Array.isArray(correctAnswer) && Array.isArray(userAnswer)) {
-      let correctCount = 0;
-      const total = correctAnswer.length;
+/**
+ * 评估用户答案(用于输入答案模式)
+ */
+evaluateAnswer(
+  correctAnswer: string | string[],
+  userAnswer: string | string[]
+): {
+  correctness: 'correct' | 'partial' | 'wrong';
+  similarity: number;
+} {
+  // 处理数组(完形填空)
+  if (Array.isArray(correctAnswer) && Array.isArray(userAnswer)) {
+    let correctCount = 0;
+    const total = correctAnswer.length;
 
-      for (let i = 0; i < total; i++) {
-        const similarity = this.calculateSimilarity(
-          this.normalize(correctAnswer[i]),
-          this.normalize(userAnswer[i] || '')
-        );
-        if (similarity >= 0.9) correctCount++;
-        else if (similarity >= 0.6) correctCount += 0.5;
-      }
-
-      const overallSimilarity = correctCount / total;
-
-      if (overallSimilarity >= 0.9) {
-        return { correctness: 'correct', similarity: overallSimilarity };
-      } else if (overallSimilarity >= 0.6) {
-        return { correctness: 'partial', similarity: overallSimilarity };
-      } else {
-        return { correctness: 'wrong', similarity: overallSimilarity };
-      }
+    for (let i = 0; i < total; i++) {
+      // 🆕 对每个空格也应用 "/" 规则
+      const evaluation = this.evaluateSingleAnswer(
+        correctAnswer[i],
+        userAnswer[i] || ''
+      );
+      
+      if (evaluation.similarity >= 0.9) correctCount++;
+      else if (evaluation.similarity >= 0.6) correctCount += 0.5;
     }
 
-    // 处理字符串
-    const correct = this.normalize(correctAnswer as string);
-    const user = this.normalize(userAnswer as string);
+    const overallSimilarity = correctCount / total;
 
-    // 空答案
-    if (user.length === 0) {
-      return { correctness: 'wrong', similarity: 0 };
-    }
-
-    // 长度差异过大直接判错
-    const lengthRatio = Math.min(user.length, correct.length) / Math.max(user.length, correct.length);
-    if (lengthRatio < 0.3) {
-
-      return { correctness: 'wrong', similarity: 0 };
-    }
-
-    const similarity = this.calculateSimilarity(correct, user);
-
-
-
-    if (similarity >= 0.9) {
-      return { correctness: 'correct', similarity };
-    } else if (similarity >= 0.7) {
-      return { correctness: 'partial', similarity };
+    if (overallSimilarity >= 0.9) {
+      return { correctness: 'correct', similarity: overallSimilarity };
+    } else if (overallSimilarity >= 0.6) {
+      return { correctness: 'partial', similarity: overallSimilarity };
     } else {
-      return { correctness: 'wrong', similarity };
+      return { correctness: 'wrong', similarity: overallSimilarity };
     }
   }
 
+  // 🆕 处理字符串 - 提取到独立方法
+  return this.evaluateSingleAnswer(
+    correctAnswer as string,
+    userAnswer as string
+  );
+}
+
+/**
+ * 🆕 评估单个答案(支持 "/" 分隔的多个正确答案)
+ */
+private evaluateSingleAnswer(
+  correctAnswer: string,
+  userAnswer: string
+): {
+  correctness: 'correct' | 'partial' | 'wrong';
+  similarity: number;
+} {
+  const correct = this.normalize(correctAnswer);
+  const user = this.normalize(userAnswer);
+
+  // 空答案
+  if (user.length === 0) {
+    return { correctness: 'wrong', similarity: 0 };
+  }
+
+  // 🆕 检查是否包含 "/" - 表示多个可接受答案
+  if (correctAnswer.includes('/') || correctAnswer.includes('|')) {
+    const alternatives = correctAnswer
+      .split(/[\/|]/)  // 支持 / 或 |
+      .map(alt => this.normalize(alt.trim()))
+      .filter(alt => alt.length > 0);
+
+    // 对每个可能的答案计算相似度,取最高分
+    let maxSimilarity = 0;
+    for (const alternative of alternatives) {
+      // 完全匹配任意一个就算对
+      if (user === alternative) {
+        return { correctness: 'correct', similarity: 1.0 };
+      }
+      
+      const similarity = this.calculateSimilarity(alternative, user);
+      maxSimilarity = Math.max(maxSimilarity, similarity);
+    }
+
+    // 使用最高相似度判断
+    if (maxSimilarity >= 0.9) {
+      return { correctness: 'correct', similarity: maxSimilarity };
+    } else if (maxSimilarity >= 0.7) {
+      return { correctness: 'partial', similarity: maxSimilarity };
+    } else {
+      return { correctness: 'wrong', similarity: maxSimilarity };
+    }
+  }
+
+  // 🔽 原有逻辑 - 处理不含 "/" 的普通答案
+  
+  // 长度差异过大直接判错
+  const lengthRatio = Math.min(user.length, correct.length) / 
+                      Math.max(user.length, correct.length);
+  if (lengthRatio < 0.3) {
+    return { correctness: 'wrong', similarity: 0 };
+  }
+
+  const similarity = this.calculateSimilarity(correct, user);
+
+  if (similarity >= 0.9) {
+    return { correctness: 'correct', similarity };
+  } else if (similarity >= 0.7) {
+    return { correctness: 'partial', similarity };
+  } else {
+    return { correctness: 'wrong', similarity };
+  }
+}
   /**
    * 标准化文本
    */

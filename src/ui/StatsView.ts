@@ -168,7 +168,15 @@ export class StatsView extends ItemView {
       text: '📄 Generate Full Report',
       cls: 'mod-cta'
     });
-    // reportBtn.addEventListener('click', () => this.generateAndShowReport());
+    reportBtn.addEventListener('click', () => this.generateAndShowReport());
+  
+  // 清除统计按钮
+const clearBtn = reportSection.createEl('button', {
+  text: '🗑️ Clear Statistics',
+  cls: 'mod-warning'
+});
+clearBtn.style.marginLeft = '10px';
+clearBtn.addEventListener('click', () => this.showClearStatsModal());
   }
 
   private renderTrends(container: HTMLElement) {
@@ -544,7 +552,168 @@ export class StatsView extends ItemView {
       new Notice('❌ 删除闪卡失败');
     }
   }
-
+  private showClearStatsModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-container';
+    modal.innerHTML = `
+      <div class="modal-bg"></div>
+      <div class="modal">
+        <div class="modal-title">Clear Statistics</div>
+        <div class="modal-content">
+          <p>Choose what statistics to clear:</p>
+          <div class="clear-options">
+            <button class="clear-option-btn" data-action="all">
+              🗑️ Clear All Statistics
+              <span class="option-desc">Reset all cards and review logs</span>
+            </button>
+            <button class="clear-option-btn" data-action="old">
+              📅 Clear Old Data (30+ days)
+              <span class="option-desc">Keep recent 30 days only</span>
+            </button>
+            <button class="clear-option-btn" data-action="deck">
+              📚 Clear Specific Deck
+              <span class="option-desc">Choose a deck to reset</span>
+            </button>
+          </div>
+        </div>
+        <div class="modal-button-container">
+          <button class="mod-cta cancel-btn">Cancel</button>
+        </div>
+      </div>
+    `;
+  
+    document.body.appendChild(modal);
+  
+    // 取消按钮
+    modal.querySelector('.cancel-btn')?.addEventListener('click', () => {
+      modal.remove();
+    });
+  
+    // 清除所有统计
+    modal.querySelector('[data-action="all"]')?.addEventListener('click', async () => {
+      if (confirm('⚠️ This will reset ALL statistics and card progress. Are you sure?')) {
+        await this.analytics.clearAllStats();
+        new Notice('✅ All statistics cleared');
+        modal.remove();
+        this.render();
+      }
+    });
+  
+    // 清除旧数据
+    modal.querySelector('[data-action="old"]')?.addEventListener('click', async () => {
+      if (confirm('Clear statistics older than 30 days?')) {
+        await this.analytics.clearStatsBeforeDate(30);
+        new Notice('✅ Old statistics cleared');
+        modal.remove();
+        this.render();
+      }
+    });
+  
+    // 清除特定卡组
+    modal.querySelector('[data-action="deck"]')?.addEventListener('click', () => {
+      modal.remove();
+      this.showDeckSelectionModal();
+    });
+  
+    // 点击背景关闭
+    modal.querySelector('.modal-bg')?.addEventListener('click', () => {
+      modal.remove();
+    });
+  }
+  
+  private showDeckSelectionModal() {
+    const deckStats = this.analytics.getDeckStats();
+    
+    if (deckStats.length === 0) {
+      new Notice('No decks available');
+      return;
+    }
+  
+    const modal = document.createElement('div');
+    modal.className = 'modal-container';
+    
+    let optionsHtml = '';
+    deckStats.forEach(deck => {
+      optionsHtml += `
+        <button class="clear-option-btn deck-option" data-deck="${deck.deckName}">
+          📚 ${deck.deckName}
+          <span class="option-desc">${deck.totalCards} cards</span>
+        </button>
+      `;
+    });
+  
+    modal.innerHTML = `
+      <div class="modal-bg"></div>
+      <div class="modal">
+        <div class="modal-title">Select Deck to Clear</div>
+        <div class="modal-content">
+          <div class="clear-options">
+            ${optionsHtml}
+          </div>
+        </div>
+        <div class="modal-button-container">
+          <button class="mod-cta cancel-btn">Cancel</button>
+        </div>
+      </div>
+    `;
+  
+    document.body.appendChild(modal);
+  
+    // 取消按钮
+    modal.querySelector('.cancel-btn')?.addEventListener('click', () => {
+      modal.remove();
+    });
+  
+    // 卡组选项
+    modal.querySelectorAll('.deck-option').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const deckName = (btn as HTMLElement).dataset.deck;
+        if (deckName && confirm(`Clear statistics for deck "${deckName}"?`)) {
+          await this.analytics.clearDeckStats(deckName);
+          new Notice(`✅ Statistics cleared for ${deckName}`);
+          modal.remove();
+          this.render();
+        }
+      });
+    });
+  
+    // 点击背景关闭
+    modal.querySelector('.modal-bg')?.addEventListener('click', () => {
+      modal.remove();
+    });
+    
+  }
+  private async generateAndShowReport() {
+    const report = this.analytics.generateReport(30);
+    
+    // 创建一个新的文件来保存报告
+    const fileName = `Learning Report ${new Date().toISOString().split('T')[0]}.md`;
+    
+    try {
+      // 检查文件是否已存在
+      let file = this.app.vault.getAbstractFileByPath(fileName);
+      
+      if (file instanceof TFile) {
+        // 文件存在，询问是否覆盖
+        if (!confirm(`Report "${fileName}" already exists. Overwrite?`)) {
+          return;
+        }
+        await this.app.vault.modify(file, report);
+      } else {
+        // 创建新文件
+        file = await this.app.vault.create(fileName, report);
+      }
+      
+      // 打开报告文件
+      const leaf = this.app.workspace.getLeaf(false);
+      await leaf.openFile(file as TFile);
+      
+      new Notice('📊 Report generated!');
+    } catch (error) {
+      console.error('Error generating report:', error);
+      new Notice('❌ Failed to generate report');
+    }
+  }
   private addStyles() {
     const styleEl = document.createElement('style');
     styleEl.textContent = `
@@ -981,6 +1150,84 @@ export class StatsView extends ItemView {
     font-size: 0.85em;
     color: var(--text-muted);
   }
+    .modal-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal {
+  position: relative;
+  background: var(--background-primary);
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.modal-title {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+.modal-content {
+  margin-bottom: 20px;
+}
+
+.clear-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.clear-option-btn {
+  padding: 15px;
+  background: var(--background-secondary);
+  border: 2px solid var(--background-modifier-border);
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.clear-option-btn:hover {
+  border-color: var(--interactive-accent);
+  background: var(--background-modifier-hover);
+}
+
+.option-desc {
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+.modal-button-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
 `;
 
 document.head.appendChild(styleEl);
