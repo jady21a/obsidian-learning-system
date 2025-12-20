@@ -284,19 +284,32 @@ private evaluateSingleAnswer(
   // 长度差异过大直接判错
   const lengthRatio = Math.min(user.length, correct.length) / 
                       Math.max(user.length, correct.length);
-  if (lengthRatio < 0.3) {
-    return { correctness: 'wrong', similarity: 0 };
-  }
+if (lengthRatio < 0.3 && user.length < 6) {
+  return { correctness: 'wrong', similarity: 0 };
+}
+
+
 
   const similarity = this.calculateSimilarity(correct, user);
-
+  const coverage = this.calculateTokenCoverage(correct, user);
+  
+  // 原有规则
   if (similarity >= 0.9) {
     return { correctness: 'correct', similarity };
-  } else if (similarity >= 0.7) {
-    return { correctness: 'partial', similarity };
-  } else {
-    return { correctness: 'wrong', similarity };
   }
+  
+  // 🆕 新增：关键词命中多，但句子结构差
+  if (similarity < 0.7 && coverage >= 0.6) {
+    return { correctness: 'partial', similarity };
+  }
+  
+  // 原有部分正确
+  if (similarity >= 0.7) {
+    return { correctness: 'partial', similarity };
+  }
+  
+  return { correctness: 'wrong', similarity };
+  
 }
   /**
    * 标准化文本
@@ -347,13 +360,34 @@ private evaluateSingleAnswer(
     
     return 1 - distance / maxLength;
   }
+/**
+ * 计算关键词覆盖率
+ * 用户答案中命中了多少标准答案的词
+ */
+private calculateTokenCoverage(
+  correct: string,
+  user: string
+): number {
+  const correctTokens = correct.split(' ').filter(t => t.length > 1);
+  const userTokens = new Set(user.split(' '));
+
+  if (correctTokens.length === 0) return 0;
+
+  let hit = 0;
+  for (const token of correctTokens) {
+    if (userTokens.has(token)) hit++;
+  }
+
+  return hit / correctTokens.length; // 0 ~ 1
+}
+
 
   /**
    * 根据相似度建议难度
    */
   suggestEase(similarity: number): ReviewEase {
-    if (similarity >= 0.9) return 'easy';
-    if (similarity >= 0.8) return 'good';
+    if (similarity >= 0.8) return 'easy';
+    if (similarity >= 0.7) return 'good';
     if (similarity >= 0.5) return 'hard';
     return 'again';
   }

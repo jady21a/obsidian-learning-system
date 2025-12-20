@@ -30,5 +30,85 @@
       "oldEase": 2.5,
       "newEase": 2.5
     }
+  },
+  {
+    "id": "log-1766157919643",
+    "flashcardId": "card-1766135199270-enmo0do3i",
+    "timestamp": 1766157919640,
+    "response": {
+      "userAnswer": "方法\n",
+      "timeSpent": 11.384,
+      "ease": "easy"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 4,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766157962738",
+    "flashcardId": "card-1766135199271-600cgmuo5",
+    "timestamp": 1766157962735,
+    "response": {
+      "userAnswer": "作者观点",
+      "timeSpent": 43.09,
+      "ease": "easy"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 4,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766157966817",
+    "flashcardId": "card-1766135199271-v37caompv",
+    "timestamp": 1766157966815,
+    "response": {
+      "userAnswer": "存疑",
+      "timeSpent": 4.076,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766160342793",
+    "flashcardId": "card-1766135199272-3ovvttidd",
+    "timestamp": 1766160342789,
+    "response": {
+      "userAnswer": "启发",
+      "timeSpent": 2375.971,
+      "ease": "easy"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 4,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766160355050",
+    "flashcardId": "card-1766135199272-e1b7cu8vv",
+    "timestamp": 1766160355048,
+    "response": {
+      "userAnswer": "重要概念",
+      "timeSpent": 12.253,
+      "ease": "easy"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 4,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
   }
 ]

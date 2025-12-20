@@ -70,23 +70,23 @@
     "deck": "9.备忘",
     "tags": [],
     "scheduling": {
-      "interval": 0,
+      "interval": 4,
       "ease": 2.5,
-      "due": 1766156170297,
+      "due": 1766503519640,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "review"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "lastReview": 0,
-      "difficulty": 0.3
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 11.384,
+      "lastReview": 1766157919640,
+      "difficulty": 0.19999999999999998
     },
     "metadata": {
       "createdAt": 1766135199270,
-      "updatedAt": 1766135199270
+      "updatedAt": 1766157919640
     }
   },
   {
@@ -100,23 +100,23 @@
     "deck": "9.备忘",
     "tags": [],
     "scheduling": {
-      "interval": 0,
+      "interval": 4,
       "ease": 2.5,
-      "due": 1766156170299,
+      "due": 1766503562735,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "review"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "lastReview": 0,
-      "difficulty": 0.3
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 43.09,
+      "lastReview": 1766157962735,
+      "difficulty": 0.19999999999999998
     },
     "metadata": {
       "createdAt": 1766135199271,
-      "updatedAt": 1766135199271
+      "updatedAt": 1766157962735
     }
   },
   {
@@ -130,23 +130,23 @@
     "deck": "9.备忘",
     "tags": [],
     "scheduling": {
-      "interval": 0,
+      "interval": 1,
       "ease": 2.5,
-      "due": 1766156170301,
+      "due": 1766244366815,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "learning"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "lastReview": 0,
-      "difficulty": 0.3
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 4.076,
+      "lastReview": 1766157966815,
+      "difficulty": 0.25
     },
     "metadata": {
       "createdAt": 1766135199271,
-      "updatedAt": 1766135199271
+      "updatedAt": 1766157966815
     }
   },
   {
@@ -160,23 +160,23 @@
     "deck": "9.备忘",
     "tags": [],
     "scheduling": {
-      "interval": 0,
+      "interval": 4,
       "ease": 2.5,
-      "due": 1766156170303,
+      "due": 1766505942789,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "review"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "lastReview": 0,
-      "difficulty": 0.3
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 2375.971,
+      "lastReview": 1766160342789,
+      "difficulty": 0.19999999999999998
     },
     "metadata": {
       "createdAt": 1766135199272,
-      "updatedAt": 1766135199272
+      "updatedAt": 1766160342789
     }
   },
   {
@@ -190,23 +190,23 @@
     "deck": "9.备忘",
     "tags": [],
     "scheduling": {
-      "interval": 0,
+      "interval": 4,
       "ease": 2.5,
-      "due": 1766156170306,
+      "due": 1766505955048,
       "lapses": 0,
-      "reps": 0,
-      "state": "new"
+      "reps": 1,
+      "state": "review"
     },
     "stats": {
-      "totalReviews": 0,
-      "correctCount": 0,
-      "averageTime": 0,
-      "lastReview": 0,
-      "difficulty": 0.3
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 12.253,
+      "lastReview": 1766160355048,
+      "difficulty": 0.19999999999999998
     },
     "metadata": {
       "createdAt": 1766135199272,
-      "updatedAt": 1766135199272
+      "updatedAt": 1766160355048
     }
   }
 ]
