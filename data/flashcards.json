@@ -208,5 +208,45 @@
       "createdAt": 1766135199272,
       "updatedAt": 1766160355048
     }
+  },
+  {
+    "id": "card-1766286488905-oqg55avng",
+    "type": "cloze",
+    "sourceContentId": "1766286488900-9enhk0c6c",
+    "sourceFile": "1.Rough/test.md",
+    "anchorLink": "[[test#^extract-1766286488900-5ual6u]]",
+    "front": "“[...]，进步没有限制。",
+    "back": [
+      "在通用物理规律允许的情况下"
+    ],
+    "cloze": {
+      "original": "“在通用物理规律允许的情况下，进步没有限制。",
+      "deletions": [
+        {
+          "index": 1,
+          "answer": "在通用物理规律允许的情况下"
+        }
+      ]
+    },
+    "deck": "1.Rough",
+    "tags": [],
+    "scheduling": {
+      "interval": 0,
+      "ease": 2.5,
+      "due": 1766286488905,
+      "lapses": 0,
+      "reps": 0,
+      "state": "new"
+    },
+    "stats": {
+      "totalReviews": 0,
+      "correctCount": 0,
+      "averageTime": 0,
+      "difficulty": 0.5
+    },
+    "metadata": {
+      "createdAt": 1766286488905,
+      "updatedAt": 1766286488905
+    }
   }
 ]
