@@ -208,33 +208,5 @@
     "flashcardIds": [
       "card-1766135199272-e1b7cu8vv"
     ]
-  },
-  {
-    "id": "1766286488900-9enhk0c6c",
-    "type": "cloze",
-    "content": "在通用物理规律允许的情况下",
-    "fullContext": "“在通用物理规律允许的情况下，进步没有限制。",
-    "source": {
-      "file": "1.Rough/test.md",
-      "position": {
-        "start": 308,
-        "end": 321,
-        "line": 15
-      },
-      "anchorLink": "[[test#^extract-1766286488900-5ual6u]]"
-    },
-    "extractRule": {
-      "ruleId": "cloze-manual",
-      "ruleName": "Manual Cloze Card",
-      "extractedBy": "manual"
-    },
-    "metadata": {
-      "createdAt": 1766286488900,
-      "updatedAt": 1766286488900,
-      "tags": []
-    },
-    "flashcardIds": [
-      "card-1766286488905-oqg55avng"
-    ]
   }
 ]
