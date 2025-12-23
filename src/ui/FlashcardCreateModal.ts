@@ -1,3 +1,4 @@
+// flashcardCreatModal.ts
 import { App, Modal, Notice, Setting } from 'obsidian';
 import type LearningSystemPlugin from '../main';
 import { ContentUnit } from '../core/DataManager';

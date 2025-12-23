@@ -1,3 +1,4 @@
+// annotationModal.ts
 import { App, Modal, Notice, Setting } from 'obsidian';
 import type LearningSystemPlugin from '../main';
 import { Annotation } from '../core/AnnotationManager';

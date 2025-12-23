@@ -1,3 +1,4 @@
+// data manager.ts
 import { App, TFile } from 'obsidian';
 import type LearningSystemPlugin from '../main';
 

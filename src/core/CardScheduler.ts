@@ -1,3 +1,4 @@
+// card Scheduler.ts
 import { Flashcard, ReviewLog } from './FlashcardManager';
 
 export type ReviewEase = 'again' | 'hard' | 'good' | 'easy';

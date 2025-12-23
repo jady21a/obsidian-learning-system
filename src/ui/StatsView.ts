@@ -1,3 +1,4 @@
+// stasView.ts
 import { ItemView, WorkspaceLeaf, TFile, Notice } from 'obsidian';
 import type LearningSystemPlugin from '../main';
 import { AnalyticsEngine } from '../core/AnalyticsEngine';

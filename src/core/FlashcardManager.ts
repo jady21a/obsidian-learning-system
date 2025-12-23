@@ -1,3 +1,4 @@
+// flashcard manager.ts
 import { App } from 'obsidian';
 import { DataManager, ContentUnit } from './DataManager'; 
 import type LearningSystemPlugin from '../main';

@@ -1,3 +1,4 @@
+// quick flashcard  creator
 import { Notice } from 'obsidian';
 import type LearningSystemPlugin from '../main';
 import { ContentUnit } from '../core/DataManager';

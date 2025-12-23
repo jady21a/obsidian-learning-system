@@ -1,3 +1,4 @@
+// SettingsTab.ts
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import type LearningSystemPlugin from '../main';
 
