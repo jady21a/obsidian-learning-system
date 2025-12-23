@@ -130,23 +130,23 @@
     "deck": "9.备忘",
     "tags": [],
     "scheduling": {
-      "interval": 1,
+      "interval": 3,
       "ease": 2.5,
-      "due": 1766244366815,
+      "due": 1766578307384,
       "lapses": 0,
-      "reps": 1,
-      "state": "learning"
+      "reps": 2,
+      "state": "review"
     },
     "stats": {
-      "totalReviews": 1,
-      "correctCount": 1,
-      "averageTime": 4.076,
-      "lastReview": 1766157966815,
-      "difficulty": 0.25
+      "totalReviews": 2,
+      "correctCount": 2,
+      "averageTime": 8.035,
+      "lastReview": 1766319107384,
+      "difficulty": 0.2
     },
     "metadata": {
       "createdAt": 1766135199271,
-      "updatedAt": 1766157966815
+      "updatedAt": 1766319107384
     }
   },
   {

@@ -110,5 +110,21 @@
       "oldEase": 2.5,
       "newEase": 2.5
     }
+  },
+  {
+    "id": "log-1766319107386",
+    "flashcardId": "card-1766135199271-v37caompv",
+    "timestamp": 1766319107384,
+    "response": {
+      "userAnswer": "存疑\n",
+      "timeSpent": 11.994,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 1,
+      "newInterval": 3,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
   }
 ]
