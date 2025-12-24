@@ -227,16 +227,21 @@ export default class LearningSystemPlugin extends Plugin {
     const { workspace } = this.app;
     const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW);
     
+    // 检查当前激活的页面是否是主界面模式
+    const activeLeaf = workspace.activeLeaf;
+    const isMainOverviewActive = activeLeaf && 
+      activeLeaf.view.getViewType() === VIEW_TYPE_MAIN_OVERVIEW;
     
-    if (existingLeaves.length > 0) {
-      // 方法1：逐个关闭
+    if (existingLeaves.length > 0 && isMainOverviewActive) {
+      // 如果主界面模式正在显示且是当前激活页面，则关闭它
       existingLeaves.forEach(leaf => {
         leaf.detach();
       });
-      
-      // 或者方法2：批量关闭
-      // workspace.detachLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW);
+    } else if (existingLeaves.length > 0 && !isMainOverviewActive) {
+      // 如果主界面模式存在但不是当前激活页面，则激活它
+      workspace.revealLeaf(existingLeaves[0]);
     } else {
+      // 如果主界面模式不存在，则创建并显示
       const leaf = workspace.getLeaf('tab');
       await leaf.setViewState({
         type: VIEW_TYPE_MAIN_OVERVIEW,

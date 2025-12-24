@@ -1,4 +1,4 @@
-// extraction engine
+// extraction engine with deduplication
 import { App, TFile, Notice, Editor, Menu } from 'obsidian';
 import { DataManager, ContentUnit } from './DataManager';
 import { FlashcardManager } from './FlashcardManager';
@@ -78,6 +78,13 @@ export class ExtractionEngine {
           break;
       }
 
+      // 检查是否重复
+      const existingUnit = await this.findDuplicateUnit(unit);
+      if (existingUnit) {
+        new Notice(`⚠️ This content was already extracted`);
+        return;
+      }
+
       // 1. 先保存 ContentUnit
       await this.dataManager.saveContentUnits([unit]);
       
@@ -112,6 +119,33 @@ export class ExtractionEngine {
       console.error('Error extracting selection:', error);
       new Notice(`❌ Error: ${error.message}`);
     }
+  }
+
+  /**
+   * 🆕 查找重复的 ContentUnit
+   * 根据文件路径和位置判断是否已存在
+   */
+  private async findDuplicateUnit(unit: ContentUnit): Promise<ContentUnit | null> {
+    const allUnits = await this.dataManager.getAllContentUnits();
+    
+    // 检查是否存在相同位置的 unit
+    const duplicate = allUnits.find(existing => 
+      existing.source.file === unit.source.file &&
+      existing.source.position.start === unit.source.position.start &&
+      existing.source.position.end === unit.source.position.end &&
+      existing.type === unit.type
+    );
+    
+    return duplicate || null;
+  }
+
+  /**
+   * 🆕 检查内容是否重复（基于内容相似度）
+   */
+  private isContentDuplicate(content1: string, content2: string): boolean {
+    const normalized1 = content1.trim().toLowerCase();
+    const normalized2 = content2.trim().toLowerCase();
+    return normalized1 === normalized2;
   }
 
   /**
@@ -328,24 +362,39 @@ export class ExtractionEngine {
   }
 
   /**
-   * 🔧 修改: 先保存 units，再创建闪卡
+   * 🔧 修改: 先保存 units，再创建闪卡，同时过滤重复项
    */
   private async extractContent(file: TFile, content: string): Promise<ContentUnit[]> {
     const units: ContentUnit[] = [];
     
     // 1️⃣ 先提取所有 units（不创建闪卡）
     const qaUnits = this.extractQACards(file, content);
-    units.push(...qaUnits);
-    
     const clozeUnits = this.extractClozeCards(file, content);
-    units.push(...clozeUnits);
     
-    // 2️⃣ 先保存所有 units 到 DataManager
+    const allExtractedUnits = [...qaUnits, ...clozeUnits];
+    
+    // 2️⃣ 🆕 过滤重复的 units
+    const existingUnits = await this.dataManager.getAllContentUnits();
+    const newUnits = await this.filterDuplicateUnits(allExtractedUnits, existingUnits);
+    
+    if (newUnits.length === 0) {
+      new Notice(` ${file.name}: 没有新内容需要提取`);
+      return [];
+    }
+    
+    if (newUnits.length < allExtractedUnits.length) {
+      const skipped = allExtractedUnits.length - newUnits.length;
+      new Notice(` ${file.name}: 跳过 ${skipped} 个重复项`);
+    }
+    
+    units.push(...newUnits);
+    
+    // 3️⃣ 先保存所有新 units 到 DataManager
     if (units.length > 0) {
       await this.dataManager.saveContentUnits(units);
     }
     
-    // 3️⃣ 再为每个 unit 创建闪卡
+    // 4️⃣ 再为每个 unit 创建闪卡
     for (const unit of units) {
       try {
         const cardType = unit.type === 'QA' ? 'qa' : 'cloze';
@@ -358,6 +407,49 @@ export class ExtractionEngine {
     }
     
     return units;
+  }
+
+  /**
+   * 🆕 过滤重复的 units
+   * 根据文件路径、位置和内容判断是否重复
+   */
+  private async filterDuplicateUnits(
+    newUnits: ContentUnit[], 
+    existingUnits: ContentUnit[]
+  ): Promise<ContentUnit[]> {
+    const filtered: ContentUnit[] = [];
+    
+    for (const newUnit of newUnits) {
+      const isDuplicate = existingUnits.some(existing => {
+        // 方式1: 相同文件 + 相同位置 + 相同类型
+        const sameLocation = 
+          existing.source.file === newUnit.source.file &&
+          existing.source.position.start === newUnit.source.position.start &&
+          existing.source.position.end === newUnit.source.position.end &&
+          existing.type === newUnit.type;
+        
+        // 方式2: 相同文件 + 相同内容 + 相同类型（防止位置偏移）
+        const sameContent = 
+          existing.source.file === newUnit.source.file &&
+          existing.type === newUnit.type &&
+          this.isContentDuplicate(existing.content, newUnit.content) &&
+          this.isContentDuplicate(existing.fullContext || '', newUnit.fullContext || '');
+        
+        // 方式3: 对于 QA 类型，额外检查答案是否相同
+        const sameQA = existing.type === 'QA' && newUnit.type === 'QA' &&
+          existing.source.file === newUnit.source.file &&
+          this.isContentDuplicate(existing.content, newUnit.content) &&
+          this.isContentDuplicate(existing.answer || '', newUnit.answer || '');
+        
+        return sameLocation || sameContent || sameQA;
+      });
+      
+      if (!isDuplicate) {
+        filtered.push(newUnit);
+      }
+    }
+    
+    return filtered;
   }
 
   /**
