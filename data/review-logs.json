@@ -320,5 +320,263 @@
       "oldEase": 2.5,
       "newEase": 2.5
     }
+  },
+  {
+    "id": "log-1766565727925",
+    "flashcardId": "card-1766478314819-6k1ogloq8",
+    "timestamp": 1766565727921,
+    "response": {
+      "userAnswer": "familie have mann frau eltern kind sohn tochter bruder schwester onkel tente",
+      "timeSpent": 364.44,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 1,
+      "newInterval": 3,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766565755119",
+    "flashcardId": "card-1766478314820-t9e2lpkcj",
+    "timestamp": 1766565755117,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 27.189,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 1,
+      "newInterval": 3,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766565927973",
+    "flashcardId": "card-1766565922638-66m83exgv",
+    "timestamp": 1766565927971,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 2.777,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766566184840",
+    "flashcardId": "card-1766566176917-5kvav8bpf",
+    "timestamp": 1766566184837,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 1.953,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766566185856",
+    "flashcardId": "card-1766566180599-a942vgobg",
+    "timestamp": 1766566185854,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 1.012,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766566482217",
+    "flashcardId": "card-1766566476164-fegltlq0f",
+    "timestamp": 1766566482215,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 3.192,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766566536279",
+    "flashcardId": "card-1766566519747-3e8t5ne4o",
+    "timestamp": 1766566536276,
+    "response": {
+      "userAnswer": [
+        ""
+      ],
+      "timeSpent": 3.18,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766566559259",
+    "flashcardId": "card-1766566554780-zt7px699n",
+    "timestamp": 1766566559257,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 2.809,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766566708394",
+    "flashcardId": "card-1766566703896-0r5vohuu0",
+    "timestamp": 1766566708391,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 2.754,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766566887580",
+    "flashcardId": "card-1766566772314-hj00gbkts",
+    "timestamp": 1766566887577,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 1.964,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766566888139",
+    "flashcardId": "card-1766566780545-sf1fp2t0m",
+    "timestamp": 1766566888136,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 0.555,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766566960324",
+    "flashcardId": "card-1766566950710-57ojwjhgv",
+    "timestamp": 1766566960321,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 1.749,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766566962371",
+    "flashcardId": "card-1766566955426-k25wfypj0",
+    "timestamp": 1766566962366,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 2.04,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766567030935",
+    "flashcardId": "card-1766566989343-8pnmnx01i",
+    "timestamp": 1766567030928,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 37.184,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766567612623",
+    "flashcardId": "card-1766567244758-bpu4uiv9z",
+    "timestamp": 1766567612620,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 20.097,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766567612625",
+    "flashcardId": "card-1766567244758-bpu4uiv9z",
+    "timestamp": 1766567612622,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 6.504,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 1,
+      "newInterval": 3,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
   }
 ]

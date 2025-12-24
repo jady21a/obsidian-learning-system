@@ -229,25 +229,28 @@ private async resetCardStats(cardId: string) {
   }
 }
 
-  private renderNoDueCards(container: Element) {
-    const emptyState = container.createDiv({ cls: 'empty-state' });
-    emptyState.createEl('h2', { text: '🎉 All Done!' });
-    emptyState.createEl('p', { text: 'No cards due for review right now.' });
+private renderNoDueCards(container: Element) {
+  const emptyState = container.createDiv({ cls: 'empty-state' });
+  emptyState.createEl('h2', { text: '🎉 All Done!' });
+  emptyState.createEl('p', { text: 'No cards due for review right now.' });
 
-    const stats = this.plugin.flashcardManager.getStats();
-    const statsDiv = emptyState.createDiv({ cls: 'stats-summary' });
-    statsDiv.createEl('p', { text: `Total cards: ${stats.total}` });
-    statsDiv.createEl('p', { text: `New cards: ${stats.new}` });
-    statsDiv.createEl('p', { text: `Reviewed today: ${stats.reviewedToday}` });
+  const stats = this.plugin.flashcardManager.getStats();
+  const statsDiv = emptyState.createDiv({ cls: 'stats-summary' });
+  statsDiv.createEl('p', { text: `Total cards: ${stats.total}` });
+  statsDiv.createEl('p', { text: `New cards: ${stats.new}` });
+  statsDiv.createEl('p', { text: `Reviewed today: ${stats.reviewedToday}` });
 
-    const closeBtn = emptyState.createEl('button', {
-      text: 'Close Review',
-      cls: 'mod-cta'
-    });
-    closeBtn.addEventListener('click', () => {
-      this.app.workspace.detachLeavesOfType(VIEW_TYPE_REVIEW);
-    });
-  }
+  const closeBtn = emptyState.createEl('button', {
+    text: 'Close Review',
+    cls: 'mod-cta'
+  });
+  
+  // 尝试方案1: 使用 onclick 而不是 addEventListener
+  closeBtn.onclick = () => {
+    this.leaf?.detach();
+  };
+
+}
 
   private renderProgress(container: Element) {
     const progressBar = container.createDiv({ cls: 'progress-bar' });

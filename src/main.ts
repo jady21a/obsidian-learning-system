@@ -227,20 +227,16 @@ export default class LearningSystemPlugin extends Plugin {
     const { workspace } = this.app;
     const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW);
     
-    console.log('Found main overview leaves:', existingLeaves.length);  // 调试用
     
     if (existingLeaves.length > 0) {
-      console.log('Closing main overview...');
       // 方法1：逐个关闭
       existingLeaves.forEach(leaf => {
-        console.log('Detaching leaf:', leaf);
         leaf.detach();
       });
       
       // 或者方法2：批量关闭
       // workspace.detachLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW);
     } else {
-      console.log('Opening main overview...');
       const leaf = workspace.getLeaf('tab');
       await leaf.setViewState({
         type: VIEW_TYPE_MAIN_OVERVIEW,

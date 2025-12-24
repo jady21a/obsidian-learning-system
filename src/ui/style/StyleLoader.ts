@@ -939,7 +939,7 @@ export class StyleLoader {
     padding: 40px 20px;
     color: var(--text-muted);
     font-size: 14px;
-    pointer-events: none;
+    // pointer-events: none;
     position: relative;
     z-index: 1;
   }
