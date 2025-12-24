@@ -10,23 +10,23 @@
     "deck": "9.备忘",
     "tags": [],
     "scheduling": {
-      "interval": 4,
-      "ease": 2.5,
-      "due": 1766501796249,
+      "interval": 10,
+      "ease": 2.6,
+      "due": 1767403674221,
       "lapses": 0,
-      "reps": 1,
+      "reps": 2,
       "state": "review"
     },
     "stats": {
-      "totalReviews": 1,
-      "correctCount": 1,
-      "averageTime": 9.876,
-      "lastReview": 1766156196249,
-      "difficulty": 0.19999999999999998
+      "totalReviews": 2,
+      "correctCount": 2,
+      "averageTime": 9.091,
+      "lastReview": 1766539674220,
+      "difficulty": 0.14999999999999997
     },
     "metadata": {
       "createdAt": 1766135199266,
-      "updatedAt": 1766156196249
+      "updatedAt": 1766539674220
     }
   },
   {
@@ -40,23 +40,23 @@
     "deck": "9.备忘",
     "tags": [],
     "scheduling": {
-      "interval": 4,
-      "ease": 2.5,
-      "due": 1766501822014,
+      "interval": 10,
+      "ease": 2.6,
+      "due": 1767403682187,
       "lapses": 0,
-      "reps": 1,
+      "reps": 2,
       "state": "review"
     },
     "stats": {
-      "totalReviews": 1,
-      "correctCount": 1,
-      "averageTime": 25.761,
-      "lastReview": 1766156222014,
-      "difficulty": 0.19999999999999998
+      "totalReviews": 2,
+      "correctCount": 2,
+      "averageTime": 16.8615,
+      "lastReview": 1766539682187,
+      "difficulty": 0.14999999999999997
     },
     "metadata": {
       "createdAt": 1766135199269,
-      "updatedAt": 1766156222014
+      "updatedAt": 1766539682187
     }
   },
   {
@@ -70,23 +70,23 @@
     "deck": "9.备忘",
     "tags": [],
     "scheduling": {
-      "interval": 4,
-      "ease": 2.5,
-      "due": 1766503519640,
+      "interval": 10,
+      "ease": 2.6,
+      "due": 1767403689604,
       "lapses": 0,
-      "reps": 1,
+      "reps": 2,
       "state": "review"
     },
     "stats": {
-      "totalReviews": 1,
-      "correctCount": 1,
-      "averageTime": 11.384,
-      "lastReview": 1766157919640,
-      "difficulty": 0.19999999999999998
+      "totalReviews": 2,
+      "correctCount": 2,
+      "averageTime": 9.396,
+      "lastReview": 1766539689604,
+      "difficulty": 0.14999999999999997
     },
     "metadata": {
       "createdAt": 1766135199270,
-      "updatedAt": 1766157919640
+      "updatedAt": 1766539689604
     }
   },
   {
@@ -100,23 +100,23 @@
     "deck": "9.备忘",
     "tags": [],
     "scheduling": {
-      "interval": 4,
-      "ease": 2.5,
-      "due": 1766503562735,
+      "interval": 10,
+      "ease": 2.6,
+      "due": 1767403697884,
       "lapses": 0,
-      "reps": 1,
+      "reps": 2,
       "state": "review"
     },
     "stats": {
-      "totalReviews": 1,
-      "correctCount": 1,
-      "averageTime": 43.09,
-      "lastReview": 1766157962735,
-      "difficulty": 0.19999999999999998
+      "totalReviews": 2,
+      "correctCount": 2,
+      "averageTime": 25.6815,
+      "lastReview": 1766539697884,
+      "difficulty": 0.14999999999999997
     },
     "metadata": {
       "createdAt": 1766135199271,
-      "updatedAt": 1766157962735
+      "updatedAt": 1766539697884
     }
   },
   {
@@ -160,23 +160,23 @@
     "deck": "9.备忘",
     "tags": [],
     "scheduling": {
-      "interval": 4,
-      "ease": 2.5,
-      "due": 1766505942789,
+      "interval": 10,
+      "ease": 2.6,
+      "due": 1767403717676,
       "lapses": 0,
-      "reps": 1,
+      "reps": 2,
       "state": "review"
     },
     "stats": {
-      "totalReviews": 1,
-      "correctCount": 1,
-      "averageTime": 2375.971,
-      "lastReview": 1766160342789,
-      "difficulty": 0.19999999999999998
+      "totalReviews": 2,
+      "correctCount": 2,
+      "averageTime": 1197.879,
+      "lastReview": 1766539717676,
+      "difficulty": 0.14999999999999997
     },
     "metadata": {
       "createdAt": 1766135199272,
-      "updatedAt": 1766160342789
+      "updatedAt": 1766539717676
     }
   },
   {
@@ -190,23 +190,154 @@
     "deck": "9.备忘",
     "tags": [],
     "scheduling": {
-      "interval": 4,
+      "interval": 4.8,
+      "ease": 2.35,
+      "due": 1766954466272,
+      "lapses": 0,
+      "reps": 2,
+      "state": "review"
+    },
+    "stats": {
+      "totalReviews": 2,
+      "correctCount": 1.5,
+      "averageTime": 20.42,
+      "lastReview": 1766539746272,
+      "difficulty": 0.25
+    },
+    "metadata": {
+      "createdAt": 1766135199272,
+      "updatedAt": 1766539746272
+    }
+  },
+  {
+    "id": "card-1766478314819-6k1ogloq8",
+    "type": "qa",
+    "sourceContentId": "1766478314815-mpihsfjhi",
+    "sourceFile": "3.learn/1.language/flashcard/Deutsch recite.md",
+    "anchorLink": "[[Deutsch recite#^extract-1766478314815-xyb4ro]]",
+    "front": "家里有男女父母和小孩，儿子女儿兄弟姐妹，叔叔和阿姨",
+    "back": "familie have mann frau Eltern kind sohn tochter bruder schwester onkel tante",
+    "deck": "flashcard",
+    "tags": [],
+    "scheduling": {
+      "interval": 1,
       "ease": 2.5,
-      "due": 1766505955048,
+      "due": 1766564725301,
       "lapses": 0,
       "reps": 1,
-      "state": "review"
+      "state": "learning"
     },
     "stats": {
       "totalReviews": 1,
       "correctCount": 1,
-      "averageTime": 12.253,
-      "lastReview": 1766160355048,
-      "difficulty": 0.19999999999999998
+      "averageTime": 3.782,
+      "difficulty": 0.45,
+      "lastReview": 1766478325301
     },
     "metadata": {
-      "createdAt": 1766135199272,
-      "updatedAt": 1766160355048
+      "createdAt": 1766478314819,
+      "updatedAt": 1766478325301
+    }
+  },
+  {
+    "id": "card-1766478314820-t9e2lpkcj",
+    "type": "qa",
+    "sourceContentId": "1766478314815-2qzlqx54a",
+    "sourceFile": "3.learn/1.language/flashcard/Deutsch recite.md",
+    "anchorLink": "[[Deutsch recite#^extract-1766478314815-ivey76]]",
+    "front": "still too young for all,but from many and his",
+    "back": "noch zu jung für all,aber von viele und sein",
+    "deck": "flashcard",
+    "tags": [],
+    "scheduling": {
+      "interval": 1,
+      "ease": 2.5,
+      "due": 1766564728118,
+      "lapses": 0,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 2.812,
+      "difficulty": 0.45,
+      "lastReview": 1766478328118
+    },
+    "metadata": {
+      "createdAt": 1766478314821,
+      "updatedAt": 1766478328118
+    }
+  },
+  {
+    "id": "card-1766478314822-fjiuzg3sk",
+    "type": "cloze",
+    "sourceContentId": "1766478314816-ug381n0wf",
+    "sourceFile": "3.learn/1.language/flashcard/Deutsch recite.md",
+    "anchorLink": "[[Deutsch recite#^extract-1766478314816-u4i35k]]",
+    "front": "| first       |     | ==[...]==  |     |",
+    "back": [
+      "erste"
+    ],
+    "cloze": {
+      "original": "| first       |     | ==erste==  |     |",
+      "deletions": [
+        {
+          "index": 24,
+          "answer": "erste"
+        }
+      ]
+    },
+    "deck": "flashcard",
+    "tags": [],
+    "scheduling": {
+      "interval": 1,
+      "ease": 2.5,
+      "due": 1766584597708,
+      "lapses": 0,
+      "reps": 1,
+      "state": "learning"
+    },
+    "stats": {
+      "totalReviews": 1,
+      "correctCount": 1,
+      "averageTime": 342.577,
+      "difficulty": 0.45,
+      "lastReview": 1766498197708
+    },
+    "metadata": {
+      "createdAt": 1766478314822,
+      "updatedAt": 1766498197708
+    }
+  },
+  {
+    "id": "card-1766478395422-o5p9fyf3f",
+    "type": "qa",
+    "sourceContentId": "1766478395406-tosvgatmr",
+    "sourceFile": "3.learn/1.language/flashcard/Deutsch recite.md",
+    "anchorLink": "[[Deutsch recite#^extract-1766478395406-txk7ld]]",
+    "front": "家里有男女父母和小孩，儿子女儿兄弟姐妹，叔叔和阿姨",
+    "back": "familie have mann frau Eltern kind sohn tochter bruder schwester onkel tante",
+    "deck": "flashcard",
+    "tags": [],
+    "scheduling": {
+      "interval": 3,
+      "ease": 2.5,
+      "due": 1766805735366,
+      "lapses": 0,
+      "reps": 3,
+      "state": "review"
+    },
+    "stats": {
+      "totalReviews": 3,
+      "correctCount": 2,
+      "averageTime": 143.72466666666665,
+      "difficulty": 0.55,
+      "lastReview": 1766546535366
+    },
+    "metadata": {
+      "createdAt": 1766478395422,
+      "updatedAt": 1766546535366
     }
   }
 ]

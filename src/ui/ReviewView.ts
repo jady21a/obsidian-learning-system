@@ -3,7 +3,7 @@ import { ItemView, WorkspaceLeaf, TFile, Notice } from 'obsidian';
 import type LearningSystemPlugin from '../main';
 import { Flashcard } from '../core/FlashcardManager';
 import { CardScheduler, ReviewEase } from '../core/CardScheduler';
-import { FlashcardEditModal } from './SidebarOverviewView';
+import { FlashcardEditModal } from './modals/FlashcardEditModal';
 
 export const VIEW_TYPE_REVIEW = 'learning-system-review';
 
@@ -245,7 +245,7 @@ private async resetCardStats(cardId: string) {
       cls: 'mod-cta'
     });
     closeBtn.addEventListener('click', () => {
-      this.leaf.detach();
+      this.app.workspace.detachLeavesOfType(VIEW_TYPE_REVIEW);
     });
   }
 

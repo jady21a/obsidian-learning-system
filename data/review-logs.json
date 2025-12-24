@@ -126,5 +126,199 @@
       "oldEase": 2.5,
       "newEase": 2.5
     }
+  },
+  {
+    "id": "log-1766478325303",
+    "flashcardId": "card-1766478314819-6k1ogloq8",
+    "timestamp": 1766478325301,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 3.782,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766478328120",
+    "flashcardId": "card-1766478314820-t9e2lpkcj",
+    "timestamp": 1766478328118,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 2.812,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766498197731",
+    "flashcardId": "card-1766478314822-fjiuzg3sk",
+    "timestamp": 1766498197708,
+    "response": {
+      "userAnswer": [
+        ""
+      ],
+      "timeSpent": 342.577,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 1,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766498294151",
+    "flashcardId": "card-1766478395422-o5p9fyf3f",
+    "timestamp": 1766498294125,
+    "response": {
+      "userAnswer": "",
+      "timeSpent": 96.392,
+      "ease": "hard"
+    },
+    "schedulingChange": {
+      "oldInterval": 0,
+      "newInterval": 10,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766539665911",
+    "flashcardId": "card-1766478395422-o5p9fyf3f",
+    "timestamp": 1766539665906,
+    "response": {
+      "userAnswer": "familie mann frau kind sohn tochter bruder schewester onkel tunte",
+      "timeSpent": 230.436,
+      "ease": "hard"
+    },
+    "schedulingChange": {
+      "oldInterval": 10,
+      "newInterval": 10,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
+  },
+  {
+    "id": "log-1766539674224",
+    "flashcardId": "card-1766135199266-g8w7096t8",
+    "timestamp": 1766539674220,
+    "response": {
+      "userAnswer": "定义",
+      "timeSpent": 8.306,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 4,
+      "newInterval": 10,
+      "oldEase": 2.5,
+      "newEase": 2.6
+    }
+  },
+  {
+    "id": "log-1766539682193",
+    "flashcardId": "card-1766135199269-tavcom483",
+    "timestamp": 1766539682187,
+    "response": {
+      "userAnswer": "不太懂",
+      "timeSpent": 7.962,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 4,
+      "newInterval": 10,
+      "oldEase": 2.5,
+      "newEase": 2.6
+    }
+  },
+  {
+    "id": "log-1766539689609",
+    "flashcardId": "card-1766135199270-enmo0do3i",
+    "timestamp": 1766539689604,
+    "response": {
+      "userAnswer": "方法",
+      "timeSpent": 7.408,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 4,
+      "newInterval": 10,
+      "oldEase": 2.5,
+      "newEase": 2.6
+    }
+  },
+  {
+    "id": "log-1766539697887",
+    "flashcardId": "card-1766135199271-600cgmuo5",
+    "timestamp": 1766539697884,
+    "response": {
+      "userAnswer": "作者观点",
+      "timeSpent": 8.273,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 4,
+      "newInterval": 10,
+      "oldEase": 2.5,
+      "newEase": 2.6
+    }
+  },
+  {
+    "id": "log-1766539717682",
+    "flashcardId": "card-1766135199272-3ovvttidd",
+    "timestamp": 1766539717676,
+    "response": {
+      "userAnswer": "灵感",
+      "timeSpent": 19.787,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 4,
+      "newInterval": 10,
+      "oldEase": 2.5,
+      "newEase": 2.6
+    }
+  },
+  {
+    "id": "log-1766539746276",
+    "flashcardId": "card-1766135199272-e1b7cu8vv",
+    "timestamp": 1766539746272,
+    "response": {
+      "userAnswer": "永久笔记",
+      "timeSpent": 28.587,
+      "ease": "hard"
+    },
+    "schedulingChange": {
+      "oldInterval": 4,
+      "newInterval": 4.8,
+      "oldEase": 2.5,
+      "newEase": 2.35
+    }
+  },
+  {
+    "id": "log-1766546535374",
+    "flashcardId": "card-1766478395422-o5p9fyf3f",
+    "timestamp": 1766546535366,
+    "response": {
+      "userAnswer": "familie have mann frau eltern kind ,sohn tochter bruder schewester onkel tante",
+      "timeSpent": 104.346,
+      "ease": "good"
+    },
+    "schedulingChange": {
+      "oldInterval": 10,
+      "newInterval": 3,
+      "oldEase": 2.5,
+      "newEase": 2.5
+    }
   }
 ]

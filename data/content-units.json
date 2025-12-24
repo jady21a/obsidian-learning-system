@@ -208,5 +208,66 @@
     "flashcardIds": [
       "card-1766135199272-e1b7cu8vv"
     ]
+  },
+  {
+    "id": "1766478314815-mpihsfjhi",
+    "type": "QA",
+    "content": "家里有男女父母和小孩，儿子女儿兄弟姐妹，叔叔和阿姨",
+    "answer": "familie have mann frau Eltern kind sohn tochter bruder schwester onkel tante",
+    "fullContext": "家里有男女父母和小孩，儿子女儿兄弟姐妹，叔叔和阿姨::familie have mann frau Eltern kind sohn tochter bruder schwester onkel tante",
+    "source": {
+      "file": "3.learn/1.language/flashcard/Deutsch recite.md",
+      "position": {
+        "start": 9,
+        "end": 112,
+        "line": 2
+      },
+      "heading": "## 连词成句",
+      "anchorLink": "[[Deutsch recite#^extract-1766478314815-xyb4ro]]"
+    },
+    "extractRule": {
+      "ruleId": "QA",
+      "ruleName": "QA Card",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1766478314815,
+      "updatedAt": 1766498196220,
+      "tags": []
+    },
+    "flashcardIds": [
+      "card-1766478314819-6k1ogloq8"
+    ],
+    "annotationId": "ann-1766498196215-ebrj7exkl"
+  },
+  {
+    "id": "1766478314815-2qzlqx54a",
+    "type": "QA",
+    "content": "still too young for all,but from many and his",
+    "answer": "noch zu jung für all,aber von viele und sein",
+    "fullContext": "still too young for all,but from many and his::noch zu jung für all,aber von viele und sein",
+    "source": {
+      "file": "3.learn/1.language/flashcard/Deutsch recite.md",
+      "position": {
+        "start": 143,
+        "end": 234,
+        "line": 6
+      },
+      "heading": "## 连词成句",
+      "anchorLink": "[[Deutsch recite#^extract-1766478314815-ivey76]]"
+    },
+    "extractRule": {
+      "ruleId": "QA",
+      "ruleName": "QA Card",
+      "extractedBy": "auto"
+    },
+    "metadata": {
+      "createdAt": 1766478314815,
+      "updatedAt": 1766478314815,
+      "tags": []
+    },
+    "flashcardIds": [
+      "card-1766478314820-t9e2lpkcj"
+    ]
   }
 ]

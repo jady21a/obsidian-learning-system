@@ -438,5 +438,15 @@
       "createdAt": 1766023225484,
       "updatedAt": 1766023235276
     }
+  },
+  {
+    "id": "ann-1766498196215-ebrj7exkl",
+    "targetType": "content",
+    "targetId": "1766478314815-mpihsfjhi",
+    "content": "真的",
+    "metadata": {
+      "createdAt": 1766498196215,
+      "updatedAt": 1766498198417
+    }
   }
 ]

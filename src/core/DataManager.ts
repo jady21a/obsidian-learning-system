@@ -38,6 +38,8 @@ export class DataManager {
   private dataFolder: string;
   private contentUnits: Map<string, ContentUnit> = new Map();
   private fileIndex: Map<string, string[]> = new Map();
+  private cache: Map<string, { data: ContentUnit; timestamp: number }>;
+  private CACHE_TTL = 5 * 60 * 1000; // 5分钟
 
   constructor(
     private app: App,
@@ -138,9 +140,12 @@ export class DataManager {
     return Array.from(this.contentUnits.values()).filter(unit => unit.type === type);
   }
 
-  getAllContentUnits(): ContentUnit[] {
-    return Array.from(this.contentUnits.values());
+  getAllContentUnits(page?: number, size?: number): ContentUnit[] {
+    const all = Array.from(this.contentUnits.values());
+    if (!page || !size) return all;
+    return all.slice(page * size, (page + 1) * size);
   }
+
 
   async deleteContentUnit(id: string) {
     const unit = this.contentUnits.get(id);
@@ -184,4 +189,15 @@ export class DataManager {
       console.error('Error persisting data:', error);
     }
   }
+    // 🔧 优化 : 批量操作使用事务
+    async transaction(operations: () => Promise<void>) {
+      try {
+        await operations();
+        await this.persist();
+      } catch (error) {
+        // 回滚逻辑
+        await this.loadData();
+        throw error;
+      }
+    }
 }
