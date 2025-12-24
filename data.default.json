@@ -1,0 +1,6 @@
+{
+  "enabled": true,
+  "extractionEnabled": true,
+  "autoScan": false,
+  "defaultDeck": "Default"
+}
