@@ -1,8 +1,8 @@
 // overview View.ts
 import { ItemView, WorkspaceLeaf, TFile, Menu, Modal, App, Notice } from 'obsidian';
-import type LearningSystemPlugin from '../main';
-import { ContentUnit } from '../core/DataManager';
-import { QuickFlashcardCreator } from '../core/QuickFlashcardCreator';
+import type LearningSystemPlugin from '../../main';
+import { ContentUnit } from '../../core/DataManager';
+import { QuickFlashcardCreator } from '../../core/QuickFlashcardCreator';
 
 export const VIEW_TYPE_OVERVIEW = 'learning-system-overview';
 

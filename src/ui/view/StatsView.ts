@@ -1,7 +1,7 @@
 // stasView.ts
 import { ItemView, WorkspaceLeaf, TFile, Notice } from 'obsidian';
-import type LearningSystemPlugin from '../main';
-import { AnalyticsEngine } from '../core/AnalyticsEngine';
+import type LearningSystemPlugin from '../../main';
+import { AnalyticsEngine } from '../../core/AnalyticsEngine';
 
 export const VIEW_TYPE_STATS = 'learning-system-stats';
 

@@ -1,9 +1,9 @@
 // reviewView.ts
 import { ItemView, WorkspaceLeaf, TFile, Notice } from 'obsidian';
-import type LearningSystemPlugin from '../main';
-import { Flashcard } from '../core/FlashcardManager';
-import { CardScheduler, ReviewEase } from '../core/CardScheduler';
-import { FlashcardEditModal } from './modals/FlashcardEditModal';
+import type LearningSystemPlugin from '../../main';
+import { Flashcard } from '../../core/FlashcardManager';
+import { CardScheduler, ReviewEase } from '../../core/CardScheduler';
+import { FlashcardEditModal } from '../components/modals/FlashcardEditModal';
 
 export const VIEW_TYPE_REVIEW = 'learning-system-review';
 
@@ -13,10 +13,22 @@ export class ReviewView extends ItemView {
   private dueCards: Flashcard[] = [];
   private currentCardIndex: number = 0;
   private currentCard: Flashcard | null = null;
-  private showAnswer: boolean = false;
-  private startTime: number = 0;
-  private userAnswers: string[] = [];
-  private userAnswer: string = ''; // QA 卡片的用户答案
+  private reviewState = {
+    showAnswer: false,
+    startTime: 0,
+    userAnswers: [] as string[],
+    userAnswer: ''
+  };
+ 
+  private resetReviewState() {
+    this.reviewState = {
+      showAnswer: false,
+      startTime: 0,
+      userAnswers: [],
+      userAnswer: ''
+    };
+  }
+  
 
   constructor(leaf: WorkspaceLeaf, plugin: LearningSystemPlugin) {
     super(leaf);
@@ -48,7 +60,7 @@ export class ReviewView extends ItemView {
   private async loadDueCards() {
     this.dueCards = this.plugin.flashcardManager.getDueCards();
     this.currentCardIndex = 0;
-    this.showAnswer = false;
+    this.reviewState.showAnswer = false;
     document.removeEventListener('keydown', this.keyboardHandler);
   }
 
@@ -64,20 +76,22 @@ export class ReviewView extends ItemView {
 
     const newCard = this.dueCards[this.currentCardIndex];
     
-    // 如果切换到新卡片，重置状态
-    if (this.currentCard?.id !== newCard?.id) {
-      this.userAnswers = [];
-      this.userAnswer = '';
-      this.showAnswer = false;
-      this.startTime = Date.now();
-    }
-    
-    this.currentCard = newCard;
-    
-    // 如果显示问题且开始时间为0，设置开始时间
-    if (!this.showAnswer && this.startTime === 0) {
-      this.startTime = Date.now();
-    }
+// 如果切换到新卡片，重置状态
+if (this.currentCard?.id !== newCard?.id) {
+  this.resetReviewState();
+  this.reviewState.startTime = Date.now();
+}
+
+this.currentCard = newCard;
+
+// 如果显示问题且开始时间为 0，设置开始时间
+if (
+  !this.reviewState.showAnswer &&
+  this.reviewState.startTime === 0
+) {
+  this.reviewState.startTime = Date.now();
+}
+
 
     // 进度条
     this.renderProgress(container);
@@ -88,7 +102,7 @@ export class ReviewView extends ItemView {
     // 添加右上角操作按钮
     this.renderTopActions(cardArea);
 
-    if (this.showAnswer) {
+    if (this.reviewState.showAnswer) {
       this.renderAnswer(cardArea);
     } else {
       this.renderQuestion(cardArea);
@@ -310,8 +324,8 @@ if (isTable) {
       inputArea.createEl('h4', { text: 'Fill in the blanks:' });
 
       // 确保 userAnswers 数组有足够的长度
-      if (this.userAnswers.length < this.currentCard.cloze.deletions.length) {
-        this.userAnswers = new Array(this.currentCard.cloze.deletions.length).fill('');
+      if (this.reviewState.userAnswers.length < this.currentCard.cloze.deletions.length) {
+        this.reviewState.userAnswers = new Array(this.currentCard.cloze.deletions.length).fill('');
       }
 
       this.currentCard.cloze.deletions.forEach((deletion, index) => {
@@ -322,11 +336,11 @@ if (isTable) {
           type: 'text',
           placeholder: 'Your answer...',
           cls: 'cloze-input',
-          value: this.userAnswers[index] || ''
+          value: this.reviewState.userAnswers[index] || ''
         });
         
         input.addEventListener('input', (e) => {
-          this.userAnswers[index] = (e.target as HTMLInputElement).value;
+          this.reviewState.userAnswers[index] = (e.target as HTMLInputElement).value;
         });
         if (index === 0) {
           setTimeout(() => input.focus(), 50);
@@ -343,11 +357,11 @@ if (isTable) {
       const textarea = inputArea.createEl('textarea', {
         placeholder: 'Type your answer here...',
         cls: 'qa-input',
-        value: this.userAnswer
+        value: this.reviewState.userAnswer
       });
       
       textarea.addEventListener('input', (e) => {
-        this.userAnswer = (e.target as HTMLTextAreaElement).value;
+        this.reviewState.userAnswer = (e.target as HTMLTextAreaElement).value;
       });
       setTimeout(() => textarea.focus(), 50);
     }
@@ -362,7 +376,7 @@ if (isTable) {
       attr: { title: 'Press Enter or Tab'} 
     });
     showAnswerBtn.addEventListener('click', () => {
-      this.showAnswer = true;
+      this.reviewState.showAnswer = true;
       this.render();
     });
   }
@@ -372,7 +386,7 @@ private renderAnswer(container: HTMLElement) {
   console.log('━━━━━━━━━━━━━━━━━━━━━━');
   console.log('🔍 [renderAnswer] 开始执行');
   console.log('卡片类型:', this.currentCard.type);
-  console.log('this.userAnswer:', this.userAnswer);
+  console.log('this.reviewState.userAnswer:', this.reviewState.userAnswer);
   console.log('━━━━━━━━━━━━━━━━━━━━━━');
     if (Array.isArray(this.currentCard.back)) {
     }
@@ -437,12 +451,12 @@ if (isQuestionTable) {
           userColumn.createEl('h4', { text: 'Your Answer:', cls: 'column-label' });
           const userDiv = userColumn.createDiv({ cls: 'comparison-item' });
           
-          if (this.userAnswers.length > 0 && this.userAnswers.some(a => a.trim())) {
+          if (this.reviewState.userAnswers.length > 0 && this.reviewState.userAnswers.some(a => a.trim())) {
             // 🆕 渲染带用户答案的表格
             const userTableEl = this.renderTableWithUserAnswers(
               this.currentCard.cloze.original,
               this.currentCard.cloze.deletions,
-              this.userAnswers
+              this.reviewState.userAnswers
             );
             userDiv.appendChild(userTableEl);
             userDiv.classList.add('table-answer');
@@ -459,8 +473,8 @@ if (isQuestionTable) {
         }
       
         // 🆕 移到表格外面:显示详细的答案对比列表(保留原有功能)
-        if (this.userAnswers.length > 0) {
-          console.log('🔍 [Cloze] 用户答案:', this.userAnswers);
+        if (this.reviewState.userAnswers.length > 0) {
+          console.log('🔍 [Cloze] 用户答案:', this.reviewState.userAnswers);
           const comparison = answerArea.createDiv({ cls: 'answer-comparison' });
           comparison.createEl('h4', { text: 'Answer Details:' });
       
@@ -468,7 +482,7 @@ if (isQuestionTable) {
             const item = comparison.createDiv({ cls: 'comparison-item' });
             item.createSpan({ text: `${index + 1}. ` });
       
-            const userAnswer = this.userAnswers[index] || '';
+            const userAnswer = this.reviewState.userAnswers[index] || '';
             const evaluation = this.scheduler.evaluateAnswer(
               deletion.answer,
               userAnswer
@@ -508,14 +522,14 @@ if (isQuestionTable) {
     }
     
     console.log('correctAnswer:', correctAnswer);
-    console.log('this.userAnswer:', this.userAnswer);
+    console.log('this.reviewState.userAnswer:', this.reviewState.userAnswer);
     const isTable = this.isTableFormat(correctAnswer);
     
     const comparison = answerArea.createDiv({ cls: 'answer-comparison qa-comparison' });
     console.log('🔍 [QA 分支] 创建对比容器');
 console.log('准备渲染两列');
-    const evaluation = this.userAnswer.trim() 
-      ? this.scheduler.evaluateAnswer(correctAnswer, this.userAnswer)
+    const evaluation = this.reviewState.userAnswer.trim() 
+      ? this.scheduler.evaluateAnswer(correctAnswer, this.reviewState.userAnswer)
       : null;
       console.log('evaluation:', evaluation);
 
@@ -550,14 +564,14 @@ userColumn.createEl('h4', { text: 'Your Answer:', cls: 'column-label' });
 const userAnswerDiv = userColumn.createDiv({ cls: 'comparison-item' });
 
 // 检测用户答案是否为表格
-const isUserAnswerTable = this.isTableFormat(this.userAnswer.trim());
+const isUserAnswerTable = this.isTableFormat(this.reviewState.userAnswer.trim());
 
 // 🆕 特殊处理:如果正确答案是表格,用户答案也应该尝试渲染为表格
-const shouldRenderAsTable = isUserAnswerTable || (isTable && this.userAnswer.trim());
+const shouldRenderAsTable = isUserAnswerTable || (isTable && this.reviewState.userAnswer.trim());
 
-if (shouldRenderAsTable && this.userAnswer.trim()) {
+if (shouldRenderAsTable && this.reviewState.userAnswer.trim()) {
   try {
-    const userTableEl = this.renderTable(this.userAnswer, true);
+    const userTableEl = this.renderTable(this.reviewState.userAnswer, true);
     userAnswerDiv.appendChild(userTableEl);
     userAnswerDiv.classList.add('table-answer');
     
@@ -569,7 +583,7 @@ if (shouldRenderAsTable && this.userAnswer.trim()) {
     console.error('渲染用户答案表格失败,降级为普通文本:', error);
     // 降级处理:渲染为普通文本
     const userAnswerElement = userAnswerDiv.createEl('div', {
-      text: this.userAnswer.trim(),
+      text: this.reviewState.userAnswer.trim(),
       cls: 'qa-user-answer'
     });
     
@@ -580,7 +594,7 @@ if (shouldRenderAsTable && this.userAnswer.trim()) {
 } else {
   // 普通文本渲染
   const userAnswerElement = userAnswerDiv.createEl('div', {
-    text: this.userAnswer.trim() || '(no answer provided)',
+    text: this.reviewState.userAnswer.trim() || '(no answer provided)',
     cls: 'qa-user-answer'
   });
   
@@ -629,13 +643,13 @@ if (shouldRenderAsTable && this.userAnswer.trim()) {
   private async submitReview(ease: ReviewEase) {
     if (!this.currentCard) return;
 
-    const timeSpent = (Date.now() - this.startTime) / 1000; // 秒
+    const timeSpent = (Date.now() - this.reviewState.startTime) / 1000; // 秒
 
     // 对于完形填空和 QA 卡片，使用用户答案
     const userAnswer = this.currentCard.type === 'cloze' 
-      ? this.userAnswers 
+      ? this.reviewState.userAnswers 
       : this.currentCard.type === 'qa'
-      ? this.userAnswer
+      ? this.reviewState.userAnswer
       : undefined;
 
     // 计算新的调度
@@ -657,9 +671,8 @@ if (shouldRenderAsTable && this.userAnswer.trim()) {
 
     // 下一张卡片
     this.currentCardIndex++;
-    this.showAnswer = false;
-    this.userAnswers = [];
-    this.userAnswer = '';
+    this.reviewState.showAnswer = false;
+    this.resetReviewState()
 
     if (this.currentCardIndex >= this.dueCards.length) {
       // 复习完成
@@ -774,14 +787,14 @@ if (shouldRenderAsTable && this.userAnswer.trim()) {
     
     if (e.shiftKey) {
       // Shift + Tab: 回到题面
-      if (this.showAnswer) {
-        this.showAnswer = false;
+      if (this.reviewState.showAnswer) {
+        this.resetReviewState()
         this.render();
       }
     } else {
       // Tab: 显示答案或下一张
-      if (!this.showAnswer) {
-        this.showAnswer = true;
+      if (!this.reviewState.showAnswer) {
+        this.resetReviewState()
         this.render();
       } else {
         // 已显示答案,直接按 "Good" 评分进入下一张
@@ -793,7 +806,7 @@ if (shouldRenderAsTable && this.userAnswer.trim()) {
 
     
     // 数字键评分（只在显示答案且不在输入框时有效）
-    if (this.showAnswer) {
+    if (this.reviewState.showAnswer) {
       const ratingMap: { [key: string]: ReviewEase } = {
         '1': 'again',
         '2': 'hard',

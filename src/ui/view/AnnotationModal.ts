@@ -1,8 +1,8 @@
 // annotationModal.ts
 import { App, Modal, Notice, Setting } from 'obsidian';
-import type LearningSystemPlugin from '../main';
-import { Annotation } from '../core/AnnotationManager';
-import { ContentUnit } from '../core/DataManager';
+import type LearningSystemPlugin from '../../main';
+import { Annotation } from '../../core/AnnotationManager';
+import { ContentUnit } from '../../core/DataManager';
 
 export class AnnotationModal extends Modal {
   private contentUnit: ContentUnit;

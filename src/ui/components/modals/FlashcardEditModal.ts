@@ -1,5 +1,5 @@
 import { App, Modal } from 'obsidian';
-import type { Flashcard } from '../../core/FlashcardManager';
+import type { Flashcard } from '../../../core/FlashcardManager';
 
 export class FlashcardEditModal extends Modal {
   constructor(

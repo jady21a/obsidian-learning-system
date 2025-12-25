@@ -1,18 +1,18 @@
 // src/ui/SidebarOverviewView.ts - 重构后版本
-import { StyleLoader } from './style/StyleLoader'
+import { StyleLoader } from '../style/StyleLoader'
 
 import { ItemView, WorkspaceLeaf, TFile, Menu, Notice, Modal, Setting, TextAreaComponent, ButtonComponent,App } from 'obsidian';
-import type LearningSystemPlugin from '../main';
-import { ContentUnit } from '../core/DataManager';
-import { Flashcard } from '../core/FlashcardManager';
+import type LearningSystemPlugin from '../../main';
+import { ContentUnit } from '../../core/DataManager';
+import { Flashcard } from '../../core/FlashcardManager';
 
 // 导入新的组件和状态管理
-import { FilterMode, GroupMode, ViewState } from './state/ViewState';
-import { Toolbar }  from './components/Toolbar';
-import { BatchActions, BatchActionCallbacks } from './components/BatchActions';
-import { ContentList } from './components/ContentList';
-import { ContentCard, CardCallbacks } from './components/ContentCard';
-import { AnnotationEditor, AnnotationEditorCallbacks } from './components/AnnotationEditor';
+import { FilterMode, GroupMode, ViewState } from '../state/ViewState';
+import { Toolbar }  from '../components/Toolbar';
+import { BatchActions, BatchActionCallbacks } from '../components/BatchActions';
+import { ContentList } from '../components/ContentList';
+import { ContentCard, CardCallbacks } from '../components/ContentCard';
+import { AnnotationEditor, AnnotationEditorCallbacks } from '../components/AnnotationEditor';
 
 export const VIEW_TYPE_SIDEBAR_OVERVIEW = 'learning-system-sidebar-overview';
 export const VIEW_TYPE_MAIN_OVERVIEW = 'learning-system-main-overview';
@@ -718,7 +718,7 @@ export class SidebarOverviewView extends ItemView {
 
   private async quickGenerateFlashcard(unit: ContentUnit): Promise<void> {
     try {
-      const { QuickFlashcardCreator } = await import('../core/QuickFlashcardCreator');
+      const { QuickFlashcardCreator } = await import('../../core/QuickFlashcardCreator');
       const creator = new QuickFlashcardCreator(this.plugin);
       await creator.createSmartCard(unit);
       new Notice('⚡ 闪卡已生成');
@@ -1219,7 +1219,7 @@ export class SidebarOverviewView extends ItemView {
     
     // 显示批量创建模态框
     const { BatchCreateModal } = await import('./OverviewView');
-    const { QuickFlashcardCreator } = await import('../core/QuickFlashcardCreator');
+    const { QuickFlashcardCreator } = await import('../../core/QuickFlashcardCreator');
     const quickCreator = new QuickFlashcardCreator(this.plugin);
     const modal = new BatchCreateModal(
       this.app,

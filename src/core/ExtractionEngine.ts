@@ -2,7 +2,7 @@
 import { App, TFile, Notice, Editor, Menu } from 'obsidian';
 import { DataManager, ContentUnit } from './DataManager';
 import { FlashcardManager } from './FlashcardManager';
-import { SidebarOverviewView } from '../ui/SidebarOverviewView';
+import { SidebarOverviewView } from '../ui/view/SidebarOverviewView';
 
 export class ExtractionEngine {
   constructor(

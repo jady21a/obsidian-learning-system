@@ -1,6 +1,6 @@
 // SettingsTab.ts
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import type LearningSystemPlugin from '../main';
+import type LearningSystemPlugin from '../../main';
 
 export class SettingsTab extends PluginSettingTab {
   plugin: LearningSystemPlugin;

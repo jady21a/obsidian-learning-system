@@ -1,9 +1,9 @@
 import { Plugin, TFile, WorkspaceLeaf, Notice, MarkdownView } from 'obsidian';
-import { SettingsTab } from './ui/SettingsTab';
-import { OverviewView, VIEW_TYPE_OVERVIEW } from './ui/OverviewView';
-import { SidebarOverviewView, VIEW_TYPE_SIDEBAR_OVERVIEW, VIEW_TYPE_MAIN_OVERVIEW  } from './ui/SidebarOverviewView';
-import { ReviewView, VIEW_TYPE_REVIEW } from './ui/ReviewView';
-import { StatsView, VIEW_TYPE_STATS } from './ui/StatsView';
+import { SettingsTab } from './ui/view/SettingsTab';
+import { OverviewView, VIEW_TYPE_OVERVIEW } from './ui/view/OverviewView';
+import { SidebarOverviewView, VIEW_TYPE_SIDEBAR_OVERVIEW, VIEW_TYPE_MAIN_OVERVIEW  } from './ui/view/SidebarOverviewView';
+import { ReviewView, VIEW_TYPE_REVIEW } from './ui/view/ReviewView';
+import { StatsView, VIEW_TYPE_STATS } from './ui/view/StatsView';
 import { DataManager } from './core/DataManager';
 import { ExtractionEngine } from './core/ExtractionEngine';
 import { AnnotationManager } from './core/AnnotationManager';
@@ -178,7 +178,7 @@ export default class LearningSystemPlugin extends Plugin {
         const activeFile = this.app.workspace.getActiveFile();
         if (!activeFile) return;
 
-        const { FileAnnotationModal } = await import('./ui/AnnotationModal');
+        const { FileAnnotationModal } = await import('./ui/view/AnnotationModal');
         const modal = new FileAnnotationModal(
           this.app,
           this,
