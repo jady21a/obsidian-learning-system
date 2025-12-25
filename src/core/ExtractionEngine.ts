@@ -2,6 +2,7 @@
 import { App, TFile, Notice, Editor, Menu } from 'obsidian';
 import { DataManager, ContentUnit } from './DataManager';
 import { FlashcardManager } from './FlashcardManager';
+import { SidebarOverviewView } from '../ui/SidebarOverviewView';
 
 export class ExtractionEngine {
   constructor(
@@ -10,6 +11,7 @@ export class ExtractionEngine {
     private flashcardManager: FlashcardManager 
   ) {}
 
+  
   /**
    * 注册右键菜单
    */
@@ -45,6 +47,7 @@ export class ExtractionEngine {
     });
   }
 
+  
   /**
    * 提取选中的文本
    */
@@ -335,7 +338,10 @@ export class ExtractionEngine {
       const viewType = leaf.view.getViewType();
       if (viewType === 'learning-system-sidebar-overview' || 
           viewType === 'learning-system-main-overview') {
-        (leaf.view as any).refresh();
+            const view = leaf.view as SidebarOverviewView;
+            if (view && typeof view.refresh === 'function') {
+              view.refresh();
+            }
       }
     });
   }
@@ -555,62 +561,62 @@ export class ExtractionEngine {
    * ✅ 提取完形填空卡 (格式: ==highlight==)
    * 新增: 过滤 Excalidraw 高亮
    */
-  private extractClozeCards(file: TFile, content: string): ContentUnit[] {
-    const units: ContentUnit[] = [];
-    const highlightRegex = /==(.+?)==/g;
-    let match;
+  // private extractClozeCards(file: TFile, content: string): ContentUnit[] {
+  //   const units: ContentUnit[] = [];
+  //   const highlightRegex = /==(.+?)==/g;
+  //   let match;
 
-    while ((match = highlightRegex.exec(content)) !== null) {
-      const extractedText = match[1];
-      const fullMatch = match[0];
-      const position = this.calculatePosition(content, match.index);
+  //   while ((match = highlightRegex.exec(content)) !== null) {
+  //     const extractedText = match[1];
+  //     const fullMatch = match[0];
+  //     const position = this.calculatePosition(content, match.index);
       
-      // 获取当前行内容
-      const lineStart = content.lastIndexOf('\n', match.index) + 1;
-      const lineEnd = content.indexOf('\n', match.index);
-      const currentLine = content.substring(lineStart, lineEnd === -1 ? content.length : lineEnd);
+  //     // 获取当前行内容
+  //     const lineStart = content.lastIndexOf('\n', match.index) + 1;
+  //     const lineEnd = content.indexOf('\n', match.index);
+  //     const currentLine = content.substring(lineStart, lineEnd === -1 ? content.length : lineEnd);
       
-      // ✅ 跳过 Excalidraw 高亮
-      if (this.isExcalidrawHighlight(extractedText, currentLine)) {
-        console.log('[extractClozeCards] 跳过 Excalidraw 高亮:', extractedText);
-        continue;
-      }
+  //     // ✅ 跳过 Excalidraw 高亮
+  //     if (this.isExcalidrawHighlight(extractedText, currentLine)) {
+  //       console.log('[extractClozeCards] 跳过 Excalidraw 高亮:', extractedText);
+  //       continue;
+  //     }
       
-      const fullSentence = this.extractFullSentence(content, match.index, fullMatch.length);
+  //     const fullSentence = this.extractFullSentence(content, match.index, fullMatch.length);
 
-      const unit: ContentUnit = {
-        id: this.generateId(),
-        type: 'cloze',
-        content: extractedText.trim(),
-        fullContext: fullSentence,
-        source: {
-          file: file.path,
-          position: {
-            start: match.index,
-            end: match.index + fullMatch.length,
-            line: position.line
-          },
-          heading: this.findHeading(content, match.index),
-          anchorLink: `[[${file.basename}#^${this.generateBlockId()}]]`
-        },
-        extractRule: {
-          ruleId: 'cloze',
-          ruleName: 'Cloze Deletion',
-          extractedBy: 'auto'
-        },
-        metadata: {
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          tags: this.extractTags(content, match.index)
-        },
-        flashcardIds: []
-      };
+  //     const unit: ContentUnit = {
+  //       id: this.generateId(),
+  //       type: 'cloze',
+  //       content: extractedText.trim(),
+  //       fullContext: fullSentence,
+  //       source: {
+  //         file: file.path,
+  //         position: {
+  //           start: match.index,
+  //           end: match.index + fullMatch.length,
+  //           line: position.line
+  //         },
+  //         heading: this.findHeading(content, match.index),
+  //         anchorLink: `[[${file.basename}#^${this.generateBlockId()}]]`
+  //       },
+  //       extractRule: {
+  //         ruleId: 'cloze',
+  //         ruleName: 'Cloze Deletion',
+  //         extractedBy: 'auto'
+  //       },
+  //       metadata: {
+  //         createdAt: Date.now(),
+  //         updatedAt: Date.now(),
+  //         tags: this.extractTags(content, match.index)
+  //       },
+  //       flashcardIds: []
+  //     };
 
-      units.push(unit);
-    }
+  //     units.push(unit);
+  //   }
 
-    return units;
-  }
+  //   return units;
+  // }
 
   /**
    * 提取包含高亮的完整句子
@@ -710,4 +716,351 @@ export class ExtractionEngine {
   private generateBlockId(): string {
     return `extract-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
   }
+
+
+// 表格提取方法
+/**
+ * 🆕 检测高亮是否在表格中
+ */
+private isInTable(content: string, position: number): boolean {
+  const lines = content.split('\n');
+  const { line } = this.calculatePosition(content, position);
+  
+  // 检查当前行是否为表格行（包含 | 分隔符）
+  if (!lines[line]?.includes('|')) {
+    return false;
+  }
+  
+  // 检查前后行是否也是表格
+  const hasPrevTableLine = line > 0 && lines[line - 1]?.includes('|');
+  const hasNextTableLine = line < lines.length - 1 && lines[line + 1]?.includes('|');
+  
+  return hasPrevTableLine || hasNextTableLine;
+}
+
+/**
+ * 🆕 提取表格及其高亮信息
+ */
+private extractTableWithHighlights(
+  content: string, 
+  highlightPosition: number
+): { tableContent: string; highlightCount: number; highlightRows: Set<number>; highlightColumns: Set<number> } | null {
+  const lines = content.split('\n');
+  const { line: currentLine } = this.calculatePosition(content, highlightPosition);
+  
+  // 找到表格的起始和结束位置
+  let tableStart = currentLine;
+  let tableEnd = currentLine;
+  
+  // 向上查找表格开始
+  while (tableStart > 0 && lines[tableStart - 1]?.includes('|')) {
+    tableStart--;
+  }
+  
+  // 向下查找表格结束
+  while (tableEnd < lines.length - 1 && lines[tableEnd + 1]?.includes('|')) {
+    tableEnd++;
+  }
+  
+  // 提取表格内容
+  const tableLines = lines.slice(tableStart, tableEnd + 1);
+  const tableContent = tableLines.join('\n');
+  
+  // 统计表格中所有高亮
+  const highlightRegex = /==(.+?)==/g;
+  const highlightRows = new Set<number>();
+  const highlightColumns = new Set<number>();
+  let highlightCount = 0;
+  
+  tableLines.forEach((line, rowIndex) => {
+    const cells = line.split('|').map(c => c.trim()).filter(c => c);
+    
+    // 🔧 改进分隔符行检测
+    if (cells.length > 0 && cells.every(cell => /^[-:\s]+$/.test(cell))) {
+      return; // 跳过分隔符行
+    }
+    
+    cells.forEach((cell, colIndex) => {
+      if (highlightRegex.test(cell)) {
+        highlightRows.add(rowIndex);
+        highlightColumns.add(colIndex);
+        highlightCount++;
+      }
+    });
+  });
+  
+  return {
+    tableContent,
+    highlightCount,
+    highlightRows,
+    highlightColumns
+  };
+}
+
+/**
+ * 🆕 根据高亮位置提取表格的特定部分
+ */
+private extractTablePortion(
+  tableLines: string[], 
+  highlightRows: Set<number>, 
+  highlightColumns: Set<number>,
+  highlightCount: number
+): string {
+  const totalRows = tableLines.length;
+ // 🔧 改进分隔符行检测
+ const separatorIndex = tableLines.findIndex((line, idx) => {
+  if (idx === 0) return false; // 第一行不可能是分隔符
+  const cells = line.split('|').map(c => c.trim()).filter(c => c);
+  // 检查是否所有单元格都只包含 -、: 和空格
+  return cells.length > 0 && cells.every(cell => /^[-:\s]+$/.test(cell));
+});
+
+// 如果没找到分隔符，假设第二行是分隔符
+const actualSeparatorIndex = separatorIndex !== -1 ? separatorIndex : 1;
+  
+  // 情况1: 整列高亮 - 提取整个表格
+  const firstDataRow = tableLines[separatorIndex + 1] || tableLines[1];
+  const columnCount = firstDataRow.split('|').filter(c => c.trim()).length;
+  
+  if (highlightColumns.size === columnCount || highlightCount >= totalRows - 1) {
+    return tableLines.join('\n');
+  }
+  
+  // 情况2: 单行高亮 - 提取该行（包含表头和分隔符）
+  if (highlightRows.size === 1) {
+    const highlightRow = Array.from(highlightRows)[0];
+    const result = [
+      tableLines[0], // 表头
+      tableLines[separatorIndex], // 分隔符
+      tableLines[highlightRow] // 高亮行
+    ];
+    return result.join('\n');
+  }
+  
+  // 情况3: 多行高亮 - 提取这些行
+  const result = [tableLines[0], tableLines[separatorIndex]];
+  highlightRows.forEach(rowIndex => {
+    if (rowIndex !== 0 && rowIndex !== separatorIndex) {
+      result.push(tableLines[rowIndex]);
+    }
+  });
+  return result.join('\n');
+}
+
+private extractClozeCards(file: TFile, content: string): ContentUnit[] {
+  const units: ContentUnit[] = [];
+  const highlightRegex = /==(.+?)==/g;
+  const processedTables = new Set<string>(); // 记录已处理的表格
+  const processedHighlights = new Set<number>(); // 🆕 记录已处理的高亮位置
+  let match;
+
+  while ((match = highlightRegex.exec(content)) !== null) {
+    const extractedText = match[1];
+    const fullMatch = match[0];
+    const position = this.calculatePosition(content, match.index);
+    
+    // 🆕 跳过已处理的高亮
+    if (processedHighlights.has(match.index)) {
+      continue;
+    }
+    
+    // 获取当前行内容
+    const lineStart = content.lastIndexOf('\n', match.index) + 1;
+    const lineEnd = content.indexOf('\n', match.index);
+    const currentLine = content.substring(lineStart, lineEnd === -1 ? content.length : lineEnd);
+    
+    // ✅ 跳过 Excalidraw 高亮
+    if (this.isExcalidrawHighlight(extractedText, currentLine)) {
+      console.log('[extractClozeCards] 跳过 Excalidraw 高亮:', extractedText);
+      continue;
+    }
+    
+    // 🆕 检查是否在表格中
+    if (this.isInTable(content, match.index)) {
+      const tableInfo = this.extractTableWithHighlights(content, match.index);
+      
+      if (tableInfo) {
+        const tableKey = `${file.path}-${tableInfo.tableContent.substring(0, 50)}`;
+        
+        // 避免重复处理同一个表格
+        if (processedTables.has(tableKey)) {
+          continue;
+        }
+        processedTables.add(tableKey);
+        
+        // 🆕 标记这个表格内的所有高亮为已处理
+        const tableHighlights = this.findAllHighlightsInTable(content, tableInfo.tableContent, match.index);
+        tableHighlights.forEach(pos => processedHighlights.add(pos));
+        
+        const lines = content.split('\n');
+        const { line: currentLine } = this.calculatePosition(content, match.index);
+        
+        // 找到表格起始位置
+        let tableStart = currentLine;
+        while (tableStart > 0 && lines[tableStart - 1]?.includes('|')) {
+          tableStart--;
+        }
+        
+        const tableLines = tableInfo.tableContent.split('\n');
+        const extractedTable = this.extractTablePortion(
+          tableLines,
+          tableInfo.highlightRows,
+          tableInfo.highlightColumns,
+          tableInfo.highlightCount
+        );
+        // 🔧 验证提取的表格是否包含分隔符行
+const extractedLines = extractedTable.split('\n');
+const hasSeparator = extractedLines.some(line => {
+  const cells = line.split('|').map(c => c.trim()).filter(c => c);
+  return cells.length > 0 && cells.every(cell => /^[-:\s]+$/.test(cell));
+});
+
+// 如果缺少分隔符行，自动添加
+if (!hasSeparator && extractedLines.length >= 2) {
+  const headerCells = extractedLines[0].split('|').map(c => c.trim()).filter(c => c);
+  const separator = '| ' + headerCells.map(() => '---').join(' | ') + ' |';
+  extractedLines.splice(1, 0, separator);
+  const extractedTable = extractedLines.join('\n');
+}
+        // 计算表格在文档中的起始位置
+        let tableStartOffset = 0;
+        for (let i = 0; i < tableStart; i++) {
+          tableStartOffset += lines[i].length + 1;
+        }
+        
+        // 🆕 收集所有高亮内容
+        const allHighlights = this.extractAllHighlightsFromTable(tableInfo.tableContent);
+        
+        const unit: ContentUnit = {
+          id: this.generateId(),
+          type: 'cloze',
+          content: allHighlights.join(', '), // 🆕 包含所有高亮
+          fullContext: extractedTable, // 显示提取的表格部分
+          source: {
+            file: file.path,
+            position: {
+              start: tableStartOffset,
+              end: tableStartOffset + tableInfo.tableContent.length,
+              line: tableStart
+            },
+            heading: this.findHeading(content, match.index),
+            anchorLink: `[[${file.basename}#^${this.generateBlockId()}]]`
+          },
+          extractRule: {
+            ruleId: 'cloze-table',
+            ruleName: 'Table Cloze Deletion',
+            extractedBy: 'auto'
+          },
+          metadata: {
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            tags: [...this.extractTags(content, match.index), '#table'],
+            customData: {
+              tableType: 'partial',
+              highlightCount: tableInfo.highlightCount,
+              rowCount: tableInfo.highlightRows.size,
+              columnCount: tableInfo.highlightColumns.size,
+              allHighlights: allHighlights // 🆕 保存所有高亮
+            }
+          },
+          flashcardIds: []
+        };
+        
+        units.push(unit);
+        console.log(`[extractClozeCards] 提取表格: ${tableInfo.highlightCount} 个高亮`);
+        continue;
+      }
+    }
+    
+    // 原有的普通高亮处理逻辑...
+    const fullSentence = this.extractFullSentence(content, match.index, fullMatch.length);
+
+    const unit: ContentUnit = {
+      id: this.generateId(),
+      type: 'cloze',
+      content: extractedText.trim(),
+      fullContext: fullSentence,
+      source: {
+        file: file.path,
+        position: {
+          start: match.index,
+          end: match.index + fullMatch.length,
+          line: position.line
+        },
+        heading: this.findHeading(content, match.index),
+        anchorLink: `[[${file.basename}#^${this.generateBlockId()}]]`
+      },
+      extractRule: {
+        ruleId: 'cloze',
+        ruleName: 'Cloze Deletion',
+        extractedBy: 'auto'
+      },
+      metadata: {
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        tags: this.extractTags(content, match.index)
+      },
+      flashcardIds: []
+    };
+
+    units.push(unit);
+  }
+
+  return units;
+}
+
+// 🆕 添加辅助方法:找到表格内所有高亮的位置
+private findAllHighlightsInTable(
+  content: string, 
+  tableContent: string, 
+  currentHighlightPos: number
+): number[] {
+  const positions: number[] = [];
+  const lines = content.split('\n');
+  const { line: currentLine } = this.calculatePosition(content, currentHighlightPos);
+  
+  // 找到表格范围
+  let tableStart = currentLine;
+  let tableEnd = currentLine;
+  
+  while (tableStart > 0 && lines[tableStart - 1]?.includes('|')) {
+    tableStart--;
+  }
+  while (tableEnd < lines.length - 1 && lines[tableEnd + 1]?.includes('|')) {
+    tableEnd++;
+  }
+  
+  // 计算表格起始偏移
+  let offset = 0;
+  for (let i = 0; i < tableStart; i++) {
+    offset += lines[i].length + 1;
+  }
+  
+  // 在表格范围内查找所有高亮
+  const highlightRegex = /==(.+?)==/g;
+  let match;
+  const tableEndOffset = offset + tableContent.length;
+  
+  while ((match = highlightRegex.exec(content)) !== null) {
+    if (match.index >= offset && match.index < tableEndOffset) {
+      positions.push(match.index);
+    }
+  }
+  
+  return positions;
+}
+
+// 🆕 添加辅助方法:提取表格中所有高亮内容
+private extractAllHighlightsFromTable(tableContent: string): string[] {
+  const highlights: string[] = [];
+  const highlightRegex = /==(.+?)==/g;
+  let match;
+  
+  while ((match = highlightRegex.exec(tableContent)) !== null) {
+    highlights.push(match[1].trim());
+  }
+  
+  return highlights;
+}
+
 }

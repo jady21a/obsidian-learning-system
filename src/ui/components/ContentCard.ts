@@ -1,7 +1,9 @@
 // src/ui/components/ContentCard.ts
+import { StyleLoader } from '../style/StyleLoader'
 import { ContentUnit } from '../../core/DataManager';
 import { Flashcard } from '../../core/FlashcardManager';
 import { ViewState } from '../state/ViewState';
+import { MarkdownRenderer } from 'obsidian'; // 
 
 export interface CardCallbacks {
   onJumpToSource: (unit: ContentUnit) => void;
@@ -189,10 +191,15 @@ export class ContentCard {
 
   private renderCardContent(content: HTMLElement, unit: ContentUnit): void {
     const noteText = content.createDiv({ cls: 'note-text' });
-
-    let displayHTML = this.formatContent(unit);
-    noteText.innerHTML = displayHTML;
-
+  
+    // 🆕 添加表格检测和渲染
+    if (this.isTableContent(unit.fullContext || unit.content)) {
+      this.renderMarkdownContent(noteText, unit);
+    } else {
+      let displayHTML = this.formatContent(unit);
+      noteText.innerHTML = displayHTML;
+    }
+  
     noteText.addEventListener('click', () => {
       this.callbacks.onJumpToSource(unit);
     });
@@ -300,13 +307,18 @@ export class ContentCard {
 
   private renderGridContent(content: HTMLElement, card: HTMLElement, unit: ContentUnit): void {
     const noteText = content.createDiv({ cls: 'grid-note-text' });
-    noteText.innerHTML = this.formatContent(unit);
+    
+    // 🆕 添加表格检测和渲染
+    if (this.isTableContent(unit.fullContext || unit.content)) {
+      this.renderMarkdownContent(noteText, unit);
+    } else {
+      noteText.innerHTML = this.formatContent(unit);
+    }
     
     noteText.addEventListener('click', () => {
       this.callbacks.onToggleAnnotation(card, unit);
     });
   }
-
   private renderGridAnnotation(content: HTMLElement, card: HTMLElement, unit: ContentUnit): void {
     if (!this.callbacks.getAnnotationContent) return;
     
@@ -365,6 +377,87 @@ export class ContentCard {
       day: '2-digit'
     });
   }
- 
+
+
+  // 🆕 添加表格检测方法
+  private isTableContent(content: string | undefined): boolean {
+    if (!content) return false;
+    const lines = content.trim().split('\n');
+    return lines.length >= 2 && 
+           lines.every(line => line.includes('|')) &&
+           !!lines[1]?.match(/^\s*\|[\s:-]+\|/);
+  }
+
+  // 🆕 添加 Markdown 渲染方法
+  private renderMarkdownContent(container: HTMLElement, unit: ContentUnit): void {
+    container.empty();
+    
+    let content = unit.fullContext || unit.content;
+    
+    // 🆕 检查是否为表格
+    if (this.isTableContent(content)) {
+      // 手动渲染表格
+      this.renderTableWithHighlights(container, content);
+    } else {
+      // 使用 Markdown 渲染器
+      const { MarkdownRenderer } = require('obsidian');
+      content = content.replace(/==([^=]+)==/g, '<span class="highlight">$1</span>');
+      MarkdownRenderer.renderMarkdown(content, container, unit.source.file, null);
+    }
+  }
+  
+  // 🆕 添加手动表格渲染方法
+private renderTableWithHighlights(container: HTMLElement, markdown: string): void {
+  
+  const lines = markdown.trim().split('\n');
+  
+  const table = container.createEl('table', { cls: 'learning-system-table' });
+  
+  // 解析表头
+  const headerCells = lines[0]
+    .split('|')
+    .map(c => c.trim())
+    .filter(c => c);
+  
+  
+  const thead = table.createEl('thead');
+  const headerRow = thead.createEl('tr');
+  headerCells.forEach((cell, index) => {
+    const th = headerRow.createEl('th');
+    
+    if (cell.includes('==')) {
+      const processed = cell.replace(/==([^=]+)==/g, '<mark>$1</mark>');
+      th.innerHTML = processed;
+    } else {
+      th.textContent = cell;
+    }
+  });
+  
+  // 解析数据行
+  const tbody = table.createEl('tbody');
+  for (let i = 2; i < lines.length; i++) {
+    
+    const cells = lines[i]
+      .split('|')
+      .map(c => c.trim())
+      .filter(c => c);
+    
+    if (cells.length === 0) continue;
+    
+    const row = tbody.createEl('tr');
+    cells.forEach((cell, index) => {
+      const td = row.createEl('td');
+      
+      if (cell.includes('==')) {
+        const processed = cell.replace(/==([^=]+)==/g, '<mark>$1</mark>');
+        td.innerHTML = processed;
+      } else {
+        td.textContent = cell;
+      }
+    });
+  }
   
 }
+}
+  
+

@@ -340,28 +340,32 @@ export default class LearningSystemPlugin extends Plugin {
   }
 
   refreshOverview() {
-    
     // 刷新旧版 Overview
     const overviewLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_OVERVIEW);
     overviewLeaves.forEach(leaf => {
       const view = leaf.view as OverviewView;
-      view.refresh();
+      if (view && typeof view.refresh === 'function') {
+        view.refresh();
+      }
     });
-
+  
     // 刷新侧边栏视图
     const sidebarLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR_OVERVIEW);
     sidebarLeaves.forEach(leaf => {
       const view = leaf.view as SidebarOverviewView;
-      view.refresh();
+      if (view && typeof view.refresh === 'function') {
+        view.refresh();
+      }
     });
-
+  
     // 刷新主界面视图
     const mainLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW);
     mainLeaves.forEach(leaf => {
       const view = leaf.view as SidebarOverviewView;
-      view.refresh();
+      if (view && typeof view.refresh === 'function') {
+        view.refresh();
+      }
     });
-    
   }
 
   private setupStatusBar() {

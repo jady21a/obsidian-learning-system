@@ -756,17 +756,24 @@ export class SidebarOverviewView extends ItemView {
     
     menu.addSeparator();
     
-    // 编辑闪卡 (如果已有闪卡)
+    // 编辑闪卡 (如果已有闪卡)//
     if (unit.flashcardIds.length > 0) {
       menu.addItem((item) =>
         item
           .setTitle('✏️ 编辑闪卡')
           .setIcon('pencil')
           .onClick(() => {
-            new Notice('💡 编辑闪卡功能开发中...');
+            const cardId = unit.flashcardIds[0];
+            const card = this.plugin.flashcardManager.getFlashcard(cardId);
+            if (card) {
+              this.openEditFlashcardModal(card);
+            } else {
+              new Notice('⚠️ 找不到对应的闪卡');
+            }
           })
       );
     }
+    
     
     // 生成闪卡 (AI智能生成)
     menu.addItem((item) =>

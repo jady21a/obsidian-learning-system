@@ -288,7 +288,21 @@ private renderNoDueCards(container: Element) {
     questionArea.createEl('h3', { text: 'Question' });
     
     const questionText = questionArea.createDiv({ cls: 'question-text' });
-    questionText.textContent = this.currentCard.front;
+// 🆕 检测是否为表格
+const isTable = this.isTableFormat(this.currentCard.front);
+
+console.log('🔍 [renderQuestion] 问题是否为表格:', isTable);
+console.log('🔍 [renderQuestion] 问题内容:', this.currentCard.front);
+
+if (isTable) {
+  console.log('📊 题面是表格，渲染表格形式');
+  const tableEl = this.renderTable(this.currentCard.front, false);  // ← 传入 false 隐藏答案
+  questionText.appendChild(tableEl);
+  questionText.classList.add('table-question');
+} else {
+  console.log('📝 题面是文本，渲染文本形式');
+  questionText.textContent = this.currentCard.front;
+}
 
     // 完形填空输入框
     if (this.currentCard.type === 'cloze' && this.currentCard.cloze) {
@@ -353,150 +367,264 @@ private renderNoDueCards(container: Element) {
     });
   }
 
-  private renderAnswer(container: HTMLElement) {
-    if (!this.currentCard) return;
+private renderAnswer(container: HTMLElement) {
+  if (!this.currentCard) return;
+  console.log('━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🔍 [renderAnswer] 开始执行');
+  console.log('卡片类型:', this.currentCard.type);
+  console.log('this.userAnswer:', this.userAnswer);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━');
+    if (Array.isArray(this.currentCard.back)) {
+    }
+  
+  // 卡片信息
+  const cardInfo = container.createDiv({ cls: 'card-info' });
+  cardInfo.createSpan({ 
+    text: this.currentCard.type === 'qa' ? '📝 Q&A' : '✏️ Cloze',
+    cls: 'card-type'
+  });
+  cardInfo.createSpan({ 
+    text: `Deck: ${this.currentCard.deck}`,
+    cls: 'card-deck'
+  });
 
-    // 卡片信息
-    const cardInfo = container.createDiv({ cls: 'card-info' });
-    cardInfo.createSpan({ 
-      text: this.currentCard.type === 'qa' ? '📝 Q&A' : '✏️ Cloze',
-      cls: 'card-type'
-    });
-    cardInfo.createSpan({ 
-      text: `Deck: ${this.currentCard.deck}`,
-      cls: 'card-deck'
-    });
+// 问题回顾
+const questionReview = container.createDiv({ cls: 'question-review' });
+questionReview.createEl('h4', { text: 'Question:' });
 
-    // 问题回顾
-    const questionReview = container.createDiv({ cls: 'question-review' });
-    questionReview.createEl('h4', { text: 'Question:' });
-    questionReview.createDiv({ 
-      text: this.currentCard.front,
-      cls: 'review-text'
-    });
+const reviewTextDiv = questionReview.createDiv({ cls: 'review-text' });
 
-    // 答案区域
-    const answerArea = container.createDiv({ cls: 'answer-area' });
+// 检测问题是否为表格格式
+const isQuestionTable = this.isTableFormat(this.currentCard.front);
+if (isQuestionTable) {
+  const tableEl = this.renderTable(this.currentCard.front, false); // 题面不显示答案
+  reviewTextDiv.appendChild(tableEl);
+  reviewTextDiv.classList.add('table-question');
+} else {
+  reviewTextDiv.textContent = this.currentCard.front;
+}
+
+  // 答案区域
+  const answerArea = container.createDiv({ cls: 'answer-area' });
+
 
     if (this.currentCard.type === 'cloze' && this.currentCard.cloze) {
-      // 显示完整文本
-      const fullText = answerArea.createDiv({ cls: 'full-text' });
-      fullText.textContent = this.currentCard.cloze.original;
-
-      // 显示用户答案对比
-      if (this.userAnswers.length > 0) {
-        const comparison = answerArea.createDiv({ cls: 'answer-comparison' });
-        comparison.createEl('h4', { text: 'Your Answers:' });
-
-        this.currentCard.cloze.deletions.forEach((deletion, index) => {
-          const item = comparison.createDiv({ cls: 'comparison-item' });
-          item.createSpan({ text: `${index + 1}. ` });
-
-          const userAnswer = this.userAnswers[index] || '';
-          const evaluation = this.scheduler.evaluateAnswer(
-            deletion.answer,
-            userAnswer
-          );
-
-          const userSpan = item.createEl('span', {
-            text: userAnswer || '(empty)',
-            cls: `user-answer ${evaluation.correctness}`
-          });
+      // 完形填空的完整答案
+        const fullText = answerArea.createDiv({ cls: 'full-text' });
+        
+        // 🆕 检测原文是否为表格
+        const isOriginalTable = this.isTableFormat(this.currentCard.cloze.original);
+      
+        console.log('🔍 [Cloze] 原文是否为表格:', isOriginalTable);
+        console.log('🔍 [Cloze] 原文内容:', this.currentCard.cloze.original);
+        
+        if (isOriginalTable) {
+          console.log('📊 完形填空原文是表格，渲染表格');
           
-          // 确保类名正确设置
-          userSpan.classList.add('user-answer', evaluation.correctness);
-
-          item.createSpan({ text: ' → ' });
+          // 🆕 渲染两列对比表格
+          const columnsContainer = answerArea.createDiv({ cls: 'cloze-table-columns' });
           
-          item.createEl('span', {
-            text: deletion.answer,
-            cls: 'correct-answer'
-          });
-
-          if (evaluation.correctness === 'partial') {
-            item.createEl('small', {
-              text: ` (${Math.round(evaluation.similarity * 100)}% match)`,
-              cls: 'similarity-info'
-            });
+          // 左列:正确答案(完整表格)
+          const correctColumn = columnsContainer.createDiv({ cls: 'qa-column' });
+          correctColumn.createEl('h4', { text: 'Correct Answer:', cls: 'column-label' });
+          const correctDiv = correctColumn.createDiv({ cls: 'comparison-item' });
+          const tableEl = this.renderTable(this.currentCard.cloze.original, true);
+          correctDiv.appendChild(tableEl);
+          correctDiv.classList.add('table-answer');
+          
+          // 右列:用户答案(表格+用户填入的答案)
+          const userColumn = columnsContainer.createDiv({ cls: 'qa-column' });
+          userColumn.createEl('h4', { text: 'Your Answer:', cls: 'column-label' });
+          const userDiv = userColumn.createDiv({ cls: 'comparison-item' });
+          
+          if (this.userAnswers.length > 0 && this.userAnswers.some(a => a.trim())) {
+            // 🆕 渲染带用户答案的表格
+            const userTableEl = this.renderTableWithUserAnswers(
+              this.currentCard.cloze.original,
+              this.currentCard.cloze.deletions,
+              this.userAnswers
+            );
+            userDiv.appendChild(userTableEl);
+            userDiv.classList.add('table-answer');
+          } else {
+            // 用户未作答,显示空白表格
+            const emptyTableEl = this.renderTable(this.currentCard.front, false);
+            userDiv.appendChild(emptyTableEl);
+            userDiv.classList.add('table-answer', 'no-answer');
           }
-        });
-      }
+          
+        } else {
+          // 原有的文本形式渲染
+          fullText.textContent = this.currentCard.cloze.original;
+        }
+      
+        // 🆕 移到表格外面:显示详细的答案对比列表(保留原有功能)
+        if (this.userAnswers.length > 0) {
+          console.log('🔍 [Cloze] 用户答案:', this.userAnswers);
+          const comparison = answerArea.createDiv({ cls: 'answer-comparison' });
+          comparison.createEl('h4', { text: 'Answer Details:' });
+      
+          this.currentCard.cloze.deletions.forEach((deletion, index) => {
+            const item = comparison.createDiv({ cls: 'comparison-item' });
+            item.createSpan({ text: `${index + 1}. ` });
+      
+            const userAnswer = this.userAnswers[index] || '';
+            const evaluation = this.scheduler.evaluateAnswer(
+              deletion.answer,
+              userAnswer
+            );
+      
+            const userSpan = item.createEl('span', {
+              text: userAnswer || '(empty)',
+              cls: `user-answer ${evaluation.correctness}`
+            });
+            
+            item.createSpan({ text: ' → ' });
+            
+            item.createEl('span', {
+              text: deletion.answer,
+              cls: 'correct-answer'
+            });
+      
+            if (evaluation.correctness === 'partial') {
+              item.createEl('small', {
+                text: ` (${Math.round(evaluation.similarity * 100)}% match)`,
+                cls: 'similarity-info'
+              });
+            }
+          });
+        }
+  } else {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🔍 [QA 分支] 进入 QA 卡片渲染');
+    // Q&A 答案
+    let correctAnswer: string;
+
+    // 处理数组格式
+    if (Array.isArray(this.currentCard.back)) {
+      correctAnswer = this.currentCard.back[0] || this.currentCard.back.join('\n');
     } else {
-      // Q&A 答案
-      const correctAnswer = this.currentCard.back as string;
-      
-      // 创建两列容器（无论是否有用户答案都显示）
-      const comparison = answerArea.createDiv({ cls: 'answer-comparison qa-comparison' });
-      
-      // 如果有用户答案，计算评估结果
-      const evaluation = this.userAnswer.trim() 
-        ? this.scheduler.evaluateAnswer(correctAnswer, this.userAnswer)
-        : null;
+      correctAnswer = this.currentCard.back as string;
+    }
     
+    console.log('correctAnswer:', correctAnswer);
+    console.log('this.userAnswer:', this.userAnswer);
+    const isTable = this.isTableFormat(correctAnswer);
+    
+    const comparison = answerArea.createDiv({ cls: 'answer-comparison qa-comparison' });
+    console.log('🔍 [QA 分支] 创建对比容器');
+console.log('准备渲染两列');
+    const evaluation = this.userAnswer.trim() 
+      ? this.scheduler.evaluateAnswer(correctAnswer, this.userAnswer)
+      : null;
+      console.log('evaluation:', evaluation);
+
       const columnsContainer = comparison.createDiv({ cls: 'qa-columns-container' });
       
-      // 左列：Correct Answer（始终显示）
-      const correctColumn = columnsContainer.createDiv({ cls: 'qa-column' });
-      correctColumn.createEl('h4', { text: 'Correct Answer:', cls: 'column-label' });
-      const correctAnswerDiv = correctColumn.createDiv({ cls: 'comparison-item' });
+      console.log('🔍 [QA 分支] columnsContainer 已创建'); 
+    // 左列：Correct Answer（始终显示）
+    const correctColumn = columnsContainer.createDiv({ cls: 'qa-column' });
+    correctColumn.createEl('h4', { text: 'Correct Answer:', cls: 'column-label' });
+    const correctAnswerDiv = correctColumn.createDiv({ cls: 'comparison-item' });
+    
+    if (isTable) {
+      const tableEl = this.renderTable(correctAnswer, true);
+      
+      correctAnswerDiv.appendChild(tableEl);
+      correctAnswerDiv.classList.add('table-answer');
+      
+      // 验证是否添加成功
+      setTimeout(() => {
+        const check = correctAnswerDiv.querySelector('table');
+      }, 100);
+    } else {
       correctAnswerDiv.createEl('div', {
         text: correctAnswer,
         cls: 'correct-answer qa-correct-answer'
       });
-    
-      // 右列：Your Answer（始终显示，但可能为空）
-      const userColumn = columnsContainer.createDiv({ cls: 'qa-column' });
-      userColumn.createEl('h4', { text: 'Your Answer:', cls: 'column-label' });
-      const userAnswerDiv = userColumn.createDiv({ cls: 'comparison-item' });
-      const userAnswerElement = userAnswerDiv.createEl('div', {
-        text: this.userAnswer.trim() || '(no answer provided)',
-        cls: 'qa-user-answer'
-      });
-      
-      // 只有在有用户答案时才添加评估样式
-      if (evaluation) {
-        userAnswerElement.classList.add('user-answer', evaluation.correctness);
-        
-        // 相似度信息（只在 partial 时显示）
-        if (evaluation.correctness === 'partial') {
-          const similarityInfo = comparison.createEl('div', {
-            cls: 'similarity-info qa-similarity'
-          });
-          similarityInfo.textContent = `Similarity: ${Math.round(evaluation.similarity * 100)}%`;
-        }
-      } else {
-        // 没有答案时的样式
-        userAnswerElement.classList.add('no-answer');
-      }
     }
+  
+// 右列:Your Answer
+const userColumn = columnsContainer.createDiv({ cls: 'qa-column' });
+userColumn.createEl('h4', { text: 'Your Answer:', cls: 'column-label' });
+const userAnswerDiv = userColumn.createDiv({ cls: 'comparison-item' });
 
-    // 评级按钮
-    const ratingArea = container.createDiv({ cls: 'rating-area' });
+// 检测用户答案是否为表格
+const isUserAnswerTable = this.isTableFormat(this.userAnswer.trim());
 
-    const buttonGroup = ratingArea.createDiv({ cls: 'rating-buttons' });
+// 🆕 特殊处理:如果正确答案是表格,用户答案也应该尝试渲染为表格
+const shouldRenderAsTable = isUserAnswerTable || (isTable && this.userAnswer.trim());
 
-    const ratings: { ease: ReviewEase; label: string; color: string; key: string}[] = [
-      { ease: 'again', label: 'Again\n < 1 min', color: 'red' , key: '1' },
-      { ease: 'hard', label: 'Hard\n < 10 min', color: 'orange' , key: '2' },
-      { ease: 'good', label: 'Good\n 1 day', color: 'blue' , key: '3' },
-      { ease: 'easy', label: 'Easy\n 4 days', color: 'green', key: '4'  }
-    ];
-
-    ratings.forEach(({ ease, label, color,key }) => {
-      const btn = buttonGroup.createEl('button', {
-        cls: `rating-btn rating-${color}`,
-        attr: { title: `Press ${key}` } 
-      });
-      
-      const lines = label.split('\n');
-      btn.createEl('div', { text: lines[0], cls: 'rating-label' });
-      btn.createEl('div', { text: lines[1], cls: 'rating-interval' });
-
-      btn.createEl('div', { text: `(${key})`, cls: 'rating-hotkey' });
-
-      btn.addEventListener('click', () => this.submitReview(ease));
+if (shouldRenderAsTable && this.userAnswer.trim()) {
+  try {
+    const userTableEl = this.renderTable(this.userAnswer, true);
+    userAnswerDiv.appendChild(userTableEl);
+    userAnswerDiv.classList.add('table-answer');
+    
+    // 添加评分样式
+    if (evaluation) {
+      userAnswerDiv.classList.add('user-answer', evaluation.correctness);
+    }
+  } catch (error) {
+    console.error('渲染用户答案表格失败,降级为普通文本:', error);
+    // 降级处理:渲染为普通文本
+    const userAnswerElement = userAnswerDiv.createEl('div', {
+      text: this.userAnswer.trim(),
+      cls: 'qa-user-answer'
     });
+    
+    if (evaluation) {
+      userAnswerElement.classList.add('user-answer', evaluation.correctness);
+    }
   }
+} else {
+  // 普通文本渲染
+  const userAnswerElement = userAnswerDiv.createEl('div', {
+    text: this.userAnswer.trim() || '(no answer provided)',
+    cls: 'qa-user-answer'
+  });
+  
+  if (evaluation) {
+    userAnswerElement.classList.add('user-answer', evaluation.correctness);
+    
+    if (evaluation.correctness === 'partial') {
+      const similarityInfo = comparison.createEl('div', {
+        cls: 'similarity-info qa-similarity'
+      });
+      similarityInfo.textContent = `Similarity: ${Math.round(evaluation.similarity * 100)}%`;
+    }
+  } else {
+    userAnswerElement.classList.add('no-answer');
+  }
+}
+
+  // 评级按钮（保持不变）
+  const ratingArea = container.createDiv({ cls: 'rating-area' });
+
+  const buttonGroup = ratingArea.createDiv({ cls: 'rating-buttons' });
+
+  const ratings: { ease: ReviewEase; label: string; color: string; key: string}[] = [
+    { ease: 'again', label: 'Again\n < 1 min', color: 'red' , key: '1' },
+    { ease: 'hard', label: 'Hard\n < 10 min', color: 'orange' , key: '2' },
+    { ease: 'good', label: 'Good\n 1 day', color: 'blue' , key: '3' },
+    { ease: 'easy', label: 'Easy\n 4 days', color: 'green', key: '4'  }
+  ];
+
+  ratings.forEach(({ ease, label, color, key }) => {
+    const btn = buttonGroup.createEl('button', {
+      cls: `rating-btn rating-${color}`,
+      attr: { title: `Press ${key}` } 
+    });
+    
+    const lines = label.split('\n');
+    btn.createEl('div', { text: lines[0], cls: 'rating-label' });
+    btn.createEl('div', { text: lines[1], cls: 'rating-interval' });
+    btn.createEl('div', { text: `(${key})`, cls: 'rating-hotkey' });
+
+    btn.addEventListener('click', () => this.submitReview(ease));
+  });
+}
+}
 
   private async submitReview(ease: ReviewEase) {
     if (!this.currentCard) return;
@@ -683,6 +811,240 @@ private renderNoDueCards(container: Element) {
   private registerKeyboardHandlers() {
     document.addEventListener('keydown', this.keyboardHandler);
   }
+
+  // 检测是否为表格格式
+  private isTableFormat(text: string): boolean {
+    
+    const lines = text.trim().split('\n');
+    
+    if (lines.length < 2) {
+      return false;
+    }
+    
+    // 检查是否有表格分隔符 |-----|
+    const hasSeparator = lines.some(line => /^\|?[\s-:|]+\|?$/.test(line.trim()));
+    
+    // 检查是否大多数行包含 |
+    const pipeLines = lines.filter(line => line.includes('|')).length;
+    
+    const result = hasSeparator || pipeLines >= lines.length * 0.7;
+    
+    return result;
+  }
+
+// 渲染表格
+private renderTable(markdown: string, showAnswer: boolean = false): HTMLElement {
+  
+  const container = document.createElement('div');
+    // 🆕 添加空值检查
+    if (!markdown || markdown.trim().length === 0) {
+      container.textContent = '(empty table)';
+      return container;
+    }
+  const lines = markdown.trim().split('\n');
+    // 🆕 添加最小行数检查
+    if (lines.length < 2) {
+      container.textContent = markdown;
+      return container;
+    }
+  const table = container.createEl('table', { cls: 'learning-system-table flashcard-review-table' });
+  
+  const parseCells = (line: string): string[] => {
+    let trimmed = line.trim();
+    if (trimmed.startsWith('|')) trimmed = trimmed.slice(1);
+    if (trimmed.endsWith('|')) trimmed = trimmed.slice(0, -1);
+    
+    return trimmed
+      .split('|')
+      .map(c => c.trim())
+      .filter(c => c.length > 0);
+  };
+  
+  // 🔧 新增：查找分隔符行的位置
+  const separatorIndex = lines.findIndex(line => {
+    // 去掉所有 | 和空格，只看剩下的字符
+    const cleaned = line.replace(/[\s|]/g, '');
+    // 如果剩下的全是 - 和 :，且长度 >= 3，就是分隔符
+    return cleaned.length >= 3 && /^[-:]+$/.test(cleaned);
+  });
+  
+  
+  // 🔧 根据分隔符位置决定表头
+  if (separatorIndex > 0) {
+    // 有分隔符：分隔符前一行是表头
+    const headerCells = parseCells(lines[separatorIndex - 1]);
+    
+    const thead = table.createEl('thead');
+    const headerRow = thead.createEl('tr');
+    headerCells.forEach(cell => {
+      const th = headerRow.createEl('th');
+      th.innerHTML = this.processCellContent(cell, showAnswer);
+    });
+    
+    // 数据行从分隔符后一行开始
+    const tbody = table.createEl('tbody');
+    for (let i = separatorIndex + 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.trim()) continue;
+      
+      const cells = parseCells(line);
+      
+      if (cells.length === 0) continue;
+      
+      const row = tbody.createEl('tr');
+      cells.forEach(cell => {
+        const td = row.createEl('td');
+        td.innerHTML = this.processCellContent(cell, showAnswer);
+      });
+    }
+  } else {
+    // 🔧 无分隔符：所有行都是数据行（无表头）
+    const tbody = table.createEl('tbody');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.trim()) continue;
+      
+      const cells = parseCells(line);
+      if (cells.length === 0) continue;
+      
+      const row = tbody.createEl('tr');
+      cells.forEach(cell => {
+        const td = row.createEl('td');
+        td.innerHTML = this.processCellContent(cell, showAnswer);
+      });
+    }
+  }
+  
+  return container;
+}
+
+// 处理单元格内容：隐藏或显示 == 标记的内容
+private processCellContent(cell: string, showAnswer: boolean): string {
+  
+  if (!cell.includes('==')) {
+    return cell;
+  }
+  
+  if (showAnswer) {
+    const result = cell.replace(/==([^=]+)==/g, '<mark class="revealed">$1</mark>');
+    return result;
+  } else {
+    const result = cell.replace(/==([^=]+)==/g, '<span class="cloze-blank">[___]</span>');
+    return result;
+  }
+}
+// 🆕 渲染带用户答案的表格(用于 Cloze 完形填空)
+private renderTableWithUserAnswers(
+  originalMarkdown: string,
+  deletions: Array<{ answer: string }>,
+  userAnswers: string[]
+): HTMLElement {
+  const container = document.createElement('div');
+  const lines = originalMarkdown.trim().split('\n');
+  
+  if (lines.length < 2) {
+    container.textContent = originalMarkdown;
+    return container;
+  }
+  
+  const table = container.createEl('table', { 
+    cls: 'learning-system-table flashcard-review-table user-answer-table' 
+  });
+  
+  // 解析单元格
+  const parseCells = (line: string): string[] => {
+    let trimmed = line.trim();
+    if (trimmed.startsWith('|')) trimmed = trimmed.slice(1);
+    if (trimmed.endsWith('|')) trimmed = trimmed.slice(0, -1);
+    return trimmed.split('|').map(c => c.trim()).filter(c => c.length > 0);
+  };
+  
+  // 查找分隔符位置
+  const separatorIndex = lines.findIndex(line => {
+    const cleaned = line.replace(/[\s|]/g, '');
+    return cleaned.length >= 3 && /^[-:]+$/.test(cleaned);
+  });
+  
+  let deletionIndex = 0; // 追踪当前是第几个空白
+  
+  // 渲染表头
+  if (separatorIndex > 0) {
+    const headerCells = parseCells(lines[separatorIndex - 1]);
+    const thead = table.createEl('thead');
+    const headerRow = thead.createEl('tr');
+    headerCells.forEach(cell => {
+      const th = headerRow.createEl('th');
+      th.innerHTML = this.processCellWithUserAnswer(
+        cell, 
+        deletions, 
+        userAnswers, 
+        deletionIndex
+      );
+      // 如果这个单元格包含空白,增加索引
+      if (cell.includes('==')) deletionIndex++;
+    });
+  }
+  
+  // 渲染数据行
+  const tbody = table.createEl('tbody');
+  const startRow = separatorIndex > 0 ? separatorIndex + 1 : 0;
+  
+  for (let i = startRow; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) continue;
+    
+    const cells = parseCells(line);
+    if (cells.length === 0) continue;
+    
+    const row = tbody.createEl('tr');
+    cells.forEach(cell => {
+      const td = row.createEl('td');
+      td.innerHTML = this.processCellWithUserAnswer(
+        cell,
+        deletions,
+        userAnswers,
+        deletionIndex
+      );
+      // 如果这个单元格包含空白,增加索引
+      if (cell.includes('==')) deletionIndex++;
+    });
+  }
+  
+  return container;
+}
+
+// 🆕 处理单元格:将 == 标记替换为用户答案并评分
+private processCellWithUserAnswer(
+  cell: string,
+  deletions: Array<{ answer: string }>,
+  userAnswers: string[],
+  deletionIndex: number
+): string {
+  if (!cell.includes('==')) {
+    return cell;
+  }
+  
+  // 提取正确答案
+  const match = cell.match(/==([^=]+)==/);
+  if (!match || deletionIndex >= deletions.length) {
+    return cell.replace(/==([^=]+)==/g, '<span class="cloze-blank">[___]</span>');
+  }
+  
+  const correctAnswer = deletions[deletionIndex].answer;
+  const userAnswer = userAnswers[deletionIndex] || '';
+  
+  // 评估答案
+  const evaluation = this.scheduler.evaluateAnswer(correctAnswer, userAnswer);
+  
+  // 根据评分显示不同样式
+  const displayText = userAnswer || '(empty)';
+  const correctnessClass = evaluation.correctness;
+  
+  return cell.replace(
+    /==([^=]+)==/g,
+    `<span class="user-answer-cell ${correctnessClass}">${displayText}</span>`
+  );
+}
 
   private addStyles() {
     const styleEl = document.createElement('style');
@@ -1225,6 +1587,117 @@ private renderNoDueCards(container: Element) {
   border: 2px dashed var(--background-modifier-border);
   /* 下拉菜单分隔线 */
 
+  /* 表格样式 */
+.learning-system-table,
+.flashcard-review-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  background: var(--background-primary);
+}
+
+.learning-system-table th,
+.learning-system-table td,
+.flashcard-review-table th,
+.flashcard-review-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.learning-system-table th,
+.flashcard-review-table th {
+  background: var(--background-secondary);
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.learning-system-table tr:hover,
+.flashcard-review-table tr:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* 完形填空：隐藏的内容显示为空白框 */
+.cloze-blank {
+  display: inline-block;
+  min-width: 60px;
+  padding: 2px 8px;
+  background: var(--background-secondary);
+  border: 2px dashed var(--text-muted);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+/* 答案揭示后的高亮样式 */
+mark.revealed {
+  background: var(--text-highlight-bg);
+  color: var(--text-normal);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.table-answer,
+.table-question {
+  padding: 0 !important;
+}
+
+.table-answer .learning-system-table,
+.table-answer .flashcard-review-table,
+.table-question .learning-system-table,
+.table-question .flashcard-review-table {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* 完形填空答案中的表格 */
+.full-text.table-answer {
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.full-text.table-answer table {
+  margin: 0;
+}
+
+
+
+/* Cloze 表格两列布局 */
+.cloze-table-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* 用户答案表格中的单元格样式 */
+.user-answer-cell {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.user-answer-cell.correct {
+  background: var(--background-modifier-success, #4caf50) !important;
+  color: white !important;
+}
+
+.user-answer-cell.partial {
+  background: #FFC000 !important;
+  color: white !important;
+}
+
+.user-answer-cell.wrong {
+  background: var(--background-modifier-error, #f44336) !important;
+  color: white !important;
+}
+
+.user-answer-table.no-answer {
+  opacity: 0.6;
+}
 }
     `;
 

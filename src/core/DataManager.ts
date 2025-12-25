@@ -29,6 +29,7 @@ export interface ContentUnit {
     updatedAt: number;
     tags: string[];
     color?: string;
+    customData?: Record<string, any>;
   };
   annotationId?: string;
   flashcardIds: string[];
