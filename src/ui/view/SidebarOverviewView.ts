@@ -1,5 +1,5 @@
 // src/ui/SidebarOverviewView.ts - 重构后版本
-import { StyleLoader } from '../style/StyleLoader'
+import { StyleLoader } from '../style/sidebarStyle'
 
 import { ItemView, WorkspaceLeaf, TFile, Menu, Notice, Modal, Setting, TextAreaComponent, ButtonComponent,App } from 'obsidian';
 import type LearningSystemPlugin from '../../main';

@@ -1,34 +1,581 @@
-// reviewView.ts
+// reviewView.ts - 重构版本
 import { ItemView, WorkspaceLeaf, TFile, Notice } from 'obsidian';
 import type LearningSystemPlugin from '../../main';
 import { Flashcard } from '../../core/FlashcardManager';
 import { CardScheduler, ReviewEase } from '../../core/CardScheduler';
 import { FlashcardEditModal } from '../components/modals/FlashcardEditModal';
 
+import { reviewStyle } from '../style/reviewStyle';
 export const VIEW_TYPE_REVIEW = 'learning-system-review';
 
+// ============================================================================
+// 辅助类：表格渲染器
+// ============================================================================
+class TableRenderer {
+  // 检测是否为表格格式
+  static isTableFormat(text: string): boolean {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return false;
+    
+    const hasSeparator = lines.some(line => /^\|?[\s-:|]+\|?$/.test(line.trim()));
+    const pipeLines = lines.filter(line => line.includes('|')).length;
+    
+    return hasSeparator || pipeLines >= lines.length * 0.7;
+  }
+
+  // 渲染表格
+  static renderTable(markdown: string, showAnswer: boolean = false): HTMLElement {
+    const container = document.createElement('div');
+    
+    if (!markdown?.trim()) {
+      container.textContent = '(empty table)';
+      return container;
+    }
+
+    const lines = markdown.trim().split('\n');
+    if (lines.length < 2) {
+      container.textContent = markdown;
+      return container;
+    }
+
+    const table = container.createEl('table', { 
+      cls: 'learning-system-table flashcard-review-table' 
+    });
+
+    const separatorIndex = this.findSeparatorIndex(lines);
+    
+    if (separatorIndex > 0) {
+      this.renderTableWithHeader(table, lines, separatorIndex, showAnswer);
+    } else {
+      this.renderTableWithoutHeader(table, lines, showAnswer);
+    }
+
+    return container;
+  }
+
+  // 查找分隔符位置
+  private static findSeparatorIndex(lines: string[]): number {
+    return lines.findIndex(line => {
+      const cleaned = line.replace(/[\s|]/g, '');
+      return cleaned.length >= 3 && /^[-:]+$/.test(cleaned);
+    });
+  }
+
+  // 渲染带表头的表格
+  private static renderTableWithHeader(
+    table: HTMLElement,
+    lines: string[],
+    separatorIndex: number,
+    showAnswer: boolean
+  ) {
+    // 表头
+    const headerCells = this.parseCells(lines[separatorIndex - 1]);
+    const thead = table.createEl('thead');
+    const headerRow = thead.createEl('tr');
+    
+    headerCells.forEach(cell => {
+      const th = headerRow.createEl('th');
+      th.innerHTML = this.processCellContent(cell, showAnswer);
+    });
+
+    // 数据行
+    const tbody = table.createEl('tbody');
+    for (let i = separatorIndex + 1; i < lines.length; i++) {
+      this.renderTableRow(tbody, lines[i], showAnswer);
+    }
+  }
+
+  // 渲染无表头的表格
+  private static renderTableWithoutHeader(
+    table: HTMLElement,
+    lines: string[],
+    showAnswer: boolean
+  ) {
+    const tbody = table.createEl('tbody');
+    lines.forEach(line => this.renderTableRow(tbody, line, showAnswer));
+  }
+
+  // 渲染单行
+  private static renderTableRow(
+    tbody: HTMLElement,
+    line: string,
+    showAnswer: boolean
+  ) {
+    if (!line.trim()) return;
+    
+    const cells = this.parseCells(line);
+    if (cells.length === 0) return;
+    
+    const row = tbody.createEl('tr');
+    cells.forEach(cell => {
+      const td = row.createEl('td');
+      td.innerHTML = this.processCellContent(cell, showAnswer);
+    });
+  }
+
+  // 解析单元格
+  private static parseCells(line: string): string[] {
+    let trimmed = line.trim();
+    if (trimmed.startsWith('|')) trimmed = trimmed.slice(1);
+    if (trimmed.endsWith('|')) trimmed = trimmed.slice(0, -1);
+    
+    return trimmed
+      .split('|')
+      .map(c => c.trim())
+      .filter(c => c.length > 0);
+  }
+
+  // 处理单元格内容
+  private static processCellContent(cell: string, showAnswer: boolean): string {
+    if (!cell.includes('==')) return cell;
+    
+    if (showAnswer) {
+      return cell.replace(/==([^=]+)==/g, '<mark class="revealed">$1</mark>');
+    } else {
+      return cell.replace(/==([^=]+)==/g, '<span class="cloze-blank">[___]</span>');
+    }
+  }
+
+  // 渲染带用户答案的表格（完形填空用）
+  static renderTableWithUserAnswers(
+    originalMarkdown: string,
+    deletions: Array<{ answer: string }>,
+    userAnswers: string[],
+    scheduler: CardScheduler
+  ): HTMLElement {
+    const container = document.createElement('div');
+    const lines = originalMarkdown.trim().split('\n');
+    
+    if (lines.length < 2) {
+      container.textContent = originalMarkdown;
+      return container;
+    }
+
+    const table = container.createEl('table', { 
+      cls: 'learning-system-table flashcard-review-table user-answer-table' 
+    });
+
+    const separatorIndex = this.findSeparatorIndex(lines);
+    let deletionIndex = 0;
+
+    // 渲染表头
+    if (separatorIndex > 0) {
+      const headerCells = this.parseCells(lines[separatorIndex - 1]);
+      const thead = table.createEl('thead');
+      const headerRow = thead.createEl('tr');
+      
+      headerCells.forEach(cell => {
+        const th = headerRow.createEl('th');
+        th.innerHTML = this.processCellWithUserAnswer(
+          cell, deletions, userAnswers, deletionIndex, scheduler
+        );
+        if (cell.includes('==')) deletionIndex++;
+      });
+    }
+
+    // 渲染数据行
+    const tbody = table.createEl('tbody');
+    const startRow = separatorIndex > 0 ? separatorIndex + 1 : 0;
+    
+    for (let i = startRow; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.trim()) continue;
+      
+      const cells = this.parseCells(line);
+      if (cells.length === 0) continue;
+      
+      const row = tbody.createEl('tr');
+      cells.forEach(cell => {
+        const td = row.createEl('td');
+        td.innerHTML = this.processCellWithUserAnswer(
+          cell, deletions, userAnswers, deletionIndex, scheduler
+        );
+        if (cell.includes('==')) deletionIndex++;
+      });
+    }
+
+    return container;
+  }
+
+  // 处理带用户答案的单元格
+  private static processCellWithUserAnswer(
+    cell: string,
+    deletions: Array<{ answer: string }>,
+    userAnswers: string[],
+    deletionIndex: number,
+    scheduler: CardScheduler
+  ): string {
+    if (!cell.includes('==')) return cell;
+    
+    const match = cell.match(/==([^=]+)==/);
+    if (!match || deletionIndex >= deletions.length) {
+      return cell.replace(/==([^=]+)==/g, '<span class="cloze-blank">[___]</span>');
+    }
+    
+    const correctAnswer = deletions[deletionIndex].answer;
+    const userAnswer = userAnswers[deletionIndex] || '';
+    const evaluation = scheduler.evaluateAnswer(correctAnswer, userAnswer);
+    
+    const displayText = userAnswer || '(empty)';
+    const correctnessClass = evaluation.correctness;
+    
+    return cell.replace(
+      /==([^=]+)==/g,
+      `<span class="user-answer-cell ${correctnessClass}">${displayText}</span>`
+    );
+  }
+}
+
+// ============================================================================
+// 辅助类：卡片渲染器（策略模式）
+// ============================================================================
+interface CardRenderStrategy {
+  renderQuestion(container: HTMLElement, card: Flashcard, state: ReviewState): void;
+  renderAnswer(
+    container: HTMLElement, 
+    card: Flashcard, 
+    state: ReviewState, 
+    scheduler: CardScheduler
+  ): void;
+}
+
+class ClozeCardRenderer implements CardRenderStrategy {
+  renderQuestion(container: HTMLElement, card: Flashcard, state: ReviewState): void {
+    // 问题文本
+    const questionText = container.createDiv({ cls: 'question-text' });
+    const isTable = TableRenderer.isTableFormat(card.front);
+    
+    if (isTable) {
+      const tableEl = TableRenderer.renderTable(card.front, false);
+      questionText.appendChild(tableEl);
+      questionText.classList.add('table-question');
+    } else {
+      questionText.textContent = card.front;
+    }
+
+    // 输入框
+    if (card.cloze) {
+      const inputArea = container.createDiv({ cls: 'cloze-input-area' });
+      inputArea.createEl('h4', { text: 'Fill in the blanks:' });
+
+      // 确保数组长度
+      if (state.userAnswers.length < card.cloze.deletions.length) {
+        state.userAnswers = new Array(card.cloze.deletions.length).fill('');
+      }
+
+      card.cloze.deletions.forEach((deletion, index) => {
+        const inputGroup = inputArea.createDiv({ cls: 'input-group' });
+        inputGroup.createSpan({ text: `${index + 1}. ` });
+        
+        const input = inputGroup.createEl('input', {
+          type: 'text',
+          placeholder: 'Your answer...',
+          cls: 'cloze-input',
+          value: state.userAnswers[index] || ''
+        });
+        
+        input.addEventListener('input', (e) => {
+          state.userAnswers[index] = (e.target as HTMLInputElement).value;
+        });
+
+        if (index === 0) {
+          setTimeout(() => input.focus(), 50);
+        }
+      });
+    }
+  }
+
+  renderAnswer(
+    container: HTMLElement,
+    card: Flashcard,
+    state: ReviewState,
+    scheduler: CardScheduler
+  ): void {
+    if (!card.cloze) return;
+
+    const answerArea = container.createDiv({ cls: 'answer-area' });
+    const isOriginalTable = TableRenderer.isTableFormat(card.cloze.original);
+
+    if (isOriginalTable) {
+      this.renderTableAnswer(answerArea, card, state, scheduler);
+    } else {
+      this.renderTextAnswer(answerArea, card, state, scheduler);
+    }
+  }
+
+  private renderTableAnswer(
+    answerArea: HTMLElement,
+    card: Flashcard,
+    state: ReviewState,
+    scheduler: CardScheduler
+  ) {
+    const columnsContainer = answerArea.createDiv({ cls: 'cloze-table-columns' });
+    
+    // 左列：正确答案
+    const correctColumn = columnsContainer.createDiv({ cls: 'qa-column' });
+    correctColumn.createEl('h4', { text: 'Correct Answer:', cls: 'column-label' });
+    const correctDiv = correctColumn.createDiv({ cls: 'comparison-item' });
+    const tableEl = TableRenderer.renderTable(card.cloze!.original, true);
+    correctDiv.appendChild(tableEl);
+    correctDiv.classList.add('table-answer');
+    
+    // 右列：用户答案
+    const userColumn = columnsContainer.createDiv({ cls: 'qa-column' });
+    userColumn.createEl('h4', { text: 'Your Answer:', cls: 'column-label' });
+    const userDiv = userColumn.createDiv({ cls: 'comparison-item' });
+    
+    if (state.userAnswers.length > 0 && state.userAnswers.some(a => a.trim())) {
+      const userTableEl = TableRenderer.renderTableWithUserAnswers(
+        card.cloze!.original,
+        card.cloze!.deletions,
+        state.userAnswers,
+        scheduler
+      );
+      userDiv.appendChild(userTableEl);
+      userDiv.classList.add('table-answer');
+    } else {
+      const emptyTableEl = TableRenderer.renderTable(card.front, false);
+      userDiv.appendChild(emptyTableEl);
+      userDiv.classList.add('table-answer', 'no-answer');
+    }
+
+    // 详细对比
+    this.renderDetailedComparison(answerArea, card, state, scheduler);
+  }
+
+  private renderTextAnswer(
+    answerArea: HTMLElement,
+    card: Flashcard,
+    state: ReviewState,
+    scheduler: CardScheduler
+  ) {
+    const fullText = answerArea.createDiv({ cls: 'full-text' });
+    fullText.textContent = card.cloze!.original;
+    
+    this.renderDetailedComparison(answerArea, card, state, scheduler);
+  }
+
+  private renderDetailedComparison(
+    answerArea: HTMLElement,
+    card: Flashcard,
+    state: ReviewState,
+    scheduler: CardScheduler
+  ) {
+    if (state.userAnswers.length === 0) return;
+
+    const comparison = answerArea.createDiv({ cls: 'answer-comparison' });
+    comparison.createEl('h4', { text: 'Answer Details:' });
+
+    card.cloze!.deletions.forEach((deletion, index) => {
+      const item = comparison.createDiv({ cls: 'comparison-item' });
+      item.createSpan({ text: `${index + 1}. ` });
+
+      const userAnswer = state.userAnswers[index] || '';
+      const evaluation = scheduler.evaluateAnswer(deletion.answer, userAnswer);
+
+      item.createEl('span', {
+        text: userAnswer || '(empty)',
+        cls: `user-answer ${evaluation.correctness}`
+      });
+      
+      item.createSpan({ text: ' → ' });
+      
+      item.createEl('span', {
+        text: deletion.answer,
+        cls: 'correct-answer'
+      });
+
+      if (evaluation.correctness === 'partial') {
+        item.createEl('small', {
+          text: ` (${Math.round(evaluation.similarity * 100)}% match)`,
+          cls: 'similarity-info'
+        });
+      }
+    });
+  }
+}
+
+class QACardRenderer implements CardRenderStrategy {
+  renderQuestion(container: HTMLElement, card: Flashcard, state: ReviewState): void {
+    // 问题文本
+    const questionText = container.createDiv({ cls: 'question-text' });
+    const isTable = TableRenderer.isTableFormat(card.front);
+    
+    if (isTable) {
+      const tableEl = TableRenderer.renderTable(card.front, false);
+      questionText.appendChild(tableEl);
+      questionText.classList.add('table-question');
+    } else {
+      questionText.textContent = card.front;
+    }
+
+    // 输入框
+    const inputArea = container.createDiv({ cls: 'qa-input-area' });
+    inputArea.createEl('h4', { text: 'Your Answer:' });
+    
+    const textarea = inputArea.createEl('textarea', {
+      placeholder: 'Type your answer here...',
+      cls: 'qa-input',
+      value: state.userAnswer
+    });
+    
+    textarea.addEventListener('input', (e) => {
+      state.userAnswer = (e.target as HTMLTextAreaElement).value;
+    });
+    
+    setTimeout(() => textarea.focus(), 50);
+  }
+
+  renderAnswer(
+    container: HTMLElement,
+    card: Flashcard,
+    state: ReviewState,
+    scheduler: CardScheduler
+  ): void {
+    const answerArea = container.createDiv({ cls: 'answer-area' });
+    
+    // 获取正确答案
+    const correctAnswer = Array.isArray(card.back) 
+      ? (card.back[0] || card.back.join('\n'))
+      : card.back as string;
+    
+    const isTable = TableRenderer.isTableFormat(correctAnswer);
+    const evaluation = state.userAnswer.trim() 
+      ? scheduler.evaluateAnswer(correctAnswer, state.userAnswer)
+      : null;
+
+    const comparison = answerArea.createDiv({ 
+      cls: 'answer-comparison qa-comparison' 
+    });
+    const columnsContainer = comparison.createDiv({ cls: 'qa-columns-container' });
+    
+    // 左列：正确答案
+    this.renderCorrectAnswerColumn(columnsContainer, correctAnswer, isTable);
+    
+    // 右列：用户答案
+    this.renderUserAnswerColumn(
+      columnsContainer, 
+      state.userAnswer, 
+      isTable, 
+      evaluation
+    );
+
+    // 相似度信息
+    if (evaluation?.correctness === 'partial') {
+      const similarityInfo = comparison.createEl('div', {
+        cls: 'similarity-info qa-similarity'
+      });
+      similarityInfo.textContent = `Similarity: ${Math.round(evaluation.similarity * 100)}%`;
+    }
+  }
+
+  private renderCorrectAnswerColumn(
+    container: HTMLElement,
+    correctAnswer: string,
+    isTable: boolean
+  ) {
+    const correctColumn = container.createDiv({ cls: 'qa-column' });
+    correctColumn.createEl('h4', { text: 'Correct Answer:', cls: 'column-label' });
+    const correctAnswerDiv = correctColumn.createDiv({ cls: 'comparison-item' });
+    
+    if (isTable) {
+      const tableEl = TableRenderer.renderTable(correctAnswer, true);
+      correctAnswerDiv.appendChild(tableEl);
+      correctAnswerDiv.classList.add('table-answer');
+    } else {
+      correctAnswerDiv.createEl('div', {
+        text: correctAnswer,
+        cls: 'correct-answer qa-correct-answer'
+      });
+    }
+  }
+
+  private renderUserAnswerColumn(
+    container: HTMLElement,
+    userAnswer: string,
+    isTable: boolean,
+    evaluation: any
+  ) {
+    const userColumn = container.createDiv({ cls: 'qa-column' });
+    userColumn.createEl('h4', { text: 'Your Answer:', cls: 'column-label' });
+    const userAnswerDiv = userColumn.createDiv({ cls: 'comparison-item' });
+
+    const isUserAnswerTable = TableRenderer.isTableFormat(userAnswer.trim());
+    const shouldRenderAsTable = isUserAnswerTable || (isTable && userAnswer.trim());
+
+    if (shouldRenderAsTable && userAnswer.trim()) {
+      try {
+        const userTableEl = TableRenderer.renderTable(userAnswer, true);
+        userAnswerDiv.appendChild(userTableEl);
+        userAnswerDiv.classList.add('table-answer');
+        
+        if (evaluation) {
+          userAnswerDiv.classList.add('user-answer', evaluation.correctness);
+        }
+      } catch (error) {
+        this.renderTextUserAnswer(userAnswerDiv, userAnswer, evaluation);
+      }
+    } else {
+      this.renderTextUserAnswer(userAnswerDiv, userAnswer, evaluation);
+    }
+  }
+
+  private renderTextUserAnswer(
+    container: HTMLElement,
+    userAnswer: string,
+    evaluation: any
+  ) {
+    const userAnswerElement = container.createEl('div', {
+      text: userAnswer.trim() || '(no answer provided)',
+      cls: 'qa-user-answer'
+    });
+    
+    if (evaluation) {
+      userAnswerElement.classList.add('user-answer', evaluation.correctness);
+    } else {
+      userAnswerElement.classList.add('no-answer');
+    }
+  }
+}
+
+// ============================================================================
+// 卡片渲染器工厂
+// ============================================================================
+class CardRendererFactory {
+  private static renderers = new Map<string, CardRenderStrategy>([
+    ['cloze', new ClozeCardRenderer()],
+    ['qa', new QACardRenderer()]
+  ]);
+
+  static getRenderer(cardType: string): CardRenderStrategy {
+    const renderer = this.renderers.get(cardType);
+    if (!renderer) {
+      throw new Error(`Unknown card type: ${cardType}`);
+    }
+    return renderer;
+  }
+}
+
+// ============================================================================
+// 复习状态
+// ============================================================================
+interface ReviewState {
+  showAnswer: boolean;
+  startTime: number;
+  userAnswers: string[];
+  userAnswer: string;
+}
+
+// ============================================================================
+// 主视图类
+// ============================================================================
 export class ReviewView extends ItemView {
   plugin: LearningSystemPlugin;
   private scheduler: CardScheduler;
   private dueCards: Flashcard[] = [];
   private currentCardIndex: number = 0;
   private currentCard: Flashcard | null = null;
-  private reviewState = {
-    showAnswer: false,
-    startTime: 0,
-    userAnswers: [] as string[],
-    userAnswer: ''
-  };
- 
-  private resetReviewState() {
-    this.reviewState = {
-      showAnswer: false,
-      startTime: 0,
-      userAnswers: [],
-      userAnswer: ''
-    };
-  }
-  
+  private reviewState: ReviewState = this.createInitialState();
 
   constructor(leaf: WorkspaceLeaf, plugin: LearningSystemPlugin) {
     super(leaf);
@@ -51,19 +598,53 @@ export class ReviewView extends ItemView {
   async onOpen() {
     await this.loadDueCards();
     this.render();
-    this.addStyles();
+    reviewStyle.inject();
     this.registerKeyboardHandlers();
   }
 
-  async onClose() {}
-
-  private async loadDueCards() {
-    this.dueCards = this.plugin.flashcardManager.getDueCards();
-    this.currentCardIndex = 0;
-    this.reviewState.showAnswer = false;
+  async onClose() {
     document.removeEventListener('keydown', this.keyboardHandler);
   }
 
+  // ============================================================================
+  // 状态管理
+  // ============================================================================
+  private createInitialState(): ReviewState {
+    return {
+      showAnswer: false,
+      startTime: 0,
+      userAnswers: [],
+      userAnswer: ''
+    };
+  }
+
+  private resetReviewState() {
+    this.reviewState = this.createInitialState();
+  }
+
+  private updateCurrentCard() {
+    const newCard = this.dueCards[this.currentCardIndex];
+    if (this.currentCard?.id !== newCard?.id) {
+      this.resetReviewState();
+      this.currentCard = newCard;
+    }
+    if (!this.reviewState.showAnswer && this.reviewState.startTime === 0) {
+      this.reviewState.startTime = Date.now();
+    }
+  }
+
+  // ============================================================================
+  // 数据加载
+  // ============================================================================
+  private async loadDueCards() {
+    this.dueCards = this.plugin.flashcardManager.getDueCards();
+    this.currentCardIndex = 0;
+    this.resetReviewState();
+  }
+
+  // ============================================================================
+  // 渲染逻辑
+  // ============================================================================
   private render() {
     const container = this.containerEl.children[1];
     container.empty();
@@ -74,197 +655,39 @@ export class ReviewView extends ItemView {
       return;
     }
 
-    const newCard = this.dueCards[this.currentCardIndex];
-    
-// 如果切换到新卡片，重置状态
-if (this.currentCard?.id !== newCard?.id) {
-  this.resetReviewState();
-  this.reviewState.startTime = Date.now();
-}
-
-this.currentCard = newCard;
-
-// 如果显示问题且开始时间为 0，设置开始时间
-if (
-  !this.reviewState.showAnswer &&
-  this.reviewState.startTime === 0
-) {
-  this.reviewState.startTime = Date.now();
-}
-
-
-    // 进度条
+    this.updateCurrentCard();
     this.renderProgress(container);
-
-    // 卡片区域
+    
     const cardArea = container.createDiv({ cls: 'card-area' });
-
-    // 添加右上角操作按钮
     this.renderTopActions(cardArea);
-
+    
     if (this.reviewState.showAnswer) {
-      this.renderAnswer(cardArea);
+      this.renderAnswerView(cardArea);
     } else {
-      this.renderQuestion(cardArea);
+      this.renderQuestionView(cardArea);
     }
   }
 
-  private renderTopActions(container: HTMLElement) {
-    const actionsBar = container.createDiv({ cls: 'top-actions-bar' });
-  
-    // Jump to source 按钮
-    const jumpBtn = actionsBar.createEl('button', {
-      cls: 'top-action-btn jump-icon-btn',
-      attr: { 'aria-label': 'Jump to Source' }
+  private renderNoDueCards(container: Element) {
+    const emptyState = container.createDiv({ cls: 'empty-state' });
+    emptyState.createEl('h2', { text: '🎉 All Done!' });
+    emptyState.createEl('p', { text: 'No cards due for review right now.' });
+
+    const stats = this.plugin.flashcardManager.getStats();
+    const statsDiv = emptyState.createDiv({ cls: 'stats-summary' });
+    statsDiv.createEl('p', { text: `Total cards: ${stats.total}` });
+    statsDiv.createEl('p', { text: `New cards: ${stats.new}` });
+    statsDiv.createEl('p', { text: `Reviewed today: ${stats.reviewedToday}` });
+
+    const closeBtn = emptyState.createEl('button', {
+      text: 'Close Review',
+      cls: 'mod-cta'
     });
-    jumpBtn.innerHTML = '↗';
-    jumpBtn.addEventListener('click', () => this.jumpToSource());
-  
-    // More 菜单
-    const moreBtn = actionsBar.createEl('button', {
-      cls: 'top-action-btn more-btn',
-      attr: { 'aria-label': 'More actions' }
-    });
-    moreBtn.innerHTML = '⋯';
     
-    const dropdown = actionsBar.createDiv({ cls: 'more-dropdown' });
-    dropdown.style.display = 'none';
-  
-    // 编辑选项
-    const editOption = dropdown.createEl('div', {
-      cls: 'dropdown-item'
-    });
-    editOption.innerHTML = '✏️ Edit Card';
-    editOption.addEventListener('click', () => {
-      if (!this.currentCard) return;
-      this.editCurrentFlashcard();
-      dropdown.style.display = 'none';
-    });
-  
-
-  
-    // 分隔线
-    // dropdown.createEl('div', { cls: 'dropdown-divider' });
-  
-    // **新增: 清除当前卡片统计**
-    const resetCardOption = dropdown.createEl('div', {
-      cls: 'dropdown-item'
-    });
-    resetCardOption.innerHTML = '🔄 Reset Card Stats';
-    resetCardOption.addEventListener('click', async () => {
-      if (!this.currentCard) return;
-      if (confirm('确定要重置这张卡片的学习进度吗？卡片将回到"新卡片"状态。')) {
-        await this.resetCardStats(this.currentCard.id);
-      }
-      dropdown.style.display = 'none';
-    });
-  
-    // **新增: 清除当前卡组统计**
-    const resetDeckOption = dropdown.createEl('div', {
-      cls: 'dropdown-item'
-    });
-    resetDeckOption.innerHTML = '📚 Reset Deck Stats';
-    resetDeckOption.addEventListener('click', async () => {
-      if (!this.currentCard) return;
-      const deckName = this.currentCard.deck;
-      if (confirm(`确定要重置卡组"${deckName}"的所有学习进度吗？该卡组的所有卡片将回到"新卡片"状态。`)) {
-        await this.plugin.analyticsEngine.clearDeckStats(deckName);
-        new Notice(`✅ 卡组"${deckName}"的统计已重置`);
-        await this.loadDueCards();
-        this.render();
-      }
-      dropdown.style.display = 'none';
-    });
-        // 删除选项
-        const deleteOption = dropdown.createEl('div', {
-          cls: 'dropdown-item delete-item'
-        });
-        deleteOption.innerHTML = '🗑️ Delete Card';
-        deleteOption.addEventListener('click', async () => {
-          if (!this.currentCard) return;
-          if (confirm('确定要删除这张闪卡吗？删除后将从复习队列中移除。')) {
-            await this.deleteFlashcard(this.currentCard.id);
-          }
-          dropdown.style.display = 'none';
-        });
-  
-    // 切换下拉菜单
-    moreBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-    });
-  
-    document.addEventListener('click', () => {
-      dropdown.style.display = 'none';
-    });
-  
-    dropdown.addEventListener('click', (e) => {
-      e.stopPropagation();
-    });
-  }
-  
-  // **新增: 重置单张卡片统计的方法**
-private async resetCardStats(cardId: string) {
-  try {
-    const card = this.plugin.flashcardManager.getFlashcard(cardId);
-    if (!card) return;
-
-    card.stats = {
-      totalReviews: 0,
-      correctCount: 0,
-      averageTime: 0,
-      lastReview: 0,
-      difficulty: 0.3
+    closeBtn.onclick = () => {
+      this.leaf?.detach();
     };
-    card.scheduling = {
-      interval: 0,
-      ease: 2.5,  // 改为 ease
-      due: Date.now(),
-      lapses: 0,
-      reps: 0,
-      state: 'new'
-    };
-
-    await this.plugin.flashcardManager.updateCard(card);
-    
-    // 清除该卡片的复习日志
-    const logs = this.plugin.flashcardManager['reviewLogs'] || [];
-    this.plugin.flashcardManager['reviewLogs'] = logs.filter(
-      log => log.flashcardId !== cardId
-    );
-    await this.plugin.dataManager.save(); // 改用 dataManager
-    
-    new Notice('✅ 卡片统计已重置');
-    this.currentCard = card;
-    this.render();
-  } catch (error) {
-    console.error('Error resetting card stats:', error);
-    new Notice('❌ 重置统计失败');
   }
-}
-
-private renderNoDueCards(container: Element) {
-  const emptyState = container.createDiv({ cls: 'empty-state' });
-  emptyState.createEl('h2', { text: '🎉 All Done!' });
-  emptyState.createEl('p', { text: 'No cards due for review right now.' });
-
-  const stats = this.plugin.flashcardManager.getStats();
-  const statsDiv = emptyState.createDiv({ cls: 'stats-summary' });
-  statsDiv.createEl('p', { text: `Total cards: ${stats.total}` });
-  statsDiv.createEl('p', { text: `New cards: ${stats.new}` });
-  statsDiv.createEl('p', { text: `Reviewed today: ${stats.reviewedToday}` });
-
-  const closeBtn = emptyState.createEl('button', {
-    text: 'Close Review',
-    cls: 'mod-cta'
-  });
-  
-  // 尝试方案1: 使用 onclick 而不是 addEventListener
-  closeBtn.onclick = () => {
-    this.leaf?.detach();
-  };
-
-}
 
   private renderProgress(container: Element) {
     const progressBar = container.createDiv({ cls: 'progress-bar' });
@@ -275,18 +698,141 @@ private renderNoDueCards(container: Element) {
       cls: 'progress-text'
     });
 
-
-
     const barContainer = progressBar.createDiv({ cls: 'bar-container' });
     const bar = barContainer.createDiv({ cls: 'bar' });
     const progress = ((this.currentCardIndex + 1) / this.dueCards.length) * 100;
     bar.style.width = `${progress}%`;
   }
 
-  private renderQuestion(container: HTMLElement) {
+  private renderTopActions(container: HTMLElement) {
+    const actionsBar = container.createDiv({ cls: 'top-actions-bar' });
+
+    // Jump to Source 按钮
+    const jumpBtn = actionsBar.createEl('button', {
+      cls: 'top-action-btn jump-icon-btn',
+      attr: { 'aria-label': 'Jump to Source' }
+    });
+    jumpBtn.innerHTML = '↗';
+    jumpBtn.addEventListener('click', () => this.jumpToSource());
+
+    // More 菜单
+    this.renderMoreMenu(actionsBar);
+  }
+
+  private renderMoreMenu(actionsBar: HTMLElement) {
+    const moreBtn = actionsBar.createEl('button', {
+      cls: 'top-action-btn more-btn',
+      attr: { 'aria-label': 'More actions' }
+    });
+    moreBtn.innerHTML = '⋯';
+    
+    const dropdown = actionsBar.createDiv({ cls: 'more-dropdown' });
+    dropdown.style.display = 'none';
+
+    // 菜单项配置
+    const menuItems = [
+      {
+        label: '✏️ Edit Card',
+        onClick: () => this.editCurrentFlashcard()
+      },
+      {
+        label: '🔄 Reset Card Stats',
+        onClick: async () => {
+          if (this.currentCard && confirm('确定要重置这张卡片的学习进度吗？')) {
+            await this.resetCardStats(this.currentCard.id);
+          }
+        }
+      },
+      {
+        label: '📚 Reset Deck Stats',
+        onClick: async () => {
+          if (this.currentCard) {
+            const deckName = this.currentCard.deck;
+            if (confirm(`确定要重置卡组"${deckName}"的所有学习进度吗？`)) {
+              await this.plugin.analyticsEngine.clearDeckStats(deckName);
+              new Notice(`✅ 卡组"${deckName}"的统计已重置`);
+              await this.loadDueCards();
+              this.render();
+            }
+          }
+        }
+      },
+      {
+        label: '🗑️ Delete Card',
+        onClick: async () => {
+          if (this.currentCard && confirm('确定要删除这张闪卡吗？')) {
+            await this.deleteFlashcard(this.currentCard.id);
+          }
+        },
+        className: 'delete-item'
+      }
+    ];
+
+    // 创建菜单项
+    menuItems.forEach(item => {
+      const menuItem = dropdown.createEl('div', {
+        cls: `dropdown-item ${item.className || ''}`
+      });
+      menuItem.innerHTML = item.label;
+      menuItem.addEventListener('click', () => {
+        item.onClick();
+        dropdown.style.display = 'none';
+      });
+    });
+
+    // 切换下拉菜单
+    moreBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    });
+
+    document.addEventListener('click', () => {
+      dropdown.style.display = 'none';
+    });
+
+    dropdown.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  private renderQuestionView(container: HTMLElement) {
     if (!this.currentCard) return;
 
     // 卡片信息
+    this.renderCardInfo(container);
+
+    // 问题区域
+    const questionArea = container.createDiv({ cls: 'question-area' });
+    questionArea.createEl('h3', { text: 'Question' });
+
+    // 使用策略模式渲染
+    const renderer = CardRendererFactory.getRenderer(this.currentCard.type);
+    renderer.renderQuestion(questionArea, this.currentCard, this.reviewState);
+
+    // 显示答案按钮
+    this.renderShowAnswerButton(container);
+  }
+
+  private renderAnswerView(container: HTMLElement) {
+    if (!this.currentCard) return;
+
+    // 卡片信息
+    this.renderCardInfo(container);
+
+    // 问题回顾
+    this.renderQuestionReview(container);
+
+    // 使用策略模式渲染答案
+    const renderer = CardRendererFactory.getRenderer(this.currentCard.type);
+    renderer.renderAnswer(container, this.currentCard, this.reviewState, this.scheduler);
+
+    // 评级按钮
+    this.renderRatingButtons(container);
+  }
+
+  private renderCardInfo(container: HTMLElement) {
+    if (!this.currentCard) return;
+
     const cardInfo = container.createDiv({ cls: 'card-info' });
     cardInfo.createSpan({ 
       text: this.currentCard.type === 'qa' ? '📝 Q&A' : '✏️ Cloze',
@@ -296,84 +842,32 @@ private renderNoDueCards(container: Element) {
       text: `Deck: ${this.currentCard.deck}`,
       cls: 'card-deck'
     });
+  }
 
-    // 问题区域
-    const questionArea = container.createDiv({ cls: 'question-area' });
-    questionArea.createEl('h3', { text: 'Question' });
+  private renderQuestionReview(container: HTMLElement) {
+    if (!this.currentCard) return;
+
+    const questionReview = container.createDiv({ cls: 'question-review' });
+    questionReview.createEl('h4', { text: 'Question:' });
+
+    const reviewTextDiv = questionReview.createDiv({ cls: 'review-text' });
+    const isQuestionTable = TableRenderer.isTableFormat(this.currentCard.front);
     
-    const questionText = questionArea.createDiv({ cls: 'question-text' });
-// 🆕 检测是否为表格
-const isTable = this.isTableFormat(this.currentCard.front);
-
-console.log('🔍 [renderQuestion] 问题是否为表格:', isTable);
-console.log('🔍 [renderQuestion] 问题内容:', this.currentCard.front);
-
-if (isTable) {
-  console.log('📊 题面是表格，渲染表格形式');
-  const tableEl = this.renderTable(this.currentCard.front, false);  // ← 传入 false 隐藏答案
-  questionText.appendChild(tableEl);
-  questionText.classList.add('table-question');
-} else {
-  console.log('📝 题面是文本，渲染文本形式');
-  questionText.textContent = this.currentCard.front;
-}
-
-    // 完形填空输入框
-    if (this.currentCard.type === 'cloze' && this.currentCard.cloze) {
-      const inputArea = container.createDiv({ cls: 'cloze-input-area' });
-      inputArea.createEl('h4', { text: 'Fill in the blanks:' });
-
-      // 确保 userAnswers 数组有足够的长度
-      if (this.reviewState.userAnswers.length < this.currentCard.cloze.deletions.length) {
-        this.reviewState.userAnswers = new Array(this.currentCard.cloze.deletions.length).fill('');
-      }
-
-      this.currentCard.cloze.deletions.forEach((deletion, index) => {
-        const inputGroup = inputArea.createDiv({ cls: 'input-group' });
-        inputGroup.createSpan({ text: `${index + 1}. ` });
-        
-        const input = inputGroup.createEl('input', {
-          type: 'text',
-          placeholder: 'Your answer...',
-          cls: 'cloze-input',
-          value: this.reviewState.userAnswers[index] || ''
-        });
-        
-        input.addEventListener('input', (e) => {
-          this.reviewState.userAnswers[index] = (e.target as HTMLInputElement).value;
-        });
-        if (index === 0) {
-          setTimeout(() => input.focus(), 50);
-        }
-      
-      });
+    if (isQuestionTable) {
+      const tableEl = TableRenderer.renderTable(this.currentCard.front, false);
+      reviewTextDiv.appendChild(tableEl);
+      reviewTextDiv.classList.add('table-question');
+    } else {
+      reviewTextDiv.textContent = this.currentCard.front;
     }
+  }
 
-    // QA 卡片输入框
-    if (this.currentCard.type === 'qa') {
-      const inputArea = container.createDiv({ cls: 'qa-input-area' });
-      inputArea.createEl('h4', { text: 'Your Answer:' });
-      
-      const textarea = inputArea.createEl('textarea', {
-        placeholder: 'Type your answer here...',
-        cls: 'qa-input',
-        value: this.reviewState.userAnswer
-      });
-      
-      textarea.addEventListener('input', (e) => {
-        this.reviewState.userAnswer = (e.target as HTMLTextAreaElement).value;
-      });
-      setTimeout(() => textarea.focus(), 50);
-    }
-
-    // 按钮区域
+  private renderShowAnswerButton(container: HTMLElement) {
     const buttonArea = container.createDiv({ cls: 'button-area' });
-
-    // 显示答案按钮
     const showAnswerBtn = buttonArea.createEl('button', {
       text: 'Show Answer',
       cls: 'mod-cta show-answer-btn',
-      attr: { title: 'Press Enter or Tab'} 
+      attr: { title: 'Press Enter or Tab' }
     });
     showAnswerBtn.addEventListener('click', () => {
       this.reviewState.showAnswer = true;
@@ -381,278 +875,51 @@ if (isTable) {
     });
   }
 
-private renderAnswer(container: HTMLElement) {
-  if (!this.currentCard) return;
-  console.log('━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('🔍 [renderAnswer] 开始执行');
-  console.log('卡片类型:', this.currentCard.type);
-  console.log('this.reviewState.userAnswer:', this.reviewState.userAnswer);
-  console.log('━━━━━━━━━━━━━━━━━━━━━━');
-    if (Array.isArray(this.currentCard.back)) {
-    }
-  
-  // 卡片信息
-  const cardInfo = container.createDiv({ cls: 'card-info' });
-  cardInfo.createSpan({ 
-    text: this.currentCard.type === 'qa' ? '📝 Q&A' : '✏️ Cloze',
-    cls: 'card-type'
-  });
-  cardInfo.createSpan({ 
-    text: `Deck: ${this.currentCard.deck}`,
-    cls: 'card-deck'
-  });
+  private renderRatingButtons(container: HTMLElement) {
+    const ratingArea = container.createDiv({ cls: 'rating-area' });
+    const buttonGroup = ratingArea.createDiv({ cls: 'rating-buttons' });
 
-// 问题回顾
-const questionReview = container.createDiv({ cls: 'question-review' });
-questionReview.createEl('h4', { text: 'Question:' });
+    const ratings: Array<{
+      ease: ReviewEase;
+      label: string;
+      color: string;
+      key: string;
+    }> = [
+      { ease: 'again', label: 'Again\n < 1 min', color: 'red', key: '1' },
+      { ease: 'hard', label: 'Hard\n < 10 min', color: 'orange', key: '2' },
+      { ease: 'good', label: 'Good\n 1 day', color: 'blue', key: '3' },
+      { ease: 'easy', label: 'Easy\n 4 days', color: 'green', key: '4' }
+    ];
 
-const reviewTextDiv = questionReview.createDiv({ cls: 'review-text' });
-
-// 检测问题是否为表格格式
-const isQuestionTable = this.isTableFormat(this.currentCard.front);
-if (isQuestionTable) {
-  const tableEl = this.renderTable(this.currentCard.front, false); // 题面不显示答案
-  reviewTextDiv.appendChild(tableEl);
-  reviewTextDiv.classList.add('table-question');
-} else {
-  reviewTextDiv.textContent = this.currentCard.front;
-}
-
-  // 答案区域
-  const answerArea = container.createDiv({ cls: 'answer-area' });
-
-
-    if (this.currentCard.type === 'cloze' && this.currentCard.cloze) {
-      // 完形填空的完整答案
-        const fullText = answerArea.createDiv({ cls: 'full-text' });
-        
-        // 🆕 检测原文是否为表格
-        const isOriginalTable = this.isTableFormat(this.currentCard.cloze.original);
-      
-        console.log('🔍 [Cloze] 原文是否为表格:', isOriginalTable);
-        console.log('🔍 [Cloze] 原文内容:', this.currentCard.cloze.original);
-        
-        if (isOriginalTable) {
-          console.log('📊 完形填空原文是表格，渲染表格');
-          
-          // 🆕 渲染两列对比表格
-          const columnsContainer = answerArea.createDiv({ cls: 'cloze-table-columns' });
-          
-          // 左列:正确答案(完整表格)
-          const correctColumn = columnsContainer.createDiv({ cls: 'qa-column' });
-          correctColumn.createEl('h4', { text: 'Correct Answer:', cls: 'column-label' });
-          const correctDiv = correctColumn.createDiv({ cls: 'comparison-item' });
-          const tableEl = this.renderTable(this.currentCard.cloze.original, true);
-          correctDiv.appendChild(tableEl);
-          correctDiv.classList.add('table-answer');
-          
-          // 右列:用户答案(表格+用户填入的答案)
-          const userColumn = columnsContainer.createDiv({ cls: 'qa-column' });
-          userColumn.createEl('h4', { text: 'Your Answer:', cls: 'column-label' });
-          const userDiv = userColumn.createDiv({ cls: 'comparison-item' });
-          
-          if (this.reviewState.userAnswers.length > 0 && this.reviewState.userAnswers.some(a => a.trim())) {
-            // 🆕 渲染带用户答案的表格
-            const userTableEl = this.renderTableWithUserAnswers(
-              this.currentCard.cloze.original,
-              this.currentCard.cloze.deletions,
-              this.reviewState.userAnswers
-            );
-            userDiv.appendChild(userTableEl);
-            userDiv.classList.add('table-answer');
-          } else {
-            // 用户未作答,显示空白表格
-            const emptyTableEl = this.renderTable(this.currentCard.front, false);
-            userDiv.appendChild(emptyTableEl);
-            userDiv.classList.add('table-answer', 'no-answer');
-          }
-          
-        } else {
-          // 原有的文本形式渲染
-          fullText.textContent = this.currentCard.cloze.original;
-        }
-      
-        // 🆕 移到表格外面:显示详细的答案对比列表(保留原有功能)
-        if (this.reviewState.userAnswers.length > 0) {
-          console.log('🔍 [Cloze] 用户答案:', this.reviewState.userAnswers);
-          const comparison = answerArea.createDiv({ cls: 'answer-comparison' });
-          comparison.createEl('h4', { text: 'Answer Details:' });
-      
-          this.currentCard.cloze.deletions.forEach((deletion, index) => {
-            const item = comparison.createDiv({ cls: 'comparison-item' });
-            item.createSpan({ text: `${index + 1}. ` });
-      
-            const userAnswer = this.reviewState.userAnswers[index] || '';
-            const evaluation = this.scheduler.evaluateAnswer(
-              deletion.answer,
-              userAnswer
-            );
-      
-            const userSpan = item.createEl('span', {
-              text: userAnswer || '(empty)',
-              cls: `user-answer ${evaluation.correctness}`
-            });
-            
-            item.createSpan({ text: ' → ' });
-            
-            item.createEl('span', {
-              text: deletion.answer,
-              cls: 'correct-answer'
-            });
-      
-            if (evaluation.correctness === 'partial') {
-              item.createEl('small', {
-                text: ` (${Math.round(evaluation.similarity * 100)}% match)`,
-                cls: 'similarity-info'
-              });
-            }
-          });
-        }
-  } else {
-    console.log('━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('🔍 [QA 分支] 进入 QA 卡片渲染');
-    // Q&A 答案
-    let correctAnswer: string;
-
-    // 处理数组格式
-    if (Array.isArray(this.currentCard.back)) {
-      correctAnswer = this.currentCard.back[0] || this.currentCard.back.join('\n');
-    } else {
-      correctAnswer = this.currentCard.back as string;
-    }
-    
-    console.log('correctAnswer:', correctAnswer);
-    console.log('this.reviewState.userAnswer:', this.reviewState.userAnswer);
-    const isTable = this.isTableFormat(correctAnswer);
-    
-    const comparison = answerArea.createDiv({ cls: 'answer-comparison qa-comparison' });
-    console.log('🔍 [QA 分支] 创建对比容器');
-console.log('准备渲染两列');
-    const evaluation = this.reviewState.userAnswer.trim() 
-      ? this.scheduler.evaluateAnswer(correctAnswer, this.reviewState.userAnswer)
-      : null;
-      console.log('evaluation:', evaluation);
-
-      const columnsContainer = comparison.createDiv({ cls: 'qa-columns-container' });
-      
-      console.log('🔍 [QA 分支] columnsContainer 已创建'); 
-    // 左列：Correct Answer（始终显示）
-    const correctColumn = columnsContainer.createDiv({ cls: 'qa-column' });
-    correctColumn.createEl('h4', { text: 'Correct Answer:', cls: 'column-label' });
-    const correctAnswerDiv = correctColumn.createDiv({ cls: 'comparison-item' });
-    
-    if (isTable) {
-      const tableEl = this.renderTable(correctAnswer, true);
-      
-      correctAnswerDiv.appendChild(tableEl);
-      correctAnswerDiv.classList.add('table-answer');
-      
-      // 验证是否添加成功
-      setTimeout(() => {
-        const check = correctAnswerDiv.querySelector('table');
-      }, 100);
-    } else {
-      correctAnswerDiv.createEl('div', {
-        text: correctAnswer,
-        cls: 'correct-answer qa-correct-answer'
+    ratings.forEach(({ ease, label, color, key }) => {
+      const btn = buttonGroup.createEl('button', {
+        cls: `rating-btn rating-${color}`,
+        attr: { title: `Press ${key}` }
       });
-    }
-  
-// 右列:Your Answer
-const userColumn = columnsContainer.createDiv({ cls: 'qa-column' });
-userColumn.createEl('h4', { text: 'Your Answer:', cls: 'column-label' });
-const userAnswerDiv = userColumn.createDiv({ cls: 'comparison-item' });
+      
+      const lines = label.split('\n');
+      btn.createEl('div', { text: lines[0], cls: 'rating-label' });
+      btn.createEl('div', { text: lines[1], cls: 'rating-interval' });
+      btn.createEl('div', { text: `(${key})`, cls: 'rating-hotkey' });
 
-// 检测用户答案是否为表格
-const isUserAnswerTable = this.isTableFormat(this.reviewState.userAnswer.trim());
-
-// 🆕 特殊处理:如果正确答案是表格,用户答案也应该尝试渲染为表格
-const shouldRenderAsTable = isUserAnswerTable || (isTable && this.reviewState.userAnswer.trim());
-
-if (shouldRenderAsTable && this.reviewState.userAnswer.trim()) {
-  try {
-    const userTableEl = this.renderTable(this.reviewState.userAnswer, true);
-    userAnswerDiv.appendChild(userTableEl);
-    userAnswerDiv.classList.add('table-answer');
-    
-    // 添加评分样式
-    if (evaluation) {
-      userAnswerDiv.classList.add('user-answer', evaluation.correctness);
-    }
-  } catch (error) {
-    console.error('渲染用户答案表格失败,降级为普通文本:', error);
-    // 降级处理:渲染为普通文本
-    const userAnswerElement = userAnswerDiv.createEl('div', {
-      text: this.reviewState.userAnswer.trim(),
-      cls: 'qa-user-answer'
+      btn.addEventListener('click', () => this.submitReview(ease));
     });
-    
-    if (evaluation) {
-      userAnswerElement.classList.add('user-answer', evaluation.correctness);
-    }
   }
-} else {
-  // 普通文本渲染
-  const userAnswerElement = userAnswerDiv.createEl('div', {
-    text: this.reviewState.userAnswer.trim() || '(no answer provided)',
-    cls: 'qa-user-answer'
-  });
-  
-  if (evaluation) {
-    userAnswerElement.classList.add('user-answer', evaluation.correctness);
-    
-    if (evaluation.correctness === 'partial') {
-      const similarityInfo = comparison.createEl('div', {
-        cls: 'similarity-info qa-similarity'
-      });
-      similarityInfo.textContent = `Similarity: ${Math.round(evaluation.similarity * 100)}%`;
-    }
-  } else {
-    userAnswerElement.classList.add('no-answer');
-  }
-}
 
-  // 评级按钮（保持不变）
-  const ratingArea = container.createDiv({ cls: 'rating-area' });
-
-  const buttonGroup = ratingArea.createDiv({ cls: 'rating-buttons' });
-
-  const ratings: { ease: ReviewEase; label: string; color: string; key: string}[] = [
-    { ease: 'again', label: 'Again\n < 1 min', color: 'red' , key: '1' },
-    { ease: 'hard', label: 'Hard\n < 10 min', color: 'orange' , key: '2' },
-    { ease: 'good', label: 'Good\n 1 day', color: 'blue' , key: '3' },
-    { ease: 'easy', label: 'Easy\n 4 days', color: 'green', key: '4'  }
-  ];
-
-  ratings.forEach(({ ease, label, color, key }) => {
-    const btn = buttonGroup.createEl('button', {
-      cls: `rating-btn rating-${color}`,
-      attr: { title: `Press ${key}` } 
-    });
-    
-    const lines = label.split('\n');
-    btn.createEl('div', { text: lines[0], cls: 'rating-label' });
-    btn.createEl('div', { text: lines[1], cls: 'rating-interval' });
-    btn.createEl('div', { text: `(${key})`, cls: 'rating-hotkey' });
-
-    btn.addEventListener('click', () => this.submitReview(ease));
-  });
-}
-}
-
+  // ============================================================================
+  // 交互处理
+  // ============================================================================
   private async submitReview(ease: ReviewEase) {
     if (!this.currentCard) return;
 
-    const timeSpent = (Date.now() - this.reviewState.startTime) / 1000; // 秒
+    const timeSpent = (Date.now() - this.reviewState.startTime) / 1000;
 
-    // 对于完形填空和 QA 卡片，使用用户答案
     const userAnswer = this.currentCard.type === 'cloze' 
       ? this.reviewState.userAnswers 
       : this.currentCard.type === 'qa'
       ? this.reviewState.userAnswer
       : undefined;
 
-    // 计算新的调度
     const { updatedCard, reviewLog } = this.scheduler.schedule(
       this.currentCard,
       ease,
@@ -660,22 +927,16 @@ if (shouldRenderAsTable && this.reviewState.userAnswer.trim()) {
       userAnswer
     );
 
-    // 更新卡片
     await this.plugin.flashcardManager.updateCard(updatedCard);
-
-    // 记录日志
     await this.plugin.flashcardManager.logReview({
       id: `log-${Date.now()}`,
       ...reviewLog
     });
 
-    // 下一张卡片
     this.currentCardIndex++;
-    this.reviewState.showAnswer = false;
-    this.resetReviewState()
+    this.resetReviewState();
 
     if (this.currentCardIndex >= this.dueCards.length) {
-      // 复习完成
       new Notice(`✅ Review session complete! Reviewed ${this.dueCards.length} cards.`);
       await this.loadDueCards();
     }
@@ -701,7 +962,6 @@ if (shouldRenderAsTable && this.reviewState.userAnswer.trim()) {
       return;
     }
 
-    // 打开文件并跳转
     const leaf = this.app.workspace.getLeaf(false);
     await leaf.openFile(file);
 
@@ -725,10 +985,8 @@ if (shouldRenderAsTable && this.reviewState.userAnswer.trim()) {
       await this.plugin.flashcardManager.deleteCard(cardId);
       new Notice('🗑️ 闪卡已删除');
       
-      // 从当前复习队列中移除
       this.dueCards = this.dueCards.filter(card => card.id !== cardId);
       
-      // 如果删除的是当前卡片，移动到下一张
       if (this.currentCard?.id === cardId) {
         if (this.currentCardIndex >= this.dueCards.length) {
           this.currentCardIndex = Math.max(0, this.dueCards.length - 1);
@@ -736,7 +994,6 @@ if (shouldRenderAsTable && this.reviewState.userAnswer.trim()) {
         this.currentCard = null;
       }
       
-      // 重新渲染
       await this.loadDueCards();
       this.render();
     } catch (error) {
@@ -744,9 +1001,10 @@ if (shouldRenderAsTable && this.reviewState.userAnswer.trim()) {
       new Notice('❌ 删除闪卡失败');
     }
   }
+
   private editCurrentFlashcard() {
     if (!this.currentCard) return;
-  
+
     const modal = new FlashcardEditModal(
       this.app,
       this.currentCard,
@@ -765,7 +1023,6 @@ if (shouldRenderAsTable && this.reviewState.userAnswer.trim()) {
           await this.plugin.flashcardManager.updateCard(updatedCard);
           new Notice('✅ 闪卡已更新');
           
-          // 刷新当前卡片显示
           this.currentCard = updatedCard;
           this.render();
         } catch (error) {
@@ -777,36 +1034,73 @@ if (shouldRenderAsTable && this.reviewState.userAnswer.trim()) {
     modal.open();
   }
 
-  // 快捷键
+  private async resetCardStats(cardId: string) {
+    try {
+      const card = this.plugin.flashcardManager.getFlashcard(cardId);
+      if (!card) return;
+
+      card.stats = {
+        totalReviews: 0,
+        correctCount: 0,
+        averageTime: 0,
+        lastReview: 0,
+        difficulty: 0.3
+      };
+      card.scheduling = {
+        interval: 0,
+        ease: 2.5,
+        due: Date.now(),
+        lapses: 0,
+        reps: 0,
+        state: 'new'
+      };
+
+      await this.plugin.flashcardManager.updateCard(card);
+      
+      const logs = this.plugin.flashcardManager['reviewLogs'] || [];
+      this.plugin.flashcardManager['reviewLogs'] = logs.filter(
+        log => log.flashcardId !== cardId
+      );
+      await this.plugin.dataManager.save();
+      
+      new Notice('✅ 卡片统计已重置');
+      this.currentCard = card;
+      this.render();
+    } catch (error) {
+      console.error('Error resetting card stats:', error);
+      new Notice('❌ 重置统计失败');
+    }
+  }
+
+  // ============================================================================
+  // 键盘处理
+  // ============================================================================
   private keyboardHandler = (e: KeyboardEvent) => {
     const target = e.target as HTMLElement;
     const isInInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
-      // Tab 键处理
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    
-    if (e.shiftKey) {
-      // Shift + Tab: 回到题面
-      if (this.reviewState.showAnswer) {
-        this.resetReviewState()
-        this.render();
-      }
-    } else {
-      // Tab: 显示答案或下一张
-      if (!this.reviewState.showAnswer) {
-        this.resetReviewState()
-        this.render();
-      } else {
-        // 已显示答案,直接按 "Good" 评分进入下一张
-        this.submitReview('good');
-      }
-    }
-    return;
-  }
 
-    
-    // 数字键评分（只在显示答案且不在输入框时有效）
-    if (this.reviewState.showAnswer) {
+    // Tab 键处理
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      
+      if (e.shiftKey) {
+        if (this.reviewState.showAnswer) {
+          this.resetReviewState();
+          this.render();
+        }
+      } else {
+        if (!this.reviewState.showAnswer) {
+          this.reviewState.showAnswer = true;
+          this.render();
+        } else {
+          this.submitReview('good');
+        }
+      }
+      return;
+    }
+
+    // 数字键评分
+    if (this.reviewState.showAnswer && !isInInput) {
       const ratingMap: { [key: string]: ReviewEase } = {
         '1': 'again',
         '2': 'hard',
@@ -820,900 +1114,13 @@ if (shouldRenderAsTable && this.reviewState.userAnswer.trim()) {
       }
     }
   };
-  
+
   private registerKeyboardHandlers() {
     document.addEventListener('keydown', this.keyboardHandler);
   }
 
-  // 检测是否为表格格式
-  private isTableFormat(text: string): boolean {
-    
-    const lines = text.trim().split('\n');
-    
-    if (lines.length < 2) {
-      return false;
-    }
-    
-    // 检查是否有表格分隔符 |-----|
-    const hasSeparator = lines.some(line => /^\|?[\s-:|]+\|?$/.test(line.trim()));
-    
-    // 检查是否大多数行包含 |
-    const pipeLines = lines.filter(line => line.includes('|')).length;
-    
-    const result = hasSeparator || pipeLines >= lines.length * 0.7;
-    
-    return result;
-  }
+  // ============================================================================
+  // 样式
+  // ============================================================================
 
-// 渲染表格
-private renderTable(markdown: string, showAnswer: boolean = false): HTMLElement {
-  
-  const container = document.createElement('div');
-    // 🆕 添加空值检查
-    if (!markdown || markdown.trim().length === 0) {
-      container.textContent = '(empty table)';
-      return container;
-    }
-  const lines = markdown.trim().split('\n');
-    // 🆕 添加最小行数检查
-    if (lines.length < 2) {
-      container.textContent = markdown;
-      return container;
-    }
-  const table = container.createEl('table', { cls: 'learning-system-table flashcard-review-table' });
-  
-  const parseCells = (line: string): string[] => {
-    let trimmed = line.trim();
-    if (trimmed.startsWith('|')) trimmed = trimmed.slice(1);
-    if (trimmed.endsWith('|')) trimmed = trimmed.slice(0, -1);
-    
-    return trimmed
-      .split('|')
-      .map(c => c.trim())
-      .filter(c => c.length > 0);
-  };
-  
-  // 🔧 新增：查找分隔符行的位置
-  const separatorIndex = lines.findIndex(line => {
-    // 去掉所有 | 和空格，只看剩下的字符
-    const cleaned = line.replace(/[\s|]/g, '');
-    // 如果剩下的全是 - 和 :，且长度 >= 3，就是分隔符
-    return cleaned.length >= 3 && /^[-:]+$/.test(cleaned);
-  });
-  
-  
-  // 🔧 根据分隔符位置决定表头
-  if (separatorIndex > 0) {
-    // 有分隔符：分隔符前一行是表头
-    const headerCells = parseCells(lines[separatorIndex - 1]);
-    
-    const thead = table.createEl('thead');
-    const headerRow = thead.createEl('tr');
-    headerCells.forEach(cell => {
-      const th = headerRow.createEl('th');
-      th.innerHTML = this.processCellContent(cell, showAnswer);
-    });
-    
-    // 数据行从分隔符后一行开始
-    const tbody = table.createEl('tbody');
-    for (let i = separatorIndex + 1; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line.trim()) continue;
-      
-      const cells = parseCells(line);
-      
-      if (cells.length === 0) continue;
-      
-      const row = tbody.createEl('tr');
-      cells.forEach(cell => {
-        const td = row.createEl('td');
-        td.innerHTML = this.processCellContent(cell, showAnswer);
-      });
-    }
-  } else {
-    // 🔧 无分隔符：所有行都是数据行（无表头）
-    const tbody = table.createEl('tbody');
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line.trim()) continue;
-      
-      const cells = parseCells(line);
-      if (cells.length === 0) continue;
-      
-      const row = tbody.createEl('tr');
-      cells.forEach(cell => {
-        const td = row.createEl('td');
-        td.innerHTML = this.processCellContent(cell, showAnswer);
-      });
-    }
-  }
-  
-  return container;
-}
-
-// 处理单元格内容：隐藏或显示 == 标记的内容
-private processCellContent(cell: string, showAnswer: boolean): string {
-  
-  if (!cell.includes('==')) {
-    return cell;
-  }
-  
-  if (showAnswer) {
-    const result = cell.replace(/==([^=]+)==/g, '<mark class="revealed">$1</mark>');
-    return result;
-  } else {
-    const result = cell.replace(/==([^=]+)==/g, '<span class="cloze-blank">[___]</span>');
-    return result;
-  }
-}
-// 🆕 渲染带用户答案的表格(用于 Cloze 完形填空)
-private renderTableWithUserAnswers(
-  originalMarkdown: string,
-  deletions: Array<{ answer: string }>,
-  userAnswers: string[]
-): HTMLElement {
-  const container = document.createElement('div');
-  const lines = originalMarkdown.trim().split('\n');
-  
-  if (lines.length < 2) {
-    container.textContent = originalMarkdown;
-    return container;
-  }
-  
-  const table = container.createEl('table', { 
-    cls: 'learning-system-table flashcard-review-table user-answer-table' 
-  });
-  
-  // 解析单元格
-  const parseCells = (line: string): string[] => {
-    let trimmed = line.trim();
-    if (trimmed.startsWith('|')) trimmed = trimmed.slice(1);
-    if (trimmed.endsWith('|')) trimmed = trimmed.slice(0, -1);
-    return trimmed.split('|').map(c => c.trim()).filter(c => c.length > 0);
-  };
-  
-  // 查找分隔符位置
-  const separatorIndex = lines.findIndex(line => {
-    const cleaned = line.replace(/[\s|]/g, '');
-    return cleaned.length >= 3 && /^[-:]+$/.test(cleaned);
-  });
-  
-  let deletionIndex = 0; // 追踪当前是第几个空白
-  
-  // 渲染表头
-  if (separatorIndex > 0) {
-    const headerCells = parseCells(lines[separatorIndex - 1]);
-    const thead = table.createEl('thead');
-    const headerRow = thead.createEl('tr');
-    headerCells.forEach(cell => {
-      const th = headerRow.createEl('th');
-      th.innerHTML = this.processCellWithUserAnswer(
-        cell, 
-        deletions, 
-        userAnswers, 
-        deletionIndex
-      );
-      // 如果这个单元格包含空白,增加索引
-      if (cell.includes('==')) deletionIndex++;
-    });
-  }
-  
-  // 渲染数据行
-  const tbody = table.createEl('tbody');
-  const startRow = separatorIndex > 0 ? separatorIndex + 1 : 0;
-  
-  for (let i = startRow; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line.trim()) continue;
-    
-    const cells = parseCells(line);
-    if (cells.length === 0) continue;
-    
-    const row = tbody.createEl('tr');
-    cells.forEach(cell => {
-      const td = row.createEl('td');
-      td.innerHTML = this.processCellWithUserAnswer(
-        cell,
-        deletions,
-        userAnswers,
-        deletionIndex
-      );
-      // 如果这个单元格包含空白,增加索引
-      if (cell.includes('==')) deletionIndex++;
-    });
-  }
-  
-  return container;
-}
-
-// 🆕 处理单元格:将 == 标记替换为用户答案并评分
-private processCellWithUserAnswer(
-  cell: string,
-  deletions: Array<{ answer: string }>,
-  userAnswers: string[],
-  deletionIndex: number
-): string {
-  if (!cell.includes('==')) {
-    return cell;
-  }
-  
-  // 提取正确答案
-  const match = cell.match(/==([^=]+)==/);
-  if (!match || deletionIndex >= deletions.length) {
-    return cell.replace(/==([^=]+)==/g, '<span class="cloze-blank">[___]</span>');
-  }
-  
-  const correctAnswer = deletions[deletionIndex].answer;
-  const userAnswer = userAnswers[deletionIndex] || '';
-  
-  // 评估答案
-  const evaluation = this.scheduler.evaluateAnswer(correctAnswer, userAnswer);
-  
-  // 根据评分显示不同样式
-  const displayText = userAnswer || '(empty)';
-  const correctnessClass = evaluation.correctness;
-  
-  return cell.replace(
-    /==([^=]+)==/g,
-    `<span class="user-answer-cell ${correctnessClass}">${displayText}</span>`
-  );
-}
-
-  private addStyles() {
-    const styleEl = document.createElement('style');
-    styleEl.textContent = `
-    .review-container {
-        padding: 16px;
-        max-width: 800px;
-        margin: 0 auto;
-      }
-
-      /* 空状态 */
-      .empty-state {
-        text-align: center;
-        padding: 40px 20px;
-      }
-
-      .empty-state h2 {
-        font-size: 1.8em;
-        margin-bottom: 8px;
-      }
-
-      .stats-summary {
-        margin: 20px 0;
-        padding: 16px;
-        background: var(--background-secondary);
-        border-radius: 8px;
-        text-align: left;
-        max-width: 300px;
-        margin-left: auto;
-        margin-right: auto;
-      }
-
-      /* 进度条 */
-      .progress-bar {
-        margin-bottom: 20px;
-      }
-
-      .progress-stats {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 8px;
-      }
-
-      .progress-text {
-        font-weight: 600;
-        font-size: 1em;
-      }
-
-      .remaining-text {
-        color: var(--text-muted);
-        font-size: 0.9em;
-      }
-
-      .bar-container {
-        height: 6px;
-        background: var(--background-secondary);
-        border-radius: 3px;
-        overflow: hidden;
-      }
-
-      .bar {
-        height: 100%;
-        background: var(--interactive-accent);
-        transition: width 0.3s ease;
-      }
-
-      /* 卡片区域 */
-      .card-area {
-        background: var(--background-primary);
-        border: 2px solid var(--background-modifier-border);
-        border-radius: 10px;
-        padding: 20px;
-        min-height: 350px;
-        position: relative;
-      }
-
-      /* 右上角操作栏 */
-      .top-actions-bar {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        display: flex;
-        gap: 6px;
-        z-index: 10;
-      }
-
-      .top-action-btn {
-        width: 32px;
-        height: 32px;
-        border: 1px solid var(--background-modifier-border);
-        border-radius: 6px;
-        background: var(--background-primary);
-        cursor: pointer;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        color: var(--text-normal);
-        padding: 0;
-      }
-
-      .top-action-btn:hover {
-        background: var(--background-modifier-hover);
-        border-color: var(--interactive-accent);
-      }
-
-      .jump-icon-btn {
-        font-weight: bold;
-      }
-
-      .more-btn {
-        font-weight: bold;
-        letter-spacing: 1px;
-      }
-
-      /* 下拉菜单 */
-      .more-dropdown {
-        position: absolute;
-        top: 38px;
-        right: 0;
-        background: var(--background-primary);
-        border: 1px solid var(--background-modifier-border);
-        border-radius: 6px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        min-width: 150px;
-        z-index: 100;
-      }
-
-      .dropdown-item {
-        padding: 8px 14px;
-        cursor: pointer;
-        transition: background 0.2s;
-        white-space: nowrap;
-        font-size: 0.9em;
-      }
-
-      .dropdown-item:hover {
-        background: var(--background-modifier-hover);
-      }
-
-      .dropdown-item:first-child {
-        border-radius: 6px 6px 0 0;
-      }
-
-      .dropdown-item:last-child {
-        border-radius: 0 0 6px 6px;
-      }
-
-      .delete-item:hover {
-        background: var(--background-modifier-error-hover);
-        color: var(--color-red);
-      }
-
-      .card-info {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 16px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid var(--background-modifier-border);
-        padding-right: 80px;
-      }
-
-      .card-type, .card-deck {
-        padding: 3px 10px;
-        background: var(--background-secondary);
-        border-radius: 10px;
-        font-size: 0.85em;
-      }
-
-      /* 问题区域 */
-      .question-area, .answer-area {
-        margin: 16px 0;
-      }
-
-      .question-area h3, .answer-area h3 {
-        margin-bottom: 10px;
-        color: var(--text-muted);
-        font-size: 1em;
-      }
-
-      .question-text, .answer-text {
-        font-size: 1.2em;
-        line-height: 1.5;
-        padding: 14px;
-        background: var(--background-secondary);
-        border-radius: 6px;
-      }
-
-      /* 完形填空输入 */
-      .cloze-input-area {
-        margin: 16px 0;
-      }
-
-      .cloze-input-area h4 {
-        margin-bottom: 10px;
-        color: var(--text-muted);
-        font-size: 0.9em;
-      }
-
-      .input-group {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 8px;
-      }
-
-      .cloze-input {
-        flex: 1;
-        padding: 8px 12px;
-        border: 2px solid var(--background-modifier-border);
-        border-radius: 6px;
-        background: var(--background-primary);
-        font-size: 0.95em;
-      }
-
-      .cloze-input:focus {
-        border-color: var(--interactive-accent);
-        outline: none;
-      }
-
-      /* QA 卡片输入 */
-      .qa-input-area {
-        margin: 16px 0;
-      }
-
-      .qa-input-area h4 {
-        margin-bottom: 10px;
-        color: var(--text-muted);
-        font-size: 0.9em;
-      }
-
-      .qa-input {
-        width: 100%;
-        min-height: 100px;
-        padding: 10px 12px;
-        border: 2px solid var(--background-modifier-border);
-        border-radius: 6px;
-        background: var(--background-primary);
-        font-size: 0.95em;
-        font-family: inherit;
-        resize: vertical;
-        line-height: 1.5;
-      }
-
-      .qa-input:focus {
-        border-color: var(--interactive-accent);
-        outline: none;
-      }
-
-      /* 答案对比 */
-      .question-review {
-        margin-bottom: 12px;
-        padding: 10px;
-        background: var(--background-secondary-alt);
-        border-radius: 6px;
-      }
-
-      .question-review h4 {
-        margin: 0 0 6px 0;
-        color: var(--text-muted);
-        font-size: 0.85em;
-      }
-
-      .review-text {
-        color: var(--text-muted);
-        font-size: 0.95em;
-      }
-
-      .full-text {
-        font-size: 1.1em;
-        line-height: 1.5;
-        padding: 12px;
-        background: var(--background-secondary);
-        border-radius: 6px;
-        margin-bottom: 12px;
-      }
-
-      .answer-comparison {
-        padding: 10px;
-        background: var(--background-secondary-alt);
-        border-radius: 6px;
-        margin-top: 12px;
-      }
-
-      .answer-comparison h4 {
-        margin: 0 0 8px 0;
-        color: var(--text-muted);
-        font-size: 0.85em;
-      }
-
-      .comparison-item {
-        padding: 8px;
-        margin-bottom: 6px;
-        background: var(--background-primary);
-        border-radius: 4px;
-      }
-
-      .user-answer {
-        font-weight: 500;
-        padding: 2px 6px;
-        border-radius: 3px;
-      }
-
-      .user-answer.correct {
-        background: var(--background-modifier-success, #4caf50) !important;
-        color: var(--text-on-accent, white) !important;
-      }
-
-      .user-answer.partial {
-        background: #FFC000 !important;
-        color: white !important;
-      }
-
-      .user-answer.wrong {
-        background: var(--background-modifier-error, #f44336) !important;
-        color: white !important;
-      }
-
-      .correct-answer {
-        color: var(--text-accent);
-        font-weight: 500;
-      }
-
-      .similarity-info {
-        color: var(--text-muted);
-        font-style: italic;
-        font-size: 0.85em;
-      }
-
-      /* QA 卡片对比样式 */
-      .qa-comparison {
-        margin-top: 12px;
-      }
-
-
-.qa-columns-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 12px;
-}
-
-.qa-column {
-  display: flex;
-  flex-direction: column;
-}
-
-.column-label {
-  margin: 0 0 8px 0 !important;
-  color: var(--text-muted);
-  font-size: 0.85em;
-}
-
-.qa-user-answer,
-.qa-correct-answer {
-  padding: 12px;
-  border-radius: 6px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-size: 0.95em;
-  line-height: 1.5;
-  min-height: 60px;
-}
-
-.qa-correct-answer {
-  background: var(--background-secondary);
-}
-
-/* 相似度信息放在两列下方 */
-.qa-similarity {
-  margin-top: 8px;
-  padding: 6px;
-  background: var(--background-secondary);
-  border-radius: 4px;
-  text-align: center;
-  font-size: 0.85em;
-  grid-column: 1 / -1;
-}
-
-
-
-
-      .qa-user-answer.correct,
-      .user-answer.correct.qa-user-answer,
-      div.qa-user-answer.correct,
-      div.user-answer.correct.qa-user-answer,
-      .comparison-item .qa-user-answer.correct,
-      .comparison-item .user-answer.correct.qa-user-answer {
-        background: var(--background-modifier-success, #4caf50) !important;
-        background-color: #4caf50 !important;
-        color: var(--text-on-accent, white) !important;
-        color: white !important;
-      }
-
-      .qa-user-answer.partial,
-      .user-answer.partial.qa-user-answer,
-      div.qa-user-answer.partial,
-      div.user-answer.partial.qa-user-answer,
-      .comparison-item .qa-user-answer.partial,
-      .comparison-item .user-answer.partial.qa-user-answer {
-        background: #FFC000 !important;
-        background-color: #FFC000 !important;
-        color: white !important;
-      }
-
-      .qa-user-answer.wrong,
-      .user-answer.wrong.qa-user-answer,
-      div.qa-user-answer.wrong,
-      div.user-answer.wrong.qa-user-answer,
-      .comparison-item .qa-user-answer.wrong,
-      .comparison-item .user-answer.wrong.qa-user-answer {
-        background: var(--background-modifier-error, #f44336) !important;
-        background-color: #f44336 !important;
-        color: white !important;
-      }
-
-
-      .correct-answer-label {
-        margin-top: 12px !important;
-        margin-bottom: 6px !important;
-      }
-
-      .qa-similarity {
-        margin-top: 8px;
-        padding: 6px;
-        background: var(--background-secondary);
-        border-radius: 4px;
-        text-align: center;
-        font-size: 0.85em;
-      }
-
-      /* 按钮区域 */
-      .button-area {
-        display: flex;
-        gap: 12px;
-        justify-content: center;
-        margin-top: 20px;
-      }
-
-      .show-answer-btn {
-        padding: 10px 32px;
-        font-size: 1em;
-      }
-
-      /* 评级区域 */
-      .rating-area {
-        margin: 15px 0 10px 0;
-        text-align: center;
-      }
-
-      .rating-area h4 {
-        margin-bottom: 12px;
-        color: var(--text-muted);
-        font-size: 0.9em;
-      }
-
-      .rating-buttons {
-        display: flex;
-        gap: 20px;
-        justify-content: center;
-        margin-bottom: 0;
-      }
-
-      .rating-btn {
-        flex: 1;
-        max-width: 120px;
-        hight:100px;
-        padding: 14px 8px;
-        border: 2px solid var(--background-modifier-border);
-        border-radius: 8px;
-        background: var(--background-primary);
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .rating-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-      }
-
-      .rating-red:hover { 
-        border-color: var(--color-red);
-        background: var(--background-modifier-error-hover);
-      }
-
-      .rating-orange:hover { 
-        border-color: #FFC000;
-        background: rgba(255, 192, 0, 0.1);
-      }
-
-      .rating-blue:hover { 
-        border-color: var(--interactive-accent);
-        background: var(--background-modifier-hover);
-      }
-
-      .rating-green:hover { 
-        border-color: var(--color-green);
-        background: var(--background-modifier-success-hover);
-      }
-
-      .rating-label {
-        font-weight: 600;
-        font-size: 1em;
-        margin-bottom: 4px;
-      }
-
-      .rating-interval {
-        font-size: 0.85em;
-        color: var(--text-muted);
-      }
-        /* 快捷键提示 */
-.rating-hotkey {
-  font-size: 0.75em;
-  color: var(--text-muted);
-  margin-top: 4px;
-  opacity: 0.7;
-}
-
-.rating-btn:hover .rating-hotkey {
-  opacity: 1;
-  color: var(--text-normal);
-}
-
-/* Show Answer 按钮 tooltip */
-.show-answer-btn {
-  position: relative;
-}
-  .cloze-input:focus,
-.qa-input:focus {
-  border-color: var(--interactive-accent);
-  outline: none;
-  box-shadow: 0 0 0 2px var(--interactive-accent-hover);
-}
-  /* 无答案状态 */
-.qa-user-answer.no-answer {
-  background: var(--background-secondary);
-  color: var(--text-muted);
-  font-style: italic;
-  border: 2px dashed var(--background-modifier-border);
-  /* 下拉菜单分隔线 */
-
-  /* 表格样式 */
-.learning-system-table,
-.flashcard-review-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 8px 0;
-  background: var(--background-primary);
-}
-
-.learning-system-table th,
-.learning-system-table td,
-.flashcard-review-table th,
-.flashcard-review-table td {
-  padding: 10px 12px;
-  text-align: left;
-  border: 1px solid var(--background-modifier-border);
-}
-
-.learning-system-table th,
-.flashcard-review-table th {
-  background: var(--background-secondary);
-  font-weight: 600;
-  color: var(--text-normal);
-}
-
-.learning-system-table tr:hover,
-.flashcard-review-table tr:hover {
-  background: var(--background-modifier-hover);
-}
-
-/* 完形填空：隐藏的内容显示为空白框 */
-.cloze-blank {
-  display: inline-block;
-  min-width: 60px;
-  padding: 2px 8px;
-  background: var(--background-secondary);
-  border: 2px dashed var(--text-muted);
-  border-radius: 4px;
-  color: var(--text-muted);
-  font-family: monospace;
-  font-size: 0.9em;
-}
-
-/* 答案揭示后的高亮样式 */
-mark.revealed {
-  background: var(--text-highlight-bg);
-  color: var(--text-normal);
-  padding: 2px 4px;
-  border-radius: 3px;
-  font-weight: 600;
-}
-
-.table-answer,
-.table-question {
-  padding: 0 !important;
-}
-
-.table-answer .learning-system-table,
-.table-answer .flashcard-review-table,
-.table-question .learning-system-table,
-.table-question .flashcard-review-table {
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-/* 完形填空答案中的表格 */
-.full-text.table-answer {
-  padding: 0 !important;
-  background: transparent !important;
-}
-
-.full-text.table-answer table {
-  margin: 0;
-}
-
-
-
-/* Cloze 表格两列布局 */
-.cloze-table-columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-/* 用户答案表格中的单元格样式 */
-.user-answer-cell {
-  display: inline-block;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-weight: 600;
-}
-
-.user-answer-cell.correct {
-  background: var(--background-modifier-success, #4caf50) !important;
-  color: white !important;
-}
-
-.user-answer-cell.partial {
-  background: #FFC000 !important;
-  color: white !important;
-}
-
-.user-answer-cell.wrong {
-  background: var(--background-modifier-error, #f44336) !important;
-  color: white !important;
-}
-
-.user-answer-table.no-answer {
-  opacity: 0.6;
-}
-}
-    `;
-
-    document.head.appendChild(styleEl);
-  }
 }
