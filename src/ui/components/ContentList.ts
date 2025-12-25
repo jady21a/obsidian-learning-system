@@ -1,4 +1,4 @@
-// src/ui/components/ContentList.ts
+// src/ui/components/ContentList.ts   内容列表
 import { ContentUnit } from '../../core/DataManager';
 import { Flashcard } from '../../core/FlashcardManager';
 import { ViewState, GroupMode } from '../state/ViewState';

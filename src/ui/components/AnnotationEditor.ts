@@ -1,4 +1,4 @@
-// src/ui/components/AnnotationEditor.ts
+// src/ui/components/AnnotationEditor.ts    批注编辑器
 import { ContentUnit } from '../../core/DataManager';
 
 export interface AnnotationEditorCallbacks {

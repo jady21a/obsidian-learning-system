@@ -1,5 +1,5 @@
-// src/ui/components/ContentCard.ts
-import { StyleLoader } from '../style/sidebarStyle'
+// src/ui/components/ContentCard.ts  卡片内容
+// import { StyleLoader } from '../style/sidebarStyle'
 import { ContentUnit } from '../../core/DataManager';
 import { Flashcard } from '../../core/FlashcardManager';
 import { ViewState } from '../state/ViewState';

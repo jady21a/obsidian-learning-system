@@ -1,4 +1,4 @@
-// src/ui/components/Toolbar.ts
+// src/ui/components/Toolbar.ts  工具栏组件
 import { ViewState, FilterMode, GroupMode } from '../state/ViewState';
 
 export class Toolbar {
