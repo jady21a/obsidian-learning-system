@@ -2,7 +2,7 @@
  * 样式加载器 - 负责注入和管理 CSS
  */
 export class reviewStyle {
-    private static styleId = 'learning-overview-styles';
+    private static styleId = 'learning-review-styles';
     private static isInjected = false;
   
     /**
