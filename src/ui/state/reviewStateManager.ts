@@ -8,8 +8,15 @@ export interface ReviewState {
   userAnswer: string;
 }
 
+// ✅ 添加答案缓存接口
+interface CardAnswerCache {
+  userAnswer: string;
+  userAnswers: string[];
+}
+
 export class ReviewStateManager {
   private state: ReviewState;
+  private answerCache: Map<string, CardAnswerCache> = new Map(); // ✅ 新增缓存
 
   constructor() {
     this.state = this.createInitialState();
@@ -32,21 +39,56 @@ export class ReviewStateManager {
     this.state = this.createInitialState();
   }
 
-  updateForNewCard(newCard: Flashcard, isSameCard: boolean) {
-    if (!isSameCard) {
-      this.state.showAnswer = false;
-      this.state.userAnswer = '';
-      
-      // 根据卡片的填空数量初始化数组
-      if (newCard.type === 'cloze' && newCard.cloze) {
-        this.state.userAnswers = new Array(newCard.cloze.deletions.length).fill('');
-      } else {
-        this.state.userAnswers = [];
-      }
-      
-      this.state.startTime = Date.now();
+  // ✅ 保存当前卡片的答案到缓存
+  saveAnswerToCache(cardId: string) {
+    this.answerCache.set(cardId, {
+      userAnswer: this.state.userAnswer,
+      userAnswers: [...this.state.userAnswers]
+    });
+  }
+
+  // ✅ 从缓存恢复答案
+  private restoreAnswerFromCache(cardId: string) {
+    const cached = this.answerCache.get(cardId);
+    if (cached) {
+      this.state.userAnswer = cached.userAnswer;
+      this.state.userAnswers = [...cached.userAnswers];
+
+    } else {
     }
+  }
+
+  // ✅ 清除指定卡片的缓存
+  clearCache(cardId: string) {
+    this.answerCache.delete(cardId);
+  }
+
+  updateForNewCard(
+    newCard: Flashcard,
+    isSameCard: boolean,
+    direction?: 'next' | 'prev'
+  ) {
+    if (!isSameCard) {
+      if (direction === 'prev') {
+        // ✅ prev: 先恢复缓存,再设置其他状态
+        this.restoreAnswerFromCache(newCard.id);
+
+      } else {
+        // next: 清空状态,准备新卡片
+        this.state.showAnswer = false;
+        this.state.userAnswer = '';
   
+        if (newCard.type === 'cloze' && newCard.cloze) {
+          this.state.userAnswers = new Array(
+            newCard.cloze.deletions.length
+          ).fill('');
+        } else {
+          this.state.userAnswers = [];
+        }
+      }
+    }
+    
+    this.state.startTime = Date.now();
   }
 
   setShowAnswer(show: boolean) {

@@ -60,15 +60,16 @@ export class ReviewView extends ItemView {
 
   private resetReviewState() {
     this.stateManager.reset();
+
   }
 
-private updateCurrentCard() {
-  const newCard = this.dueCards[this.currentCardIndex];
-  const isSameCard = this.currentCard?.id === newCard?.id;
-  
-  this.stateManager.updateForNewCard(newCard, isSameCard);
-  this.currentCard = newCard;
-}
+  private updateCurrentCard(direction: 'next' | 'prev' = 'next') {
+    const newCard = this.dueCards[this.currentCardIndex];
+    const isSameCard = this.currentCard?.id === newCard?.id;
+    
+    this.stateManager.updateForNewCard(newCard, isSameCard, direction);
+    this.currentCard = newCard;
+  }
 
   // ============================================================================
   // 数据加载
@@ -77,6 +78,8 @@ private updateCurrentCard() {
     this.dueCards = this.plugin.flashcardManager.getDueCards();
     this.currentCardIndex = 0;
     this.resetReviewState();
+    this.stateManager.reset();
+    this.updateCurrentCard('next');
   }
 
   // ============================================================================
@@ -92,7 +95,7 @@ private updateCurrentCard() {
       return;
     }
 
-    this.updateCurrentCard();
+    // this.updateCurrentCard();
     this.renderProgress(container);
     
     const cardArea = container.createDiv({ cls: 'card-area' });
@@ -244,8 +247,19 @@ private updateCurrentCard() {
 
     // 使用策略模式渲染
     const renderer = CardRendererFactory.getRenderer(this.currentCard.type);
-    renderer.renderQuestion(questionArea, this.currentCard, this.stateManager.getState());
-
+    renderer.renderQuestion(
+      questionArea, 
+      this.currentCard, 
+      this.stateManager.getState(),
+      {
+        setUserAnswer: (answer: string) => {
+          this.stateManager.setUserAnswer(answer);
+        },
+        setUserAnswers: (answers: string[]) => {
+          this.stateManager.setUserAnswers(answers);
+        }
+      }
+    );
     // 显示答案按钮 + 翻页按钮在同一行
     const actionRow = container.createDiv({ cls: 'action-row' });
     this.renderNavigationButton(actionRow, 'prev');
@@ -357,76 +371,124 @@ private updateCurrentCard() {
       btn.addEventListener('click', () => this.submitReview(ease));
     });
   }
-  private renderNavigationButton(container: HTMLElement, type: 'prev' | 'next'): void {
+
+
+  private renderNavigationButton(container: HTMLElement, type: 'prev' | 'next') {
     const btn = container.createEl('button', {
       cls: `nav-btn ${type}-btn`,
       text: type === 'prev' ? '←' : '→'
     });
-    
+  
     btn.addEventListener('click', () => {
-      if (type === 'prev') {
-        this.gotoPreviousCard();  // 复用现有方法
-      } else {
-        this.gotoNextCard();  // 复用现有方法
-      }
+      this.go(type);
     });
   }
-
   
-  private gotoPreviousCard(): void {
-    if (this.currentCardIndex > 0) {
-      this.currentCardIndex--;
-      this.render();  // ← 改成 render()
-    } else {
-      new Notice('Already at first card');
-    }
-  }
   
-  private gotoNextCard(): void {
-    if (this.currentCardIndex < this.dueCards.length - 1) {  // ← 改成 dueCards
-      this.currentCardIndex++;
-      this.render();  // ← 改成 render()
-    } else {
-      new Notice('Already at last card');
-    }
-  }
+  private go(direction: 'prev' | 'next') {
+    const state = this.stateManager.getState();
+  
+    if (direction === 'next') {
+      if (!state.showAnswer) {
+        // 正面 → 背面
 
+        const hasCurrentInput = this.currentCard?.type === 'cloze'
+          ? state.userAnswers.some(ans => ans && ans.trim() !== '')
+          : state.userAnswer.trim() !== '';
+        
+        
+        if (!hasCurrentInput) {
+          this.stateManager.reset();
+        }
+        
+        this.stateManager.setShowAnswer(true);
+      
+      } else {
+        // 背面 → 下一张卡正面
+        if (this.currentCardIndex < this.dueCards.length - 1) {
+          // ✅ 在清除缓存前,先保存当前答案
+          if (this.currentCard) {
+            this.stateManager.saveAnswerToCache(this.currentCard.id);
+          }
+          
+          this.currentCardIndex++;
+          // ✅ 先更新卡片引用
+          this.currentCard = this.dueCards[this.currentCardIndex];
+          // ✅ 然后清空状态(不是清除缓存!)
+          this.resetReviewState();
+          this.updateCurrentCard('next');
+          
+          // ❌ 移除这行,不要清除缓存
+          // this.stateManager.clearCache(this.currentCard.id);
+        } else {
+          new Notice('Already at last card');
+        }
+      }
+    }
+  
+    if (direction === 'prev') {
+      if (state.showAnswer) {
+        // 背面 → 正面
+        this.stateManager.setShowAnswer(false);
+        this.stateManager.reset();
+        this.stateManager.setShowAnswer(false);
+      } else {
+        // 正面 → 上一张卡背面
+        if (this.currentCardIndex > 0) {
+          if (this.currentCard) {
+            this.stateManager.saveAnswerToCache(this.currentCard.id);
+          }
+          this.currentCardIndex--;
+          this.stateManager.reset();
+          this.updateCurrentCard('prev');
+          this.stateManager.setShowAnswer(true);
+        } else {
+          new Notice('Already at first card');
+        }
+      }
+    }
+    
+    this.render();
+  }
 
   // ============================================================================
   // 交互处理
   // ============================================================================
   private async submitReview(ease: ReviewEase) {
     if (!this.currentCard) return;
-
+  
     const timeSpent = (Date.now() - this.stateManager.getState().startTime) / 1000;
-
+  
     const userAnswer = this.currentCard.type === 'cloze' 
       ? this.stateManager.getState().userAnswers 
       : this.currentCard.type === 'qa'
       ? this.stateManager.getState().userAnswer
       : undefined;
-
+  
     const { updatedCard, reviewLog } = this.scheduler.schedule(
       this.currentCard,
       ease,
       timeSpent,
       userAnswer
     );
-
+  
     await this.plugin.flashcardManager.updateCard(updatedCard);
     await this.plugin.flashcardManager.logReview({
       id: `log-${Date.now()}`,
       ...reviewLog
     });
-
+  
+    // ✅ 提交后清除该卡片的答案缓存
+    this.stateManager.clearCache(this.currentCard.id);
+  
     this.currentCardIndex++;
     this.resetReviewState();
-
+  
     if (this.currentCardIndex >= this.dueCards.length) {
       new Notice(`✅ Review session complete! Reviewed ${this.dueCards.length} cards.`);
       await this.loadDueCards();
     }
-
+  
     this.render();
   }
 
@@ -570,17 +632,11 @@ private updateCurrentCard() {
       e.preventDefault();
       
       if (e.shiftKey) {
-        if (this.stateManager.getState().showAnswer) {
-          this.resetReviewState();
-          this.render();
-        }
+        // Shift+Tab: 后退
+        this.go('prev');
       } else {
-        if (!this.stateManager.getState().showAnswer) {
-          this.stateManager.getState().showAnswer = true;
-          this.render();
-        } else {
-          this.submitReview('good');
-        }
+        // Tab: 前进
+        this.go('next');
       }
       return;
     }

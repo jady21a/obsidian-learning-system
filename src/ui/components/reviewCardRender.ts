@@ -8,7 +8,15 @@ import type { ReviewState } from '../state/reviewStateManager';
 // 卡片渲染策略接口
 // ============================================================================
 export interface CardRenderStrategy {
-  renderQuestion(container: HTMLElement, card: Flashcard, state: ReviewState): void;
+  renderQuestion(
+    container: HTMLElement, 
+    card: Flashcard, 
+    state: ReviewState,
+    updateState: {
+      setUserAnswer: (answer: string) => void;
+      setUserAnswers: (answers: string[]) => void;
+    }
+  ): void;
   renderAnswer(
     container: HTMLElement, 
     card: Flashcard, 
@@ -21,7 +29,15 @@ export interface CardRenderStrategy {
 // 完形填空卡片渲染器
 // ============================================================================
 export class ClozeCardRenderer implements CardRenderStrategy {
-    renderQuestion(container: HTMLElement, card: Flashcard, state: ReviewState): void {
+    renderQuestion(
+        container: HTMLElement, 
+        card: Flashcard, 
+        state: ReviewState,
+        updateState: {
+          setUserAnswer: (answer: string) => void;
+          setUserAnswers: (answers: string[]) => void;
+        }
+      ): void {
         // 问题文本
         const questionText = container.createDiv({ cls: 'question-text' });
         const isTable = TableRenderer.isTableFormat(card.front);
@@ -54,7 +70,6 @@ export class ClozeCardRenderer implements CardRenderStrategy {
           inputArea.createEl('h4', { text: `Fill in the blanks (${blankCount} total):` });
           
           const hint = inputArea.createEl('div', { cls: 'cloze-input-hint' });
-          hint.innerHTML = '💡 <strong>Separate answers with:</strong> <code>|</code>, <code>,</code>, <code>,</code>, or 2+ spaces<br>';
           
           const singleInputGroup = inputArea.createDiv({ cls: 'single-input-group' });
           const initialValue = state.userAnswers.filter(a => a).join(' | ');
@@ -66,22 +81,22 @@ export class ClozeCardRenderer implements CardRenderStrategy {
             value: initialValue
           });
           
-          // 实时更新函数
-          const updatePreview = (inputValue: string) => {
-            const parts = this.parseMultipleAnswers(inputValue, blankCount);
-            state.userAnswers = parts;
-            
-            // ← 如果是表格,重新渲染表格
-            if (isTable) {
-              questionText.empty();
-              const updatedTableEl = this.renderTableWithInputPreview(
-                card.front,
-                card.cloze?.deletions || [],
-                state
-              );
-              questionText.appendChild(updatedTableEl);
-            }
-          };
+// 实时更新函数
+const updatePreview = (inputValue: string) => {
+    const parts = this.parseMultipleAnswers(inputValue, blankCount);
+    updateState.setUserAnswers(parts);  // ✅ 使用回调更新
+    
+    // ← 如果是表格,重新渲染表格
+    if (isTable) {
+      questionText.empty();
+      const updatedTableEl = this.renderTableWithInputPreview(
+        card.front,
+        card.cloze?.deletions || [],
+        state
+      );
+      questionText.appendChild(updatedTableEl);
+    }
+  };
           
           input.addEventListener('input', (e) => {
             const inputValue = (e.target as HTMLInputElement).value;
@@ -376,8 +391,16 @@ export class ClozeCardRenderer implements CardRenderStrategy {
 // 问答卡片渲染器
 // ============================================================================
 export class QACardRenderer implements CardRenderStrategy {
-    renderQuestion(container: HTMLElement, card: Flashcard, state: ReviewState): void {
-        // 问题文本
+    renderQuestion(
+        container: HTMLElement, 
+        card: Flashcard, 
+        state: ReviewState,
+        updateState: {  // ✅ 添加参数
+          setUserAnswer: (answer: string) => void;
+          setUserAnswers: (answers: string[]) => void;
+        }
+      ): void {
+    // 问题文本
         const questionText = container.createDiv({ cls: 'question-text' });
         const isTable = TableRenderer.isTableFormat(card.front);
         
@@ -400,8 +423,8 @@ export class QACardRenderer implements CardRenderStrategy {
         });
         
         textarea.addEventListener('input', (e) => {
-          state.userAnswer = (e.target as HTMLTextAreaElement).value;
-        });
+            updateState.setUserAnswer((e.target as HTMLTextAreaElement).value);  // ✅ 使用回调
+          });
         
         setTimeout(() => textarea.focus(), 50);
       }

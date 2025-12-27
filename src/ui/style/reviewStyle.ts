@@ -282,6 +282,7 @@ export class reviewStyle {
       }
 
       .answer-comparison {
+      font-size:13px;
         padding: 10px;
         background: var(--background-secondary-alt);
         border-radius: 6px;
@@ -295,8 +296,6 @@ export class reviewStyle {
       }
 
       .comparison-item {
-        padding: 8px;
-        margin-bottom: 6px;
         background: var(--background-primary);
         border-radius: 4px;
       }
@@ -584,8 +583,8 @@ export class reviewStyle {
       }
 
       .user-answer-cell {
-        display: inline-block;
-        padding: 2px 6px;
+        display: inline;
+        padding: 0px 4px;
         border-radius: 3px;
         font-weight: 600;
       }
@@ -716,13 +715,16 @@ export class reviewStyle {
   width: 100%;
   border-collapse: collapse;
   margin: 8px 0;
-  font-size: 15px;
+  font-size: 13px;
 }
 
 .learning-system-table th,
 .learning-system-table td {
+  line-height: 1.4;
+  height: 22px;        
   padding: 2px 4px;
   text-align: left;
+   vertical-align: middle;
   border: 1px solid var(--background-modifier-border);
 }
 
