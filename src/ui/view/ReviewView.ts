@@ -246,25 +246,42 @@ private updateCurrentCard() {
     const renderer = CardRendererFactory.getRenderer(this.currentCard.type);
     renderer.renderQuestion(questionArea, this.currentCard, this.stateManager.getState());
 
-    // 显示答案按钮
-    this.renderShowAnswerButton(container);
+    // 显示答案按钮 + 翻页按钮在同一行
+    const actionRow = container.createDiv({ cls: 'action-row' });
+    this.renderNavigationButton(actionRow, 'prev');
+    this.renderShowAnswerButton(actionRow);  // 复用原方法
+    this.renderNavigationButton(actionRow, 'next');
   }
 
   private renderAnswerView(container: HTMLElement) {
     if (!this.currentCard) return;
-
+  
     // 卡片信息
     this.renderCardInfo(container);
-
-    // 问题回顾
-    this.renderQuestionReview(container);
-
+  
+    // 只有在非表格问题时才显示问题回顾
+    const isQuestionTable = TableRenderer.isTableFormat(this.currentCard.front);
+    const isAnswerTable = this.currentCard.type === 'cloze' 
+      ? TableRenderer.isTableFormat(this.currentCard.cloze?.original || '')
+      : TableRenderer.isTableFormat(
+          Array.isArray(this.currentCard.back) 
+            ? (this.currentCard.back[0] || '') 
+            : this.currentCard.back as string
+        );
+    
+    if (!isQuestionTable && !isAnswerTable) {
+      this.renderQuestionReview(container);
+    }
+  
     // 使用策略模式渲染答案
     const renderer = CardRendererFactory.getRenderer(this.currentCard.type);
     renderer.renderAnswer(container, this.currentCard, this.stateManager.getState(), this.scheduler);
-
-    // 评级按钮
-    this.renderRatingButtons(container);
+  
+      // 评级按钮 + 翻页按钮在同一行
+      const actionRow = container.createDiv({ cls: 'action-row' });
+      this.renderNavigationButton(actionRow, 'prev');
+      this.renderRatingButtons(actionRow);  // 复用原方法,传入容器
+      this.renderNavigationButton(actionRow, 'next');
   }
 
   private renderCardInfo(container: HTMLElement) {
@@ -300,8 +317,7 @@ private updateCurrentCard() {
   }
 
   private renderShowAnswerButton(container: HTMLElement) {
-    const buttonArea = container.createDiv({ cls: 'button-area' });
-    const showAnswerBtn = buttonArea.createEl('button', {
+    const showAnswerBtn = container.createEl('button', {
       text: 'Show Answer',
       cls: 'mod-cta show-answer-btn',
       attr: { title: 'Press Enter or Tab' }
@@ -313,8 +329,7 @@ private updateCurrentCard() {
   }
 
   private renderRatingButtons(container: HTMLElement) {
-    const ratingArea = container.createDiv({ cls: 'rating-area' });
-    const buttonGroup = ratingArea.createDiv({ cls: 'rating-buttons' });
+    const buttonGroup = container.createDiv({ cls: 'rating-buttons' });
 
     const ratings: Array<{
       ease: ReviewEase;
@@ -342,6 +357,40 @@ private updateCurrentCard() {
       btn.addEventListener('click', () => this.submitReview(ease));
     });
   }
+  private renderNavigationButton(container: HTMLElement, type: 'prev' | 'next'): void {
+    const btn = container.createEl('button', {
+      cls: `nav-btn ${type}-btn`,
+      text: type === 'prev' ? '←' : '→'
+    });
+    
+    btn.addEventListener('click', () => {
+      if (type === 'prev') {
+        this.gotoPreviousCard();  // 复用现有方法
+      } else {
+        this.gotoNextCard();  // 复用现有方法
+      }
+    });
+  }
+
+  
+  private gotoPreviousCard(): void {
+    if (this.currentCardIndex > 0) {
+      this.currentCardIndex--;
+      this.render();  // ← 改成 render()
+    } else {
+      new Notice('Already at first card');
+    }
+  }
+  
+  private gotoNextCard(): void {
+    if (this.currentCardIndex < this.dueCards.length - 1) {  // ← 改成 dueCards
+      this.currentCardIndex++;
+      this.render();  // ← 改成 render()
+    } else {
+      new Notice('Already at last card');
+    }
+  }
+
 
   // ============================================================================
   // 交互处理

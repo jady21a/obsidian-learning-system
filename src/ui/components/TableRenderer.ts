@@ -105,24 +105,36 @@ export class TableRenderer {
 
   // 解析单元格
   private static parseCells(line: string): string[] {
+    console.log(`parseCells: line="${line}"`);
+    
     let trimmed = line.trim();
     if (trimmed.startsWith('|')) trimmed = trimmed.slice(1);
     if (trimmed.endsWith('|')) trimmed = trimmed.slice(0, -1);
     
-    return trimmed
+    const cells = trimmed
       .split('|')
       .map(c => c.trim())
       .filter(c => c.length > 0);
+    
+    console.log('  → cells:', cells);
+    return cells;
   }
 
   // 处理单元格内容
   private static processCellContent(cell: string, showAnswer: boolean): string {
-    if (!cell.includes('==')) return cell;
-    
+    console.log(`processCellContent: cell="${cell}", showAnswer=${showAnswer}`);
+    if (!cell.includes('==')) {
+      console.log('  → 不包含 ==, 返回原样');
+      return cell;
+    }
     if (showAnswer) {
-      return cell.replace(/==([^=]+)==/g, '<mark class="revealed">$1</mark>');
+      const result = cell.replace(/==([^=]+)==/g, '<span class="revealed">$1</span>');
+      console.log('  → showAnswer=true, 返回:', result);
+      return result;
     } else {
-      return cell.replace(/==([^=]+)==/g, '<span class="cloze-blank">[___]</span>');
+      const result = cell.replace(/==([^=]+)==/g, '<span class="cloze-blank"></span>');
+      console.log('  → showAnswer=false, 返回:', result);
+      return result;
     }
   }
 
@@ -137,6 +149,7 @@ export class TableRenderer {
     const lines = originalMarkdown.trim().split('\n');
     
     if (lines.length < 2) {
+
       container.textContent = originalMarkdown;
       return container;
     }
@@ -147,42 +160,59 @@ export class TableRenderer {
 
     const separatorIndex = this.findSeparatorIndex(lines);
     let deletionIndex = 0;
+// 渲染表头
+if (separatorIndex > 0) {
+ 
+  const headerCells = this.parseCells(lines[separatorIndex - 1]);
+  
+  const thead = table.createEl('thead');
+  const headerRow = thead.createEl('tr');
+  
+  let headerIndex = 0;  // ← 表头独立计数
+headerCells.forEach(cell => {
+  const th = headerRow.createEl('th');
+  const result = this.processCellWithUserAnswerAndClass(
+    cell, deletions, userAnswers, deletionIndex, scheduler
+  );
+  th.innerHTML = result.html;
+  if (result.correctnessClass) {
+    th.classList.add(result.correctnessClass);
+  }
+  if (cell.includes('==')) {
+    deletionIndex++;
+  }
+});
 
-    // 渲染表头
-    if (separatorIndex > 0) {
-      const headerCells = this.parseCells(lines[separatorIndex - 1]);
-      const thead = table.createEl('thead');
-      const headerRow = thead.createEl('tr');
-      
-      headerCells.forEach(cell => {
-        const th = headerRow.createEl('th');
-        th.innerHTML = this.processCellWithUserAnswer(
-          cell, deletions, userAnswers, deletionIndex, scheduler
-        );
-        if (cell.includes('==')) deletionIndex++;
-      });
-    }
+  
+}
 
-    // 渲染数据行
-    const tbody = table.createEl('tbody');
-    const startRow = separatorIndex > 0 ? separatorIndex + 1 : 0;
-    
-    for (let i = startRow; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line.trim()) continue;
-      
-      const cells = this.parseCells(line);
-      if (cells.length === 0) continue;
-      
-      const row = tbody.createEl('tr');
-      cells.forEach(cell => {
-        const td = row.createEl('td');
-        td.innerHTML = this.processCellWithUserAnswer(
-          cell, deletions, userAnswers, deletionIndex, scheduler
-        );
-        if (cell.includes('==')) deletionIndex++;
-      });
+
+// 渲染数据行
+const tbody = table.createEl('tbody');
+const startRow = separatorIndex > 0 ? separatorIndex + 1 : 0;
+
+for (let i = startRow; i < lines.length; i++) {
+  const line = lines[i];
+  if (!line.trim()) continue;
+  
+  const cells = this.parseCells(line);
+  if (cells.length === 0) continue;
+  
+  const row = tbody.createEl('tr');
+  cells.forEach(cell => {
+    const td = row.createEl('td');
+    const result = this.processCellWithUserAnswerAndClass(
+      cell, deletions, userAnswers, deletionIndex, scheduler
+    );
+    td.innerHTML = result.html;
+    if (result.correctnessClass) {
+      td.classList.add(result.correctnessClass);
     }
+    if (cell.includes('==')) {  // ← 改成这样,与表头逻辑一致
+      deletionIndex++;
+    }
+  });
+}
 
     return container;
   }
@@ -199,7 +229,7 @@ export class TableRenderer {
     
     const match = cell.match(/==([^=]+)==/);
     if (!match || deletionIndex >= deletions.length) {
-      return cell.replace(/==([^=]+)==/g, '<span class="cloze-blank">[___]</span>');
+      return cell.replace(/==([^=]+)==/g, '<span class="cloze-blank"></span>');
     }
     
     const correctAnswer = deletions[deletionIndex].answer;
@@ -213,5 +243,42 @@ export class TableRenderer {
       /==([^=]+)==/g,
       `<span class="user-answer-cell ${correctnessClass}">${displayText}</span>`
     );
+  }
+
+  // 处理带用户答案的单元格(返回 HTML 和正确性类)
+  private static processCellWithUserAnswerAndClass(
+    cell: string,
+    deletions: Array<{ answer: string }>,
+    userAnswers: string[],
+    deletionIndex: number,
+    scheduler: CardScheduler
+  ): { html: string; correctnessClass: string | null } {
+    
+    const match = cell.match(/==([^=]+)==/);
+    if (!match) {  // ← 如果没有匹配到完整的挖空标记
+      return { html: cell, correctnessClass: null };
+    }
+  
+    if (!match || deletionIndex >= deletions.length) {
+      return { 
+        html: cell.replace(/==([^=]+)==/g, '<span class="cloze-blank"></span>'),
+        correctnessClass: null
+      };
+    }
+    
+    const correctAnswer = deletions[deletionIndex].answer;
+    const userAnswer = userAnswers[deletionIndex] || '';
+    const evaluation = scheduler.evaluateAnswer(correctAnswer, userAnswer);
+    
+    const displayText = userAnswer || '(empty)';
+    const correctnessClass = evaluation.correctness;
+    
+    const html = cell.replace(
+      /==([^=]+)==/g,
+      `<span class="user-answer-cell ${correctnessClass}">${displayText}</span>`
+    );
+    
+    
+    return { html, correctnessClass: `cell-${correctnessClass}` };
   }
 }

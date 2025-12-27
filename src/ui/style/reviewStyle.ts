@@ -197,7 +197,30 @@ export class reviewStyle {
         color: var(--text-muted);
         font-size: 0.9em;
       }
+        
+.qa-answer-input {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  border: 2px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 0.95em;
+  font-family: inherit;
+  resize: vertical;
+  line-height: 1.5;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
 
+.qa-answer-input:focus {
+  outline: none;
+}
+
+.qa-answer-input::placeholder {
+  color: var(--text-faint);
+  font-style: italic;
+}
       .input-group {
         display: flex;
         align-items: center;
@@ -215,9 +238,7 @@ export class reviewStyle {
       }
 
       .cloze-input:focus, .qa-input:focus {
-        border-color: var(--interactive-accent);
         outline: none;
-        box-shadow: 0 0 0 2px var(--interactive-accent-hover);
       }
 
       .qa-input {
@@ -287,18 +308,18 @@ export class reviewStyle {
       }
 
       .user-answer.correct {
-        background: var(--background-modifier-success, #4caf50) !important;
-        color: white !important;
+       background-color: rgba(40, 167, 69, 0.1)  !important;
+        color:  #2ea043;
       }
 
       .user-answer.partial {
-        background: #FFC000 !important;
-        color: white !important;
+         background-color: rgba(255, 193, 7, 0.15) !important;
+        color: #ff9f0a;
       }
 
       .user-answer.wrong {
-        background: var(--background-modifier-error, #f44336) !important;
-        color: white !important;
+        background-color: rgba(220, 53, 69, 0.1) !important;
+        color: #e5534b;
       }
 
       .correct-answer {
@@ -373,6 +394,93 @@ export class reviewStyle {
         margin-top: 20px;
       }
 
+      /* ============================================================================
+         Action Row - 按钮布局
+         ============================================================================ */
+      .action-row {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+        padding: 0 20px;
+        min-height: 60px;
+      }
+
+      /* 中间的主要按钮(评级或显示答案) */
+      .action-row .rating-buttons,
+      .action-row .show-answer-btn {
+        flex: 0 1 auto;
+      }
+
+      /* 翻页按钮定位到左下角和右下角 */
+
+      .show-answer-btn {
+        padding: 10px 32px;
+        font-size: 1em;
+        border: 2px solid var(--interactive-accent);
+        border-radius: 8px;
+        background: var(--interactive-accent);
+        color: var(--text-on-accent);
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 500;
+      }
+
+      .show-answer-btn:hover {
+        background: var(--interactive-accent-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+/* 翻页按钮 - 纯文本样式 */
+    button.nav-btn {
+        padding: 8px 12px;
+        background: transparent; !important
+        border: none;!important
+        cursor: pointer;
+        font-size: 1.2em;
+       color: var(--text-muted) !important;
+        transition: all 0.2s;
+        box-shadow: none;!important
+      }
+
+     button.nav-btn:hover {
+        background: transparent;!important
+        border: none !important
+        color: var(--text-normal) !important;
+        transform: scale(1.2);
+        box-shadow: none;!important
+      }
+
+      .nav-btn:active {
+        transform: scale(1.1);
+      }
+
+      /* action-row 中的定位 */
+      .action-row .nav-btn {
+        position: absolute;
+      }
+
+      .action-row .prev-btn {
+        left: 0px;
+      }
+
+      .action-row .next-btn {
+        right: 0px;
+      }
+
+      .prev-btn:hover {
+        padding-left: 8px;
+        transform: translateX(-3px) scale(1.2);
+      }
+
+      .next-btn:hover {
+        padding-right: 8px;
+        transform: translateX(3px) scale(1.2);
+      }
+
+
+      
       .show-answer-btn {
         padding: 10px 32px;
         font-size: 1em;
@@ -380,7 +488,10 @@ export class reviewStyle {
 
       .rating-area {
         margin: 15px 0 10px 0;
-        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 40px; 
       }
 
       .rating-buttons {
@@ -448,49 +559,18 @@ export class reviewStyle {
         color: var(--text-normal);
       }
 
-      .learning-system-table, .flashcard-review-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 8px 0;
-        background: var(--background-primary);
-      }
-
-      .learning-system-table th, .learning-system-table td,
-      .flashcard-review-table th, .flashcard-review-table td {
-        padding: 10px 12px;
-        text-align: left;
-        border: 1px solid var(--background-modifier-border);
-      }
-
-      .learning-system-table th, .flashcard-review-table th {
-        background: var(--background-secondary);
-        font-weight: 600;
-        color: var(--text-normal);
-      }
-
-      .learning-system-table tr:hover, .flashcard-review-table tr:hover {
-        background: var(--background-modifier-hover);
-      }
+   
 
       .cloze-blank {
         display: inline-block;
         min-width: 60px;
         padding: 2px 8px;
-        background: var(--background-secondary);
-        border: 2px dashed var(--text-muted);
-        border-radius: 4px;
         color: var(--text-muted);
         font-family: monospace;
         font-size: 0.9em;
       }
 
-      mark.revealed {
-        background: var(--text-highlight-bg);
-        color: var(--text-normal);
-        padding: 2px 4px;
-        border-radius: 3px;
-        font-weight: 600;
-      }
+          
 
       .table-answer, .table-question {
         padding: 0 !important;
@@ -499,7 +579,7 @@ export class reviewStyle {
       .cloze-table-columns {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 16px;
+        gap: 8px;
         margin-bottom: 16px;
       }
 
@@ -511,21 +591,194 @@ export class reviewStyle {
       }
 
       .user-answer-cell.correct {
-        background: #4caf50 !important;
-        color: white !important;
+         color: #2ea043;
       }
 
       .user-answer-cell.partial {
-        background: #FFC000 !important;
-        color: white !important;
+        color: #ff9f0a;
+
       }
 
       .user-answer-cell.wrong {
-        background: #f44336 !important;
-        color: white !important;
+       color: #e5534b;
+
       }
 
-      `
+      /* 表格单元格正确性颜色 */
+.learning-system-table.user-answer-table td.cell-correct,
+.learning-system-table.user-answer-table th.cell-correct {
+  background-color: rgba(40, 167, 69, 0.1);
+}
+
+.learning-system-table.user-answer-table td.cell-partial,
+.learning-system-table.user-answer-table th.cell-partial {
+  background-color: rgba(255, 193, 7, 0.15);
+}
+
+.learning-system-table.user-answer-table td.cell-wrong,
+.learning-system-table.user-answer-table th.cell-wrong {
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+.learning-system-table.user-answer-table .user-answer-cell {
+  font-weight: 500;
+}
+// 在 reviewStyle.inject() 中添加提示样式
+
+.cloze-input-hint {
+  font-size: 0.85em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  padding: 8px;
+  background: var(--background-secondary);
+  border-radius: 4px;
+  border-left: 3px solid var(--interactive-accent);
+}
+// 在 reviewStyle.inject() 方法中添加:
+
+/* 单个输入框样式 */
+.single-input-group {
+  margin-bottom: 16px;
+}
+
+.cloze-single-input {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  border: 2px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  transition: border-color 0.2s;
+}
+
+.cloze-single-input:focus {
+  outline: none;
+}
+
+
+
+.cloze-input-hint code {
+  background: var(--background-modifier-border);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+}
+
+/* 预览区域 */
+.answer-preview-area {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.answer-preview-area h5 {
+  margin: 0 0 8px 0;
+  font-size: 0.9em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.preview-list {
+  margin: 0;
+  padding-left: 24px;
+  list-style: decimal;
+}
+
+.preview-item {
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+}
+
+.preview-item.filled {
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-weight: 500;
+}
+
+.preview-item.empty {
+  background: transparent;
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+
+/* ============================================================================
+   Table Styles
+   ============================================================================ */
+.learning-system-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 15px;
+}
+
+.learning-system-table th,
+.learning-system-table td {
+  padding: 2px 4px;
+  text-align: left;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.learning-system-table th {
+  background: var(--background-secondary);
+  font-weight: 400;
+  color: var(--text-normal);
+}
+
+.learning-system-table td {
+  color: var(--text-normal);
+}
+
+.learning-system-table tr:hover td {
+  background: var(--background-modifier-hover);
+}
+
+/* ← 新增:被挖空的单元格背景色(显示答案前) */
+.learning-system-table td:has(.cloze-blank),
+.learning-system-table th:has(.cloze-blank) {
+  background-color: rgba(80, 126, 91, 0.1);
+}
+.learning-system-table th.has-cloze {
+  background-color: rgba(40, 167, 69, 0.15) !important;
+  border-left: 2px solid rgba(40, 167, 69, 0.6);
+}
+/* ← 新增:被挖空的单元格背景色(显示答案后,已揭示) */
+.learning-system-table td:has(span.revealed),
+.learning-system-table th:has(span.revealed)
+{
+  background-color: rgba(70, 113, 80, 0.15);
+  border-left: 2px solid rgba(40, 167, 69, 0.5);
+}
+
+/* User Answer Table - Cell correctness background */
+.user-answer-table td.cell-correct {
+  background-color: rgba(76, 125, 85, 0.15);
+}
+
+/* 预览答案的样式 */
+.preview-answer {
+
+  color: #4a9eff;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.preview-table .cloze-blank {
+  color: #666;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+
+`
       ;
-    }
+}
   }

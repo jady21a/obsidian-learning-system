@@ -32,14 +32,21 @@ export class ReviewStateManager {
     this.state = this.createInitialState();
   }
 
-  updateForNewCard(card: Flashcard, isSameCard: boolean) {
+  updateForNewCard(newCard: Flashcard, isSameCard: boolean) {
     if (!isSameCard) {
-      this.reset();
-    }
-    
-    if (!this.state.showAnswer && this.state.startTime === 0) {
+      this.state.showAnswer = false;
+      this.state.userAnswer = '';
+      
+      // 根据卡片的填空数量初始化数组
+      if (newCard.type === 'cloze' && newCard.cloze) {
+        this.state.userAnswers = new Array(newCard.cloze.deletions.length).fill('');
+      } else {
+        this.state.userAnswers = [];
+      }
+      
       this.state.startTime = Date.now();
     }
+  
   }
 
   setShowAnswer(show: boolean) {

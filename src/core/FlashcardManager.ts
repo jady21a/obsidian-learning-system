@@ -192,10 +192,17 @@ export class FlashcardManager {
   ): Promise<Flashcard> {
     const contentUnit = this.dataManager.getContentUnit(contentUnitId);
     if (!contentUnit) throw new Error('Content unit not found');
-
-    const front = this.generateClozeText(original, deletions);
+  
+    // ← 修改这里:检测是否为表格
+    const isTable = this.isTableFormat(original);
+    
+    const front = isTable 
+      ? original  // ← 表格直接使用原文,保留 == 标记
+      : this.generateClozeText(original, deletions);  // ← 非表格才替换为 [...]
+      
     const back = deletions.map(d => d.answer);
-
+  
+    // ← 把下面这些代码补充完整
     const card: Flashcard = {
       id: this.generateId(),
       type: 'cloze',
@@ -222,14 +229,27 @@ export class FlashcardManager {
         updatedAt: Date.now()
       }
     };
-
+  
     this.flashcards.set(card.id, card);
     
     contentUnit.flashcardIds.push(card.id);
     await this.dataManager.saveContentUnits([contentUnit]);
     
     await this.persistFlashcards();
-    return card;
+    return card;  // ← 必须有这一行!
+  }
+  
+  // ← 添加辅助方法
+  private isTableFormat(text: string): boolean {
+    if (!text || !text.trim()) return false;  // ← 添加空值检查
+    
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return false;
+    
+    const hasSeparator = lines.some(line => /^\|?[\s-:|]+\|?$/.test(line.trim()));
+    const pipeLines = lines.filter(line => line.includes('|')).length;
+    
+    return hasSeparator || pipeLines >= lines.length * 0.7;
   }
 
   // ==================== 查询方法 ====================
