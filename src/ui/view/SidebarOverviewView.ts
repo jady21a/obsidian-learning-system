@@ -1,7 +1,8 @@
 // src/ui/SidebarOverviewView.ts - 重构后版本
 import { StyleLoader } from '../style/sidebarStyle'
 
-import { ItemView, WorkspaceLeaf, TFile, Menu, Notice, Modal, Setting, TextAreaComponent, ButtonComponent,App } from 'obsidian';
+import { QuickFlashcardCreator } from '../../core/QuickFlashcardCreator';
+import { ItemView, WorkspaceLeaf, TFile, Menu, Notice, Modal, Setting, TextAreaComponent, ButtonComponent,App, MarkdownView} from 'obsidian';
 import type LearningSystemPlugin from '../../main';
 import { ContentUnit } from '../../core/DataManager';
 import { Flashcard } from '../../core/FlashcardManager';
@@ -13,6 +14,15 @@ import { BatchActions, BatchActionCallbacks } from '../components/BatchActions';
 import { ContentList } from '../components/ContentList';
 import { ContentCard, CardCallbacks } from '../components/ContentCard';
 import { AnnotationEditor, AnnotationEditorCallbacks } from '../components/AnnotationEditor';
+import { sideOverviewService } from '../service/sideOverviewService';
+import { ManualFlashcardModal } from '../components/modals/ManualFlashcardModal';
+import { EditFlashcardModal } from '../components/modals/EditFlashcardModal';
+import { 
+  ContextMenuBuilder, 
+  ContentUnitMenuCallbacks, 
+  FlashcardMenuCallbacks 
+} from '../components/ContextMenuBuilder';
+
 
 export const VIEW_TYPE_SIDEBAR_OVERVIEW = 'learning-system-sidebar-overview';
 export const VIEW_TYPE_MAIN_OVERVIEW = 'learning-system-main-overview';
@@ -28,7 +38,7 @@ export class SidebarOverviewView extends ItemView {
   private batchActions: BatchActions;
   private contentList: ContentList;
   private annotationEditor: AnnotationEditor;
-  
+  private overviewService: sideOverviewService; 
 
   private _forceMainMode: boolean;
   constructor(leaf: WorkspaceLeaf, plugin: LearningSystemPlugin, forceMainMode = false) {
@@ -41,6 +51,7 @@ export class SidebarOverviewView extends ItemView {
     
     // 初始化组件
     this.initializeComponents();
+    
     
     // 设置初始选中文件
     const activeFile = this.app.workspace.getActiveFile();
@@ -94,6 +105,7 @@ export class SidebarOverviewView extends ItemView {
   // ==================== 初始化方法 ====================
 
   private initializeComponents(): void {
+    this.overviewService = new sideOverviewService(this.plugin, this.state);
     // 工具栏回调
     this.toolbar = new Toolbar(this.state, {
       onSearchChange: (query) => this.handleSearchChange(query),
@@ -115,6 +127,7 @@ export class SidebarOverviewView extends ItemView {
     // 卡片回调
     const cardCallbacks: CardCallbacks = {
       onJumpToSource: (unit) => this.jumpToSource(unit),
+      onJumpToFlashcard: (card) => this.jumpToFlashcardSource(card), 
       onToggleAnnotation: (card, unit) => this.annotationEditor.toggle(card, unit),
       onQuickFlashcard: (unit) => this.quickGenerateFlashcard(unit),
       onShowContextMenu: (event, unit) => this.showContextMenu(event, unit),
@@ -122,6 +135,32 @@ export class SidebarOverviewView extends ItemView {
       getAnnotationContent: (unitId) => {
         const ann = this.plugin.annotationManager.getContentAnnotation(unitId);
         return ann?.content;
+      },
+      getContentUnit: (unitId) => {
+        const allUnits = this.plugin.dataManager.getAllContentUnits();
+        
+        
+        if (allUnits.length > 0) {
+          allUnits.slice(0, 10).forEach(u => {
+          });
+        }
+        
+        // 尝试直接获取
+        const unit = this.plugin.dataManager.getContentUnit(unitId);
+        
+        if (unit) {
+          return unit;
+        } else {
+          
+          const allFlashcards = this.plugin.flashcardManager.getAllFlashcards();
+          
+          // 找出问题：这个 flashcard 的 sourceContentId 对应的 unit 是否存在
+          const matchingUnit = allUnits.find(u => u.id === unitId);
+          if (!matchingUnit) {
+          }
+          
+          return undefined;
+        }
       }
     };
     
@@ -655,557 +694,176 @@ export class SidebarOverviewView extends ItemView {
 
   // ==================== 业务逻辑方法 ====================
 
-  private async jumpToSource(unit: ContentUnit): Promise<void> {
-    const file = this.app.vault.getAbstractFileByPath(unit.source.file);
+ 
+
+private async jumpToSource(unit: ContentUnit): Promise<void> {
+  await this.overviewService.jumpToSource(unit, this.app);
+}
+
+private async jumpToFlashcardSource(card: Flashcard): Promise<void> {
+  try {
+    // 首先尝试通过 ContentUnit 跳转
+    const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+    
+    if (unit) {
+      await this.jumpToSource(unit);
+      return;
+    }
+    const file = this.app.vault.getAbstractFileByPath(card.sourceFile);
     if (!(file instanceof TFile)) {
-      new Notice('⚠️ 文件不存在');
+      new Notice('❌ 源文件不存在');
       return;
     }
     
-    this.state.shouldRestoreScroll = true;
-    
+    // 打开文件
     const leaf = this.app.workspace.getLeaf(false);
     await leaf.openFile(file);
     
-    setTimeout(() => {
-      const view = this.app.workspace.getActiveViewOfType(ItemView);
-      if (view) {
-        const editor = (view as any).editor;
-        if (editor) {
-          const line = unit.source.position.line;
-          const lineCount = editor.lineCount();
-          const validLine = Math.min(line, lineCount - 1);
+    // 如果有 anchorLink，尝试跳转到具体位置
+    if (card.anchorLink) {
+      // 从 anchorLink 提取 blockId
+      // 格式: [[filename#^block-id]]
+      const blockIdMatch = card.anchorLink.match(/\^\S+/);
+      if (blockIdMatch) {
+        const blockId = blockIdMatch[0].substring(1); // 移除 ^
+        
+        // 等待编辑器加载
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // 正确获取 MarkdownView
+        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (view && view.editor) {
+          const editor = view.editor;
+          const content = editor.getValue();
+          const lines = content.split('\n');
           
-          editor.setCursor({ line: validLine, ch: 0 });
-          editor.scrollIntoView(
-            { from: { line: validLine, ch: 0 }, to: { line: validLine, ch: 0 } },
-            true
-          );
-          
-          setTimeout(() => {
-            try {
-              const lineLength = editor.getLine(validLine)?.length || 0;
-              editor.setSelection(
-                { line: validLine, ch: 0 },
-                { line: validLine, ch: lineLength }
-              );
-            } catch (e) {
-              console.error('Selection error:', e);
+          // 查找 block ID
+          for (let i = 0; i < lines.length; i++) {
+            if (lines[i].includes(`^${blockId}`)) {
+              editor.setCursor({ line: i, ch: 0 });
+              editor.scrollIntoView({ from: { line: i, ch: 0 }, to: { line: i, ch: 0 } }, true);
+              break;
             }
-          }, 100);
+          }
         }
       }
-    }, 200);
-  }
-
-  private async saveAnnotation(unitId: string, content: string): Promise<void> {
-    const trimmedText = content.trim();
-    const annotation = this.plugin.annotationManager.getContentAnnotation(unitId);
+    }
     
-    if (trimmedText) {
-      if (annotation) {
-        await this.plugin.annotationManager.updateAnnotation(annotation.id, {
-          content: trimmedText
-        });
-      } else {
-        await this.plugin.annotationManager.addContentAnnotation(unitId, trimmedText);
+    new Notice('✅ 已跳转到源文件');
+  } catch (error) {
+    console.error('Error jumping to flashcard source:', error);
+    new Notice('❌ 跳转失败');
+  }
+}
+
+private async saveAnnotation(unitId: string, content: string): Promise<void> {
+  await this.overviewService.saveAnnotation(unitId, content);
+}
+
+private async quickGenerateFlashcard(unit: ContentUnit): Promise<void> {
+  await this.overviewService.quickGenerateFlashcard(unit);
+  
+  // 刷新 UI
+  requestAnimationFrame(() => {
+    this.refresh();
+  });
+}
+  // ==================== 右键菜单 ====================
+private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
+  const callbacks: ContentUnitMenuCallbacks = {
+    onJumpToSource: (unit) => this.jumpToSource(unit),
+    
+    onToggleAnnotation: (unit) => {
+      const card = event.target as HTMLElement;
+      const cardEl = card.closest('.compact-card, .grid-card') as HTMLElement;
+      if (cardEl) {
+        this.annotationEditor.toggle(cardEl, unit);
       }
-    } else if (annotation) {
-      await this.plugin.annotationManager.deleteAnnotation(annotation.id);
-      new Notice('🗑️ 批注已删除');
-    }
-  }
-
-  private async quickGenerateFlashcard(unit: ContentUnit): Promise<void> {
-    try {
-      const { QuickFlashcardCreator } = await import('../../core/QuickFlashcardCreator');
-      const creator = new QuickFlashcardCreator(this.plugin);
-      await creator.createSmartCard(unit);
-      new Notice('⚡ 闪卡已生成');
-      this.refresh();
-    } catch (error) {
-      new Notice('❌ 生成闪卡失败');
-      console.error(error);
-    }
-  }
-
-  private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
-    const menu = new Menu();
+    },
     
-    // 跳转到原文
-    menu.addItem((item) =>
-      item
-        .setTitle('📖 跳转到原文')
-        .setIcon('arrow-up-right')
-        .onClick(() => this.jumpToSource(unit))
-    );
+    onEditFlashcard: (unit) => {
+      const cardId = unit.flashcardIds[0];
+      const card = this.plugin.flashcardManager.getFlashcard(cardId);
+      if (card) {
+        new EditFlashcardModal(this.app, this.plugin, card).open();
+      } else {
+        new Notice('⚠️ 找不到对应的闪卡');
+      }
+    },
     
-    // 编辑批注
-    menu.addItem((item) =>
-      item
-        .setTitle('💬 编辑批注')
-        .setIcon('message-square')
-        .onClick(() => {
-          const card = event.target as HTMLElement;
-          const cardEl = card.closest('.compact-card, .grid-card') as HTMLElement;
-          if (cardEl) {
-            this.annotationEditor.toggle(cardEl, unit);
+    onQuickGenerate: (unit) => this.quickGenerateFlashcard(unit),
+    
+    onCreateQA: (unit) => {
+      new ManualFlashcardModal(this.app, this.plugin, unit, 'qa').open();
+    },
+    
+    onCreateCloze: (unit) => {
+      new ManualFlashcardModal(this.app, this.plugin, unit, 'cloze').open();
+    },
+    
+    onViewStats: () => {
+      this.plugin.activateStats();
+    },
+    
+    onDelete: async (unit) => {
+      if (confirm('确定要删除这条笔记吗？')) {
+        if (unit.flashcardIds.length > 0) {
+          for (const cardId of unit.flashcardIds) {
+            await this.plugin.flashcardManager.deleteCard(cardId);
           }
-        })
-    );
-    
-    menu.addSeparator();
-    
-    // 编辑闪卡 (如果已有闪卡)//
-    if (unit.flashcardIds.length > 0) {
-      menu.addItem((item) =>
-        item
-          .setTitle('✏️ 编辑闪卡')
-          .setIcon('pencil')
-          .onClick(() => {
-            const cardId = unit.flashcardIds[0];
-            const card = this.plugin.flashcardManager.getFlashcard(cardId);
-            if (card) {
-              this.openEditFlashcardModal(card);
-            } else {
-              new Notice('⚠️ 找不到对应的闪卡');
-            }
-          })
-      );
+        }
+        await this.plugin.dataManager.deleteContentUnit(unit.id);
+        new Notice('🗑️ 笔记已删除');
+        this.refresh();
+      }
     }
-    
-    
-    // 生成闪卡 (AI智能生成)
-    menu.addItem((item) =>
-      item
-        .setTitle('⚡ 生成闪卡')
-        .setIcon('zap')
-        .onClick(() => this.quickGenerateFlashcard(unit))
-    );
-    
-    // 创建 QA 闪卡
-    menu.addItem((item) =>
-      item
-        .setTitle('➕ 创建 QA 闪卡')
-        .setIcon('plus')
-        .onClick(() => {
-          this.openManualFlashcardModal(unit, 'qa');
-        })
-    );
-    
-    // 创建填空闪卡
-    menu.addItem((item) =>
-      item
-        .setTitle('➕ 创建填空闪卡')
-        .setIcon('plus')
-        .onClick(() => {
-          this.openManualFlashcardModal(unit, 'cloze');
-        })
-    );
-    
-    menu.addSeparator();
-    
-    // 查看统计
-    menu.addItem((item) =>
-      item
-        .setTitle('📊 查看统计')
-        .setIcon('bar-chart')
-        .onClick(() => {
-          this.plugin.activateStats();
-        })
-    );
-    
-    menu.addSeparator();
-    
-    // 删除笔记
-    menu.addItem((item) =>
-      item
-        .setTitle('🗑️ 删除笔记')
-        .setIcon('trash')
-        .onClick(async () => {
-          if (confirm('确定要删除这条笔记吗？')) {
-            if (unit.flashcardIds.length > 0) {
-              for (const cardId of unit.flashcardIds) {
-                await this.plugin.flashcardManager.deleteCard(cardId);
-              }
-            }
-            await this.plugin.dataManager.deleteContentUnit(unit.id);
-            new Notice('🗑️ 笔记已删除');
-            this.refresh();
-          }
-        })
-    );
-    
-    menu.showAtMouseEvent(event);
-  }
+  };
+  
+  const menu = ContextMenuBuilder.buildContentUnitMenu(unit, callbacks);
+  menu.showAtMouseEvent(event);
+}
   
   private openManualFlashcardModal(unit: ContentUnit, type: 'qa' | 'cloze'): void {
-    class ManualFlashcardModal extends Modal {
-      unit: ContentUnit;
-      type: 'qa' | 'cloze';
-      plugin: LearningSystemPlugin;
-      question: string = '';
-      answer: string = '';
-      
-      constructor(app: App, plugin: LearningSystemPlugin, unit: ContentUnit, type: 'qa' | 'cloze') {
-        super(app);
-        this.plugin = plugin;
-        this.unit = unit;
-        this.type = type;
-        
-        // 根据类型设置默认值
-        if (type === 'qa') {
-          this.question = unit.type === 'QA' ? unit.content : unit.content;
-          this.answer = unit.type === 'QA' && unit.answer ? unit.answer : '';
-        } else {
-          this.question = unit.fullContext || unit.content;
-          this.answer = unit.content;
-        }
-      }
-      
-      onOpen() {
-        const { contentEl } = this;
-        contentEl.empty();
-        contentEl.addClass('manual-flashcard-modal');
-        
-        contentEl.createEl('h2', { 
-          text: this.type === 'qa' ? '✏️ 创建 QA 闪卡' : '✏️ 创建填空闪卡' 
-        });
-        
-        contentEl.createEl('p', {
-          text: this.type === 'qa' 
-            ? '创建一张问答卡片，可以自定义问题和答案' 
-            : '创建一张填空卡片，在完整文本中标记要挖空的内容',
-          cls: 'modal-description'
-        });
-        
-        // 问题/完整文本
-        new Setting(contentEl)
-          .setName(this.type === 'qa' ? '问题 (Front)' : '完整文本')
-          .setDesc(this.type === 'qa' ? '卡片正面显示的问题' : '包含答案的完整句子或段落')
-          .addTextArea((text: TextAreaComponent) => {
-            text
-              .setValue(this.question)
-              .setPlaceholder(
-                this.type === 'qa' 
-                  ? '例如: 什么是间隔重复?' 
-                  : '例如: 间隔重复是一种学习技术'
-              )
-              .onChange((value: string) => this.question = value);
-            text.inputEl.rows = 4;
-            text.inputEl.style.width = '100%';
-          });
-        
-        // 答案/挖空内容
-        new Setting(contentEl)
-          .setName(this.type === 'qa' ? '答案 (Back)' : '挖空内容')
-          .setDesc(this.type === 'qa' ? '卡片背面显示的答案' : '要被挖空的关键词或短语')
-          .addTextArea((text: TextAreaComponent) => {
-            text
-              .setValue(this.answer)
-              .setPlaceholder(
-                this.type === 'qa' 
-                  ? '例如: 间隔重复是一种学习技术...' 
-                  : '例如: 间隔重复'
-              )
-              .onChange((value: string) => this.answer = value);
-            text.inputEl.rows = 3;
-            text.inputEl.style.width = '100%';
-          });
-        
-        // 按钮组
-        const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
-        
-        new Setting(buttonContainer)
-          .addButton((btn: ButtonComponent) => btn
-            .setButtonText('取消')
-            .onClick(() => this.close())
-          )
-          .addButton((btn: ButtonComponent) => btn
-            .setButtonText('创建闪卡')
-            .setCta()
-            .onClick(async () => await this.createFlashcard())
-          );
-      }
-      
-      async createFlashcard() {
-        // 验证输入
-        if (!this.question.trim()) {
-          new Notice('⚠️ 问题/文本不能为空');
-          return;
-        }
-        if (!this.answer.trim()) {
-          new Notice('⚠️ 答案不能为空');
-          return;
-        }
-        
-        try {
-          // 使用 FlashcardManager 的 createFlashcardFromUnit 方法
-          await this.plugin.flashcardManager.createFlashcardFromUnit(
-            this.unit,
-            {
-              customQuestion: this.question.trim(),
-              customAnswer: this.answer.trim(),
-              cardType: this.type
-            }
-          );
-          
-          new Notice(
-            this.type === 'qa' 
-              ? '✅ QA 闪卡已创建' 
-              : '✅ 填空闪卡已创建'
-          );
-          
-          this.close();
-          
-          // 刷新视图
-          const view = this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR_OVERVIEW)[0]?.view ||
-                       this.app.workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW)[0]?.view;
-          if (view && 'refresh' in view) {
-            (view as any).refresh();
-          }
-          
-        } catch (error) {
-          new Notice('❌ 创建闪卡失败');
-          console.error('Error creating flashcard:', error);
-        }
-      }
-      
-      onClose() {
-        const { contentEl } = this;
-        contentEl.empty();
-      }
-    }
+
     
     new ManualFlashcardModal(this.app, this.plugin, unit, type).open();
   }
 
 
   private showFlashcardContextMenu(event: MouseEvent, card: Flashcard): void {
-    const menu = new Menu();
+    const callbacks: FlashcardMenuCallbacks = {
+      onJumpToSource: async (card) => {
+        await this.overviewService.jumpToFlashcardSource(card.id, this.app);
+      },
+      
+      onEdit: (card) => {
+        new EditFlashcardModal(this.app, this.plugin, card).open();
+      },
+      
+      onViewStats: (card) => {
+        const statsText = ContextMenuBuilder.formatFlashcardStats(card);
+        new Notice(statsText, 10000);
+      },
+      
+      onDelete: async (card) => {
+        if (confirm('确定要删除这张闪卡吗？')) {
+          await this.plugin.flashcardManager.deleteCard(card.id);
+          new Notice('🗑️ 闪卡已删除');
+          this.refresh();
+        }
+      }
+    };
     
-    // 跳转到原文
-    menu.addItem((item) =>
-      item
-        .setTitle('📖 跳转到原文')
-        .setIcon('arrow-up-right')
-        .onClick(async () => {
-          const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
-          if (unit) {
-            await this.jumpToSource(unit);
-          } else {
-            const file = this.app.vault.getAbstractFileByPath(card.sourceFile);
-            if (file instanceof TFile) {
-              await this.app.workspace.getLeaf(false).openFile(file);
-              new Notice('✅ 已打开源文件');
-            } else {
-              new Notice('⚠️ 找不到原始笔记');
-            }
-          }
-        })
-    );
-    
-    // 编辑卡片
-    menu.addItem((item) =>
-      item
-        .setTitle('✏️ 编辑卡片')
-        .setIcon('pencil')
-        .onClick(() => {
-          this.openEditFlashcardModal(card);
-        })
-    );
-    
-    menu.addSeparator();
-    
-    // 查看统计
-    menu.addItem((item) =>
-      item
-        .setTitle('📊 查看统计')
-        .setIcon('bar-chart')
-        .onClick(() => {
-          const createdDate = new Date(card.metadata.createdAt).toLocaleString('zh-CN');
-          const lastReview = card.stats.lastReview 
-            ? new Date(card.stats.lastReview).toLocaleString('zh-CN')
-            : '未复习';
-          const nextReview = new Date(card.scheduling.due).toLocaleString('zh-CN');
-          const accuracy = card.stats.totalReviews > 0 
-            ? ((card.stats.correctCount / card.stats.totalReviews) * 100).toFixed(1)
-            : '0';
-          
-          new Notice(
-            `📊 闪卡统计\n` +
-            `━━━━━━━━━━━━━━━\n` +
-            `📁 文件: ${card.sourceFile.split('/').pop()}\n` +
-            `🃏 类型: ${card.type === 'qa' ? 'Q&A' : '填空'}\n` +
-            `📚 卡组: ${card.deck}\n` +
-            `🏷️ 标签: ${card.tags?.length > 0 ? card.tags.join(', ') : '无'}\n` +
-            `━━━━━━━━━━━━━━━\n` +
-            `📈 复习次数: ${card.stats.totalReviews}\n` +
-            `✅ 正确次数: ${card.stats.correctCount}\n` +
-            `📊 正确率: ${accuracy}%\n` +
-            `⏱️ 平均用时: ${card.stats.averageTime.toFixed(1)}秒\n` +
-            `🎯 难度: ${(card.stats.difficulty * 100).toFixed(0)}%\n` +
-            `━━━━━━━━━━━━━━━\n` +
-            `📅 创建时间: ${createdDate}\n` +
-            `🔄 上次复习: ${lastReview}\n` +
-            `⏰ 下次复习: ${nextReview}\n` +
-            `📏 间隔: ${card.scheduling.interval}天\n` +
-            `💪 熟练度: ${card.scheduling.ease.toFixed(2)}`,
-            10000
-          );
-        })
-    );
-    
-    menu.addSeparator();
-    
-    // 删除卡片
-    menu.addItem((item) =>
-      item
-        .setTitle('🗑️ 删除卡片')
-        .setIcon('trash')
-        .onClick(async () => {
-          if (confirm('确定要删除这张闪卡吗？')) {
-            await this.plugin.flashcardManager.deleteCard(card.id);
-            new Notice('🗑️ 闪卡已删除');
-            this.refresh();
-          }
-        })
-    );
-    
+    const menu = ContextMenuBuilder.buildFlashcardMenu(card, callbacks);
     menu.showAtMouseEvent(event);
   }
   
+
   private openEditFlashcardModal(card: Flashcard): void {
-    class EditFlashcardModal extends Modal {
-      card: Flashcard;
-      plugin: LearningSystemPlugin;
-      front: string;
-      back: string;
-      
-      constructor(app: App, plugin: LearningSystemPlugin, card: Flashcard) {
-        super(app);
-        this.plugin = plugin;
-        this.card = card;
-        this.front = card.front;
-        this.back = Array.isArray(card.back) ? card.back.join(', ') : card.back;
-      }
-      
-      onOpen() {
-        const { contentEl } = this;
-        contentEl.empty();
-        contentEl.addClass('edit-flashcard-modal');
-        
-        contentEl.createEl('h2', { 
-          text: '✏️ 编辑闪卡' 
-        });
-        
-        contentEl.createEl('p', {
-          text: `编辑 ${this.card.type === 'qa' ? 'Q&A' : '填空'}卡片内容`,
-          cls: 'modal-description'
-        });
-        
-        // 卡片信息
-        const infoDiv = contentEl.createDiv({ cls: 'card-info' });
-        infoDiv.innerHTML = `
-          <div style="background: var(--background-secondary); padding: 10px; border-radius: 6px; margin-bottom: 15px;">
-            <div style="font-size: 0.9em; color: var(--text-muted);">
-              📁 ${this.card.sourceFile.split('/').pop()}<br>
-              📚 卡组: ${this.card.deck}<br>
-              📊 复习: ${this.card.stats.totalReviews}次 | 正确: ${this.card.stats.correctCount}次
-            </div>
-          </div>
-        `;
-        
-        // 问题/前面
-        new Setting(contentEl)
-          .setName(this.card.type === 'qa' ? '问题 (Front)' : '完整文本')
-          .setDesc('卡片正面显示的内容')
-          .addTextArea((text: TextAreaComponent) => {
-            text
-              .setValue(this.front)
-              .onChange((value: string) => this.front = value);
-            text.inputEl.rows = 4;
-            text.inputEl.style.width = '100%';
-          });
-        
-        // 答案/后面
-        new Setting(contentEl)
-          .setName(this.card.type === 'qa' ? '答案 (Back)' : '挖空答案')
-          .setDesc(this.card.type === 'qa' ? '卡片背面显示的答案' : '多个答案用逗号分隔')
-          .addTextArea((text: TextAreaComponent) => {
-            text
-              .setValue(this.back)
-              .onChange((value: string) => this.back = value);
-            text.inputEl.rows = 3;
-            text.inputEl.style.width = '100%';
-          });
-        
-        // 按钮组
-        const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
-        
-        new Setting(buttonContainer)
-          .addButton((btn: ButtonComponent) => btn
-            .setButtonText('取消')
-            .onClick(() => this.close())
-          )
-          .addButton((btn: ButtonComponent) => btn
-            .setButtonText('保存')
-            .setCta()
-            .onClick(async () => await this.saveFlashcard())
-          );
-      }
-      
-      async saveFlashcard() {
-        // 验证输入
-        if (!this.front.trim()) {
-          new Notice('⚠️ 问题/文本不能为空');
-          return;
-        }
-        if (!this.back.trim()) {
-          new Notice('⚠️ 答案不能为空');
-          return;
-        }
-        
-        try {
-          // 更新卡片
-          this.card.front = this.front.trim();
-          
-          if (this.card.type === 'cloze') {
-            // 填空卡：将逗号分隔的答案转换为数组
-            this.card.back = this.back.split(',').map(s => s.trim()).filter(s => s);
-          } else {
-            // 问答卡：保持字符串
-            this.card.back = this.back.trim();
-          }
-          
-          this.card.metadata.updatedAt = Date.now();
-          
-          await this.plugin.flashcardManager.updateCard(this.card);
-          
-          new Notice('✅ 闪卡已更新');
-          this.close();
-          
-          // 刷新视图
-          const view = this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR_OVERVIEW)[0]?.view ||
-                       this.app.workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW)[0]?.view;
-          if (view && 'refresh' in view) {
-            (view as any).refresh();
-          }
-          
-        } catch (error) {
-          new Notice('❌ 保存失败');
-          console.error('Error updating flashcard:', error);
-        }
-      }
-      
-      onClose() {
-        const { contentEl } = this;
-        contentEl.empty();
-      }
-    }
     
     new EditFlashcardModal(this.app, this.plugin, card).open();
   }
+    // ==================== 批量操作 ====================
 
   private async batchCreateFlashcards(): Promise<void> {
     const units = Array.from(this.state.selectedUnitIds)
@@ -1239,28 +897,9 @@ export class SidebarOverviewView extends ItemView {
       return;
     }
     
-    let success = 0;
-    let failed = 0;
-    
-    for (const unitId of this.state.selectedUnitIds) {
-      try {
-        const unit = this.plugin.dataManager.getContentUnit(unitId);
-        
-        if (unit) {
-          if (unit.flashcardIds.length > 0) {
-            for (const cardId of unit.flashcardIds) {
-              await this.plugin.flashcardManager.deleteCard(cardId);
-            }
-          }
-        }
-        
-        await this.plugin.dataManager.deleteContentUnit(unitId);
-        success++;
-      } catch (error) {
-        console.error('Error deleting note:', error);
-        failed++;
-      }
-    }
+    const { success, failed } = await this.overviewService.batchDeleteNotes(
+      this.state.selectedUnitIds
+    );
     
     this.state.clearSelection();
     new Notice(`✅ 已删除 ${success} 条笔记${failed > 0 ? `，${failed} 条失败` : ''}`);

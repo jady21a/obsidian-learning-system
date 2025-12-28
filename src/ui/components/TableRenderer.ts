@@ -105,7 +105,6 @@ export class TableRenderer {
 
   // 解析单元格
   private static parseCells(line: string): string[] {
-    console.log(`parseCells: line="${line}"`);
     
     let trimmed = line.trim();
     if (trimmed.startsWith('|')) trimmed = trimmed.slice(1);
@@ -116,24 +115,19 @@ export class TableRenderer {
       .map(c => c.trim())
       .filter(c => c.length > 0);
     
-    console.log('  → cells:', cells);
     return cells;
   }
 
   // 处理单元格内容
   private static processCellContent(cell: string, showAnswer: boolean): string {
-    console.log(`processCellContent: cell="${cell}", showAnswer=${showAnswer}`);
     if (!cell.includes('==')) {
-      console.log('  → 不包含 ==, 返回原样');
       return cell;
     }
     if (showAnswer) {
       const result = cell.replace(/==([^=]+)==/g, '<span class="revealed">$1</span>');
-      console.log('  → showAnswer=true, 返回:', result);
       return result;
     } else {
       const result = cell.replace(/==([^=]+)==/g, '<span class="cloze-blank"></span>');
-      console.log('  → showAnswer=false, 返回:', result);
       return result;
     }
   }

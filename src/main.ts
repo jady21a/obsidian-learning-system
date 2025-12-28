@@ -1,6 +1,5 @@
 import { Plugin, TFile, WorkspaceLeaf, Notice, MarkdownView } from 'obsidian';
 import { SettingsTab } from './ui/view/SettingsTab';
-import { OverviewView, VIEW_TYPE_OVERVIEW } from './ui/view/OverviewView';
 import { SidebarOverviewView, VIEW_TYPE_SIDEBAR_OVERVIEW, VIEW_TYPE_MAIN_OVERVIEW  } from './ui/view/SidebarOverviewView';
 import { ReviewView, VIEW_TYPE_REVIEW } from './ui/view/ReviewView';
 import { StatsView, VIEW_TYPE_STATS } from './ui/view/StatsView';
@@ -58,11 +57,6 @@ export default class LearningSystemPlugin extends Plugin {
 
     // 注册视图
     this.registerView(
-      VIEW_TYPE_OVERVIEW,
-      (leaf) => new OverviewView(leaf, this)
-    );
-
-    this.registerView(
       VIEW_TYPE_SIDEBAR_OVERVIEW,
       (leaf) => new SidebarOverviewView(leaf, this, false)
     );
@@ -108,7 +102,6 @@ export default class LearningSystemPlugin extends Plugin {
     this.setupStatusBar();
     
     this.analyticsEngine = new AnalyticsEngine(this);
-
 
     console.log('Learning System Plugin loaded');
   }
@@ -223,6 +216,7 @@ export default class LearningSystemPlugin extends Plugin {
 
     workspace.revealLeaf(leaf);
   }
+
   async toggleMainView() {
     const { workspace } = this.app;
     const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW);
@@ -250,6 +244,7 @@ export default class LearningSystemPlugin extends Plugin {
       workspace.revealLeaf(leaf);
     }
   }
+
   async activateSidebarOverview() {
     const { workspace } = this.app;
     
@@ -263,26 +258,6 @@ export default class LearningSystemPlugin extends Plugin {
       leaf = workspace.getRightLeaf(false);
       await leaf?.setViewState({
         type: VIEW_TYPE_SIDEBAR_OVERVIEW,
-        active: true
-      });
-    }
-
-    if (leaf) {
-      workspace.revealLeaf(leaf);
-    }
-  }
-
-  async activateOverview() {
-    const { workspace } = this.app;
-    let leaf: WorkspaceLeaf | null = null;
-    const leaves = workspace.getLeavesOfType(VIEW_TYPE_OVERVIEW);
-
-    if (leaves.length > 0) {
-      leaf = leaves[0];
-    } else {
-      leaf = workspace.getLeaf(`tab`);
-      await leaf?.setViewState({
-        type: VIEW_TYPE_OVERVIEW,
         active: true
       });
     }
@@ -340,15 +315,6 @@ export default class LearningSystemPlugin extends Plugin {
   }
 
   refreshOverview() {
-    // 刷新旧版 Overview
-    const overviewLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_OVERVIEW);
-    overviewLeaves.forEach(leaf => {
-      const view = leaf.view as OverviewView;
-      if (view && typeof view.refresh === 'function') {
-        view.refresh();
-      }
-    });
-  
     // 刷新侧边栏视图
     const sidebarLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR_OVERVIEW);
     sidebarLeaves.forEach(leaf => {
@@ -390,5 +356,14 @@ export default class LearningSystemPlugin extends Plugin {
     statusBarItem.addEventListener('click', () => {
       this.activateReview();
     });
+  }
+
+  // 辅助方法：检查视图是否激活
+  public isSidebarOverviewActive(): boolean {
+    return this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR_OVERVIEW).length > 0;
+  }
+
+  public isMainOverviewActive(): boolean {
+    return this.app.workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW).length > 0;
   }
 }

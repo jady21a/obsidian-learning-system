@@ -7,11 +7,13 @@ import { MarkdownRenderer } from 'obsidian'; //
 
 export interface CardCallbacks {
   onJumpToSource: (unit: ContentUnit) => void;
+  onJumpToFlashcard?: (card: Flashcard) => void; 
   onToggleAnnotation: (card: HTMLElement, unit: ContentUnit) => void;
   onQuickFlashcard: (unit: ContentUnit) => void;
   onShowContextMenu: (event: MouseEvent, unit: ContentUnit) => void;
   onFlashcardContextMenu?: (event: MouseEvent, card: Flashcard) => void;
   getAnnotationContent?: (unitId: string) => string | undefined;
+  getContentUnit?: (unitId: string) => ContentUnit | undefined;  
 }
 
 export class ContentCard {
@@ -56,7 +58,10 @@ export class ContentCard {
     }
 
     const header = card.createDiv({ cls: 'grid-card-header' });
-    header.addEventListener('click', () => {
+    header.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      alert('Header clicked! Check console for details.');
       this.callbacks.onJumpToSource(unit);
     });
 
@@ -84,10 +89,12 @@ export class ContentCard {
     }
 
     const header = cardEl.createDiv({ cls: 'grid-card-header' });
-    header.addEventListener('click', () => {
-      // 通过回调处理跳转逻辑
-      if (this.callbacks.onFlashcardContextMenu) {
-        // 这里需要特殊处理，因为闪卡跳转需要先找到对应的 ContentUnit
+    header.addEventListener('click', (e) => {
+      if (!(e.target as HTMLElement).closest('.batch-checkbox')) {
+        // 使用新的回调处理 flashcard 跳转
+        if (this.callbacks.onJumpToFlashcard) {
+          this.callbacks.onJumpToFlashcard(card);
+        }
       }
     });
 

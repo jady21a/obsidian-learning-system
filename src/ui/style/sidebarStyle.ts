@@ -4,7 +4,7 @@
  * 样式加载器 - 负责注入和管理 CSS
  */
 export class StyleLoader {
-    private static styleId = 'learning-overview-styles';
+    private static styleId = 'learning-sideOverview-styles';
     private static isInjected = false;
   
     /**
