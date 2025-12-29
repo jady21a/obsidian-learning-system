@@ -480,6 +480,7 @@ export class ReviewView extends ItemView {
   
     // ✅ 提交后清除该卡片的答案缓存
     this.stateManager.clearCache(this.currentCard.id);
+    
     // ⚠️ 从当前列表中移除已复习的卡片
     this.dueCards.splice(this.currentCardIndex, 1);
   
@@ -487,17 +488,18 @@ export class ReviewView extends ItemView {
     this.resetReviewState();
   
     if (this.dueCards.length === 0) {
+      // ⭐ 关键修改：复习完成后，清空当前卡片并直接渲染
+      this.currentCard = null;
       new Notice(`✅ Review session complete!`);
-      await this.loadDueCards();  // 重新加载以显示"全部完成"界面
+      this.render(); // ⭐ 直接渲染，会触发 renderNoDueCards
     } else {
       // 确保索引不越界
       if (this.currentCardIndex >= this.dueCards.length) {
         this.currentCardIndex = this.dueCards.length - 1;
       }
       this.updateCurrentCard('next');
+      this.render();
     }
-  
-    this.render();
   }
 
   private async jumpToSource() {

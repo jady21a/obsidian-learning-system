@@ -1015,23 +1015,7 @@ public checkReviewReminder(): void {
 
 
 
-private getDueFlashcards() {
-  const allCards = this.plugin.flashcardManager.getAllFlashcards();
-  const now = Date.now();
-  
-  console.log('[Review Check] Total cards:', allCards.length);
-  console.log('[Review Check] Current time:', now, new Date(now));
-  
-  const dueCards = allCards.filter(card => {
-    const isDue = card.scheduling.due <= now;
-    if (isDue) {
-      console.log('[Review Check] Due card:', card.id, 'due:', new Date(card.scheduling.due));
-    }
-    return isDue;
-  });
-  
-  return dueCards;
-}
+
 
 
 private startReview() {
@@ -1053,7 +1037,9 @@ private isReminderDismissedToday(): boolean {
 private insertReviewReminderAtTop(container: HTMLElement): void {
   if (this.isReminderDismissedToday()) return;
   
-  const dueCount = this.state.dueFlashcardsCount; // ⭐ 使用缓存的数量
+  // ⭐ 直接从 FlashcardManager 获取实际数量
+  const dueCount = this.plugin.flashcardManager.getDueCards().length;
+  
   if (dueCount === 0) return;
   
   const banner = this.createReviewBanner(dueCount);
@@ -1061,24 +1047,47 @@ private insertReviewReminderAtTop(container: HTMLElement): void {
 }
 
 
+
 private createReviewBanner(count: number): HTMLElement {
   const banner = document.createElement('div');
   banner.className = 'content-list-review-reminder';
   
-  // 计算统计数据
-  const dueCards = this.getDueFlashcards();
+  // ⭐ 获取当前待复习的卡片
+  const dueCards = this.plugin.flashcardManager.getDueCards();
+  const actualDueCount = dueCards.length;
+  
+  // ⭐ 正确的逻辑：计算今天的复习任务总数
+  // 今天复习过的卡片 = 今天复习过且今天到期的卡片
   const allCards = this.plugin.flashcardManager.getAllFlashcards();
+  const today = new Date().setHours(0, 0, 0, 0);
+  
+  // 获取今天到期的所有卡片ID（包括已复习和未复习）
+  const todayDueCardIds = new Set(
+    allCards
+      .filter(card => {
+        const dueDate = new Date(card.scheduling.due).setHours(0, 0, 0, 0);
+        return dueDate <= today;
+      })
+      .map(card => card.id)
+  );
+  
+  // 统计今天已复习的卡片（且属于今天的任务）
   const reviewedToday = allCards.filter(card => {
-    const lastReview = card.stats.lastReview;
-    if (!lastReview) return false;
-    const today = new Date().setHours(0, 0, 0, 0);
-    return lastReview >= today;
+    if (!card.stats.lastReview) return false;
+    const lastReviewDate = new Date(card.stats.lastReview).setHours(0, 0, 0, 0);
+    return lastReviewDate === today && todayDueCardIds.has(card.id);
   }).length;
   
+  // ⭐ 今天的总任务数 = 已完成 + 待完成
+  const totalToday = reviewedToday + actualDueCount;
+  const progressPercent = totalToday > 0 ? Math.round((reviewedToday / totalToday) * 100) : 0;
+  
   // 计算最紧急的卡片延后时间
-  const mostUrgent = dueCards.reduce((earliest, card) => 
-    card.scheduling.due < earliest ? card.scheduling.due : earliest
-  , Date.now());
+  const mostUrgent = dueCards.length > 0 
+    ? dueCards.reduce((earliest, card) => 
+        card.scheduling.due < earliest ? card.scheduling.due : earliest
+      , Date.now())
+    : Date.now();
   const hoursSinceDue = Math.floor((Date.now() - mostUrgent) / (1000 * 60 * 60));
   
   // 获取延后提示文本
@@ -1087,18 +1096,14 @@ private createReviewBanner(count: number): HTMLElement {
   // 获取连续复习天数
   const streakDays = this.getReviewStreak();
   
-  // 计算进度百分比
-  const totalToday = reviewedToday + count;
-  const progressPercent = totalToday > 0 ? Math.round((reviewedToday / totalToday) * 100) : 0;
-  
   banner.innerHTML = `
     <div class="reminder-header">
       <div class="reminder-text">
         <strong>今日复习任务</strong>  
       </div>
-        <div class="progress-text">${reviewedToday} / ${totalToday}</div>
-  
-   
+      <div class="progress-text">${reviewedToday} / ${totalToday}</div>
+    </div>
+    
     <div class="reminder-stats">
       <div class="stat-item delay-warning">
         ${delayText}

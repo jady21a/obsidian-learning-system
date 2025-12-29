@@ -317,6 +317,10 @@ async deleteCard(id: string) {
     }
   }
 
+  // ⭐ 删除该卡片的所有复习日志
+  this.reviewLogs = this.reviewLogs.filter(log => log.flashcardId !== id);
+  await this.persistReviewLogs(); // 保存更新后的日志
+
   // 删除闪卡
   this.flashcards.delete(id);
   await this.persistFlashcards();

@@ -153,10 +153,6 @@ export class ViewState {
 
   // 复习提醒
   updateDueCount(flashcardManager: FlashcardManager): void {
-    const now = Date.now();
-    this.dueFlashcardsCount = flashcardManager
-      .getAllFlashcards()
-      .filter(card => card.scheduling.due <= now)
-      .length;
+    this.dueFlashcardsCount = flashcardManager.getDueCards().length;
   }
 }
