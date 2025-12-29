@@ -29,7 +29,7 @@ export class ContentList {
   renderCompactList(container: HTMLElement, units: ContentUnit[]): void {
     const existingCards = container.querySelectorAll('.compact-card, .group-section, .empty-state');
     existingCards.forEach(el => el.remove());
-    
+
     if (units.length === 0) {
       this.renderEmptyState(container);
       return;

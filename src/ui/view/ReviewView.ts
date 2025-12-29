@@ -480,13 +480,21 @@ export class ReviewView extends ItemView {
   
     // ✅ 提交后清除该卡片的答案缓存
     this.stateManager.clearCache(this.currentCard.id);
+    // ⚠️ 从当前列表中移除已复习的卡片
+    this.dueCards.splice(this.currentCardIndex, 1);
   
-    this.currentCardIndex++;
+    // ⚠️ 不要增加索引,因为删除元素后,下一张卡自动移到当前位置
     this.resetReviewState();
   
-    if (this.currentCardIndex >= this.dueCards.length) {
-      new Notice(`✅ Review session complete! Reviewed ${this.dueCards.length} cards.`);
-      await this.loadDueCards();
+    if (this.dueCards.length === 0) {
+      new Notice(`✅ Review session complete!`);
+      await this.loadDueCards();  // 重新加载以显示"全部完成"界面
+    } else {
+      // 确保索引不越界
+      if (this.currentCardIndex >= this.dueCards.length) {
+        this.currentCardIndex = this.dueCards.length - 1;
+      }
+      this.updateCurrentCard('next');
     }
   
     this.render();

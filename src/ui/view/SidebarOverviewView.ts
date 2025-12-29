@@ -83,7 +83,14 @@ export class SidebarOverviewView extends ItemView {
   async onOpen() {
     console.log('[OverviewView] Opening view...');
     this.detectDisplayMode();
-    
+      // ⭐ 确保侧边栏模式下设置当前活动文件
+  if (this.state.displayMode === 'sidebar') {
+    const activeFile = this.app.workspace.getActiveFile();
+    if (activeFile) {
+      this.state.selectedFile = activeFile.path;
+      console.log('[SidebarView] Initial file:', activeFile.path);
+    }
+  }
     // 注册事件监听
     if (!this.state.forceMainMode) {
       this.registerActiveLeafChange();
@@ -205,6 +212,15 @@ export class SidebarOverviewView extends ItemView {
         const activeFile = this.app.workspace.getActiveFile();
         if (activeFile && this.state.displayMode === 'sidebar') {
           this.state.selectedFile = activeFile.path;
+          this.refresh();
+        }
+      })
+    );
+    this.registerEvent(
+      this.app.workspace.on('file-open', (file) => {
+        if (file && this.state.displayMode === 'sidebar') {
+          this.state.selectedFile = file.path;
+          console.log('[SidebarView] File opened:', file.path);
           this.refresh();
         }
       })
