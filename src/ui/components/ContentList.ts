@@ -27,8 +27,9 @@ export class ContentList {
    * 渲染紧凑列表（侧边栏模式）
    */
   renderCompactList(container: HTMLElement, units: ContentUnit[]): void {
-    container.empty();
-
+    const existingCards = container.querySelectorAll('.compact-card, .group-section, .empty-state');
+    existingCards.forEach(el => el.remove());
+    
     if (units.length === 0) {
       this.renderEmptyState(container);
       return;

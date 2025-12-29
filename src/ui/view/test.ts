@@ -88,7 +88,7 @@ export class SidebarOverviewView extends ItemView {
     if (!this.state.forceMainMode) {
       this.registerActiveLeafChange();
     }
-    this.state.updateDueCount(this.plugin.flashcardManager);
+    
     // 先渲染界面
     this.render();
     StyleLoader.inject();
@@ -983,19 +983,121 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
 // 每日提醒复习
 // 手动触发复习提醒检查
 public checkReviewReminder(): void {
-  const isDismissed = this.isReminderDismissedToday();
+  console.log('[Review Check] Manual check triggered');
   
-  if (isDismissed) {
-    // 显示提醒
-    localStorage.removeItem('learning-system-reminder-dismissed');
-  } else {
-    // 隐藏提醒
-    this.markReminderDismissed();
+  const dueCards = this.getDueFlashcards();
+  console.log('[Review Check] Found due cards:', dueCards.length);
+  
+  if (dueCards.length === 0) {
+    new Notice('✅ 目前没有需要复习的卡片');
+    return;
   }
   
+  // 检查当前提醒是否已忽略
+  const dismissed = localStorage.getItem('learning-system-reminder-dismissed');
+  const isCurrentlyDismissed = dismissed === new Date().toDateString();
+  
+  if (isCurrentlyDismissed) {
+    // 当前已忽略 -> 清除忽略状态,显示提醒
+    console.log('[Review Check] Showing reminder');
+    localStorage.removeItem('learning-system-reminder-dismissed');
+  } else {
+    // 当前显示中 -> 忽略提醒,隐藏
+    console.log('[Review Check] Hiding reminder');
+    this.markReminderDismissed();
+  }
+    
+  // 重新渲染
   this.refresh();
+  
+  // 如果是显示提醒,滚动到顶部
+  if (isCurrentlyDismissed) {
+    requestAnimationFrame(() => {
+      const contentList = this.containerEl.querySelector('.sidebar-content-list') as HTMLElement;
+      if (contentList) {
+        contentList.scrollTop = 0;
+      }
+    });
+  }
 }
+private renderReviewReminderIfNeeded(container: HTMLElement): void {
+  // 如果今天已经忽略过提醒,就不再显示
+  if (this.isReminderDismissedToday()) {
+    console.log('[Review Check] Reminder already dismissed today');
+    return;
+  }
+  
+  const dueCards = this.getDueFlashcards();
+  console.log('[Review Check] Found due cards:', dueCards.length);
+  
+  if (dueCards.length > 0) {
+    console.log('[Review Check] Showing reminder for', dueCards.length, 'cards');
+    this.renderReviewBanner(container, dueCards.length);
+  }
+}
+private renderReviewBanner(container: HTMLElement, count: number): void {
+  console.log('[Review Check] Creating reminder banner...');
+  
+  // 创建紧凑的提醒横幅
+  const banner = container.createDiv({ cls: 'content-list-review-reminder' });
+  
+  const header = banner.createDiv({ cls: 'reminder-header' });
+  header.createSpan({ text: '📚', cls: 'reminder-icon' });
+  
+  const textContent = header.createDiv({ cls: 'reminder-text' });
+  textContent.createEl('strong', { text: `${count} 张卡片待复习` });
+    // 计算最紧急的卡片
+    const dueCards = this.getDueFlashcards();
+    const mostUrgent = dueCards.reduce((earliest, card) => 
+      card.scheduling.due < earliest ? card.scheduling.due : earliest
+    , Date.now());
+    
+    const hoursSinceDue = Math.floor((Date.now() - mostUrgent) / (1000 * 60 * 60));
+    
+    if (hoursSinceDue > 0) {
+      textContent.createEl('span', { 
+        text: `已过期 ${hoursSinceDue} 小时 ⏰`, 
+        cls: 'reminder-urgent' 
+      });
+    }
 
+  textContent.createEl('span', { text: '保持每日复习习惯 💪', cls: 'reminder-hint' });
+    // ⭐ 添加进度条（可选）
+    const allCards = this.plugin.flashcardManager.getAllFlashcards().length;
+    if (allCards > 0) {
+      const progress = banner.createDiv({ cls: 'reminder-progress' });
+      const percentage = Math.round((count / allCards) * 100);
+      progress.innerHTML = `
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: ${percentage}%"></div>
+        </div>
+        <span class="progress-text">${percentage}% 需要复习</span>
+      `;
+    }
+
+  const actions = banner.createDiv({ cls: 'reminder-actions' });
+  
+  const reviewBtn = actions.createEl('button', {
+    text: '开始复习',
+    cls: 'reminder-btn primary'
+  });
+  reviewBtn.addEventListener('click', () => {
+    this.startReview();
+    banner.remove();
+  });
+  
+  const dismissBtn = actions.createEl('button', {
+    text: '✕',
+    cls: 'reminder-btn dismiss',
+    attr: { 'aria-label': '稍后提醒' }
+  });
+  dismissBtn.addEventListener('click', () => {
+    banner.remove();
+    this.markReminderDismissed();
+  });
+  
+  console.log('[Review Check] Reminder banner created');
+}
 
 
 
@@ -1035,122 +1137,59 @@ private isReminderDismissedToday(): boolean {
   return dismissed === today;
 }
 private insertReviewReminderAtTop(container: HTMLElement): void {
-  if (this.isReminderDismissedToday()) return;
+  // 如果今天已经忽略过提醒,就不再显示
+  if (this.isReminderDismissedToday()) {
+    console.log('[Review Check] Reminder already dismissed today');
+    return;
+  }
   
-  const dueCount = this.state.dueFlashcardsCount; // ⭐ 使用缓存的数量
-  if (dueCount === 0) return;
+  const dueCards = this.getDueFlashcards();
+  console.log('[Review Check] Found due cards:', dueCards.length);
   
-  const banner = this.createReviewBanner(dueCount);
-  container.insertBefore(banner, container.firstChild);
+  if (dueCards.length > 0) {
+    console.log('[Review Check] Showing reminder for', dueCards.length, 'cards');
+    
+    // 创建横幅
+    const banner = this.createReviewBanner(dueCards.length);
+    
+    // ⭐ 插入到容器最前面
+    if (container.firstChild) {
+      container.insertBefore(banner, container.firstChild);
+    } else {
+      container.appendChild(banner);
+    }
+  }
 }
-
 
 private createReviewBanner(count: number): HTMLElement {
-  const banner = document.createElement('div');
-  banner.className = 'content-list-review-reminder';
-  
-  // 计算统计数据
-  const dueCards = this.getDueFlashcards();
-  const allCards = this.plugin.flashcardManager.getAllFlashcards();
-  const reviewedToday = allCards.filter(card => {
-    const lastReview = card.stats.lastReview;
-    if (!lastReview) return false;
-    const today = new Date().setHours(0, 0, 0, 0);
-    return lastReview >= today;
-  }).length;
-  
-  // 计算最紧急的卡片延后时间
-  const mostUrgent = dueCards.reduce((earliest, card) => 
-    card.scheduling.due < earliest ? card.scheduling.due : earliest
-  , Date.now());
-  const hoursSinceDue = Math.floor((Date.now() - mostUrgent) / (1000 * 60 * 60));
-  
-  // 获取延后提示文本
-  const delayText = this.getDelayText(hoursSinceDue);
-  
-  // 获取连续复习天数
-  const streakDays = this.getReviewStreak();
-  
-  // 计算进度百分比
-  const totalToday = reviewedToday + count;
-  const progressPercent = totalToday > 0 ? Math.round((reviewedToday / totalToday) * 100) : 0;
-  
-  banner.innerHTML = `
-    <div class="reminder-header">
-      <div class="reminder-text">
-        <strong>今日复习任务</strong>  
-      </div>
-        <div class="progress-text">${reviewedToday} / ${totalToday}</div>
-  
-   
-    <div class="reminder-stats">
-      <div class="stat-item delay-warning">
-        ${delayText}
-      </div>
-      ${streakDays > 0 ? `
-        <div class="stat-item streak-info">
-          🔥 连续复习第 ${streakDays} 天!
-        </div>
-      ` : ''}
-    </div>
-    
-    <div class="reminder-actions">
-      <button class="reminder-btn primary">开始复习</button>
-    </div>
-  `;
-  
-  banner.querySelector('.primary')!.addEventListener('click', () => {
-    this.startReview();
-    banner.remove();
-    this.markReminderDismissed();
-  });
-  
-  return banner;
-}
+console.log('[Review Check] Creating reminder banner...');
 
-// 新增辅助方法 1: 获取延后提示文本
-private getDelayText(hoursSinceDue: number): string {
-  if (hoursSinceDue < 1) {
-    return "⏰ 刚刚到期，趁热复习";
-  } else if (hoursSinceDue < 6) {
-    return `⚠️ 复习已延后 ${hoursSinceDue} 小时，现在处理刚好`;
-  } else if (hoursSinceDue < 24) {
-    return `⚠️ 复习已延后 ${hoursSinceDue} 小时，建议优先完成`;
-  } else {
-    const days = Math.floor(hoursSinceDue / 24);
-    return `🚨 复习已延后 ${days} 天，建议尽快清空`;
-  }
-}
+// 创建临时容器用于构建元素
+const tempDiv = document.createElement('div');
+const banner = tempDiv.createDiv({ cls: 'content-list-review-reminder' });
 
-// 新增辅助方法 2: 获取连续复习天数
-private getReviewStreak(): number {
-  const allCards = this.plugin.flashcardManager.getAllFlashcards();
-  
-  // 按日期分组统计复习记录
-  const reviewDates = new Set<string>();
-  allCards.forEach(card => {
-    if (card.stats.lastReview) {
-      const dateStr = new Date(card.stats.lastReview)
-        .toLocaleDateString('zh-CN');
-      reviewDates.add(dateStr);
-    }
-  });
-  
-  // 计算连续天数
-  let streak = 0;
-  let checkDate = new Date();
-  
-  while (streak < 365) { // 最多检查一年
-    const dateStr = checkDate.toLocaleDateString('zh-CN');
-    if (reviewDates.has(dateStr)) {
-      streak++;
-      checkDate.setDate(checkDate.getDate() - 1);
-    } else {
-      break;
-    }
-  }
-  
-  return streak;
+const header = banner.createDiv({ cls: 'reminder-header' });
+header.createSpan({ text: '', cls: 'reminder-icon' });
+
+const textContent = header.createDiv({ cls: 'reminder-text' });
+textContent.createEl('strong', { text: `📚${count} 张卡片待复习` });
+textContent.createEl('span', { text: '保持每日复习习惯 💪', cls: 'reminder-hint' });
+
+const actions = banner.createDiv({ cls: 'reminder-actions' });
+
+const reviewBtn = actions.createEl('button', {
+  text: '开始复习',
+  cls: 'reminder-btn primary'
+});
+reviewBtn.addEventListener('click', () => {
+  this.startReview();
+  banner.remove();
+});
+
+
+
+console.log('[Review Check] Reminder banner created');
+return banner;
 }
 
 }

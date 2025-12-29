@@ -6,6 +6,7 @@ export class Toolbar {
   private onSearchChange: (query: string) => void;
   private onFilterChange: (mode: FilterMode) => void;
   private onGroupChange: (mode: GroupMode) => void;
+  private onCheckReview?: () => void;
 
   constructor(
     state: ViewState,
@@ -13,12 +14,14 @@ export class Toolbar {
       onSearchChange: (query: string) => void;
       onFilterChange: (mode: FilterMode) => void;
       onGroupChange: (mode: GroupMode) => void;
+      onCheckReview?: () => void; 
     }
   ) {
     this.state = state;
     this.onSearchChange = callbacks.onSearchChange;
     this.onFilterChange = callbacks.onFilterChange;
     this.onGroupChange = callbacks.onGroupChange;
+    this.onCheckReview = callbacks.onCheckReview; 
   }
 
   /**
@@ -61,15 +64,17 @@ export class Toolbar {
       const value = (e.target as HTMLInputElement).value;
       this.onSearchChange(value);
     });
+
+    
   }
 
   private renderFilterChips(container: HTMLElement): void {
     const filters = container.createDiv({ cls: 'filter-chips' });
     
     const filterOptions: Array<{ mode: FilterMode; icon: string; label: string }> = [
-      { mode: 'all', icon: '📝', label: 'allnotes' },
-      { mode: 'annotated', icon: '💬', label: 'comment' },
-      { mode: 'flashcards', icon: '🃏', label: 'flashcards' }
+      { mode: 'all', icon: '📝', label: '笔记' },
+      { mode: 'annotated', icon: '💬', label: '批注' },
+      { mode: 'flashcards', icon: '🃏', label: '闪卡' }
     ];
 
     filterOptions.forEach(({ mode, icon, label }) => {
@@ -124,4 +129,23 @@ export class Toolbar {
     // 预留容器供外部使用
     statsRow.setAttribute('data-stats-container', 'true');
   }
+  // 新增:渲染复习检查按钮的方法
+renderReviewCheckButton(container: HTMLElement): HTMLElement | null {
+  if (!this.onCheckReview) return null;
+  
+  const reviewBtn = container.createEl('button', {
+    cls: 'review-check-btn-stats',
+    attr: { 
+      'aria-label': '检查复习提醒', 
+      'title': '检查是否有需要复习的卡片' 
+    }
+  });
+  reviewBtn.innerHTML = '🔔';
+  reviewBtn.addEventListener('click', () => {
+    this.onCheckReview?.();
+  });
+  
+  return reviewBtn;
+}
+
 }

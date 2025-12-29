@@ -3,7 +3,7 @@
 import { ViewState } from '../state/ViewState';
 import { ContentUnit } from '../../core/DataManager';
 import { Flashcard } from '../../core/FlashcardManager';
-
+import { Toolbar } from './Toolbar';
 export interface BatchActionCallbacks {
   onSelectAll: () => void;
   onDeselectAll: () => void;
@@ -15,10 +15,16 @@ export interface BatchActionCallbacks {
 export class BatchActions {
   private state: ViewState;
   private callbacks: BatchActionCallbacks;
+  private toolbar?: Toolbar; 
 
-  constructor(state: ViewState, callbacks: BatchActionCallbacks) {
+  constructor(
+    state: ViewState, 
+    callbacks: BatchActionCallbacks,
+    toolbar?: Toolbar
+  ) {
     this.state = state;
     this.callbacks = callbacks;
+    this.toolbar = toolbar;
   }
 
   /**
@@ -70,7 +76,12 @@ export class BatchActions {
     
     return selectAllBtn;
   }
-
+  // 新增:渲染复习检查按钮(独立方法)
+  renderReviewCheckButton(container: HTMLElement, mode: 'sidebar' | 'header'): void {
+    if (mode === 'sidebar' && this.toolbar) {
+      this.toolbar.renderReviewCheckButton(container);
+    }
+  }
   /**
    * 渲染批量操作按钮组
    */

@@ -164,12 +164,86 @@ export class StyleLoader {
     gap: 3px;
   }
   
-  .header-actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
+.stats-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.stats-center {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: flex-start;
+}
+
+.stats-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto; /* 推到最右侧 */
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 复习检查按钮样式 */
+.review-check-btn-stats {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  cursor: pointer;
+  font-size: 14px;
+  transition: var(--overview-transition);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+   background-color: transparent;
+   border:none;
+}
+
+.review-check-btn-stats:hover {
+  background: var(--interactive-accent);
+  color: white;
+  border-color: var(--interactive-accent);
+  transform: scale(1.1);
+}
+
+.review-check-btn-stats:active {
+  transform: scale(0.95);
+}
+
+/* 如果有待复习卡片,添加提示动画 */
+.review-check-btn-stats.has-due {
+  animation: bellRing 2s ease-in-out infinite;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: #667eea;
+}
+
+@keyframes bellRing {
+  0%, 100% {
+    transform: rotate(0deg);
   }
-  
+  10%, 30% {
+    transform: rotate(-10deg);
+  }
+  20%, 40% {
+    transform: rotate(10deg);
+  }
+  50% {
+    transform: rotate(0deg);
+  }
+}
+
   .batch-create-cards-btn-sidebar,
   .batch-delete-btn-sidebar,
   .cancel-selection-btn-sidebar {
@@ -994,6 +1068,142 @@ export class StyleLoader {
     .content-grid {
       grid-template-columns: 1fr;
     }
+
+    // 在 addStyles() 的 styleEl.textContent 中添加
+
+/* 复习提醒横幅 */
+
+// 复习图标
+.search-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.search-input {
+  flex: 1;
+  
+}
+
+.review-check-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--overview-border-radius);
+  background: var(--background-secondary);
+  cursor: pointer;
+  font-size: 18px;
+  transition: var(--overview-transition);
+  flex-shrink: 0;
+}
+
+.review-check-btn:hover {
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  transform: scale(1.05);
+}
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+// 复习提醒具体样式
+.content-list-review-reminder {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.reminder-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.reminder-icon {
+  font-size: 24px;
+}
+
+.reminder-text strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.reminder-progress {
+  margin-bottom: 12px;
+}
+
+.progress-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.reminder-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.stat-item {
+  font-size: 13px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+}
+
+.delay-warning {
+  font-weight: 500;
+}
+
+.streak-info {
+  opacity: 0.95;
+}
+
+.reminder-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.reminder-btn.primary {
+  background: white;
+  color: #667eea;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reminder-btn.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
   }
       `;
     }

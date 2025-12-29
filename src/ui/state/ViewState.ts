@@ -1,6 +1,6 @@
 // src/ui/state/ViewState.ts
 import { ContentUnit } from '../../core/DataManager';
-import { Flashcard } from '../../core/FlashcardManager';
+import { Flashcard ,FlashcardManager} from '../../core/FlashcardManager';
 
 export type FilterMode = 'all' | 'annotated' | 'flashcards';
 export type DisplayMode = 'sidebar' | 'main';
@@ -33,9 +33,13 @@ export class ViewState {
   searchDebounceTimer: number | null = null;
   isRendering: boolean = false;
 
+    // 添加缓存
+    dueFlashcardsCount: number = 0;
+
   constructor(forceMainMode: boolean = false) {
     this.forceMainMode = forceMainMode;
     this.displayMode = forceMainMode ? 'main' : 'sidebar';
+    
   }
 
   // 状态重置方法
@@ -145,5 +149,14 @@ export class ViewState {
     return this.viewType === 'cards' 
       ? this.selectedCardIds.size 
       : this.selectedUnitIds.size;
+  }
+
+  // 复习提醒
+  updateDueCount(flashcardManager: FlashcardManager): void {
+    const now = Date.now();
+    this.dueFlashcardsCount = flashcardManager
+      .getAllFlashcards()
+      .filter(card => card.scheduling.due <= now)
+      .length;
   }
 }
