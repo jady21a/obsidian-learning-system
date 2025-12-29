@@ -1,75 +1,29 @@
-// src/ui/SidebarOverviewView.ts - 重构后版本
-import { StyleLoader } from '../style/sidebarStyle'
-
-import { QuickFlashcardCreator } from '../../core/QuickFlashcardCreator';
-import { ItemView, WorkspaceLeaf, TFile, Menu, Notice, Modal, Setting, TextAreaComponent, ButtonComponent,App, MarkdownView} from 'obsidian';
+// overview View.ts
+import { ItemView, WorkspaceLeaf, TFile, Menu, Modal, App, Notice } from 'obsidian';
 import type LearningSystemPlugin from '../../main';
 import { ContentUnit } from '../../core/DataManager';
-import { Flashcard } from '../../core/FlashcardManager';
+import { QuickFlashcardCreator } from '../../core/QuickFlashcardCreator';
+import { overviewStyle } from '../style/overviewStyle';
 
-// 导入新的组件和状态管理
-import { FilterMode, GroupMode, ViewState } from '../state/ViewState';
-import { Toolbar }  from '../components/Toolbar';
-import { BatchActions, BatchActionCallbacks } from '../components/BatchActions';
-import { ContentList } from '../components/ContentList';
-import { ContentCard, CardCallbacks } from '../components/ContentCard';
-import { AnnotationEditor, AnnotationEditorCallbacks } from '../components/AnnotationEditor';
-import { sideOverviewService } from '../service/sideOverviewService';
-import { ManualFlashcardModal } from '../components/modals/ManualFlashcardModal';
-import { EditFlashcardModal } from '../components/modals/EditFlashcardModal';
-import { 
-  ContextMenuBuilder, 
-  ContentUnitMenuCallbacks, 
-  FlashcardMenuCallbacks 
-} from '../components/ContextMenuBuilder';
+export const VIEW_TYPE_OVERVIEW = 'learning-system-overview';
 
-
-export const VIEW_TYPE_SIDEBAR_OVERVIEW = 'learning-system-sidebar-overview';
-export const VIEW_TYPE_MAIN_OVERVIEW = 'learning-system-main-overview';
-
-export class SidebarOverviewView extends ItemView {
+export class OverviewView extends ItemView {
   plugin: LearningSystemPlugin;
-  
-  // 使用状态管理器
-  private state: ViewState;
-  
-  // 使用组件
-  private toolbar: Toolbar;
-  private batchActions: BatchActions;
-  private contentList: ContentList;
-  private annotationEditor: AnnotationEditor;
-  private overviewService: sideOverviewService; 
+//   private contentEl: HTMLElement;
+  private groupBy: 'file' | 'tag' | 'date' = 'file';
+  private searchQuery: string = '';
+  private quickCreator: QuickFlashcardCreator;
+  private batchMode: boolean = false;
+  private selectedUnitIds: Set<string> = new Set();
 
-  private _forceMainMode: boolean;
-  constructor(leaf: WorkspaceLeaf, plugin: LearningSystemPlugin, forceMainMode = false) {
+  constructor(leaf: WorkspaceLeaf, plugin: LearningSystemPlugin) {
     super(leaf);
     this.plugin = plugin;
-    
-    this._forceMainMode = forceMainMode;
-    // 初始化状态
-    this.state = new ViewState(forceMainMode);
-    
-    // 初始化组件
-    this.initializeComponents();
-    
-    
-    // 设置初始选中文件
-    const activeFile = this.app.workspace.getActiveFile();
-    if (activeFile) {
-      this.state.selectedFile = activeFile.path;
-    }
-    
-    // 监听窗口大小变化（防抖）
-    this.setupResizeListener();
+    this.quickCreator = new QuickFlashcardCreator(plugin);
   }
 
-  // ==================== 生命周期方法 ====================
-
   getViewType(): string {
-    const forceMainMode = this._forceMainMode || false;
-    return forceMainMode 
-      ? VIEW_TYPE_MAIN_OVERVIEW 
-      : VIEW_TYPE_SIDEBAR_OVERVIEW;
+    return VIEW_TYPE_OVERVIEW;
   }
 
   getDisplayText(): string {
@@ -77,1048 +31,1022 @@ export class SidebarOverviewView extends ItemView {
   }
 
   getIcon(): string {
-    return 'book-marked';
+    return 'layout-list';
   }
 
   async onOpen() {
-    console.log('[OverviewView] Opening view...');
-    this.detectDisplayMode();
-    
-    // 注册事件监听
-    if (!this.state.forceMainMode) {
-      this.registerActiveLeafChange();
-    }
-    
-    // 先渲染界面
-    this.render();
-    StyleLoader.inject();
-    
-    // 界面渲染后再检查复习提醒
-    await new Promise(resolve => setTimeout(resolve, 100));
-}
+    console.log('📖 OverviewView opened');
+    const container = this.containerEl.children[1];
+    container.empty();
+
+    this.createToolbar(container);
+    this.contentEl = container.createDiv({ cls: 'learning-system-content' });
+    this.checkDailyReview();
+    await this.refresh();
+    overviewStyle.inject();
+  }
 
   async onClose() {
-    // 清理定时器
-    if (this.state.searchDebounceTimer !== null) {
-      window.clearTimeout(this.state.searchDebounceTimer);
-    }
-    
-    // 关闭所有活动的编辑器
-    this.annotationEditor.closeAll();
+    console.log('📕 OverviewView closed');
+
   }
 
-  // ==================== 初始化方法 ====================
 
-  private initializeComponents(): void {
-    this.overviewService = new sideOverviewService(this.plugin, this.state);
-    // 工具栏回调
-    this.toolbar = new Toolbar(this.state, {
-      onSearchChange: (query) => this.handleSearchChange(query),
-      onFilterChange: (mode) => this.handleFilterChange(mode),
-      onGroupChange: (mode) => this.handleGroupChange(mode),
-      onCheckReview: () => this.checkReviewReminder()
-    });
+  // 添加到 OverviewView 类中
+scrollToFile(filePath: string) {
+    // this.selectedFile = filePath; // 如果你有这个属性
     
-    
-    // 批量操作回调
-    const batchCallbacks: BatchActionCallbacks = {
-      onSelectAll: () => this.handleSelectAll(),
-      onDeselectAll: () => this.handleDeselectAll(),
-      onBatchCreate: () => this.handleBatchCreate(),
-      onBatchDelete: () => this.handleBatchDelete(),
-      onCancel: () => this.handleBatchCancel()
-    };
-    this.batchActions = new BatchActions(this.state, batchCallbacks,this.toolbar);
-    
-    // 卡片回调
-    const cardCallbacks: CardCallbacks = {
-      onJumpToSource: (unit) => this.jumpToSource(unit),
-      onJumpToFlashcard: (card) => this.jumpToFlashcardSource(card), 
-      onToggleAnnotation: (card, unit) => this.annotationEditor.toggle(card, unit),
-      onQuickFlashcard: (unit) => this.quickGenerateFlashcard(unit),
-      onShowContextMenu: (event, unit) => this.showContextMenu(event, unit),
-      onFlashcardContextMenu: (event, card) => this.showFlashcardContextMenu(event, card),
-      getAnnotationContent: (unitId) => {
-        const ann = this.plugin.annotationManager.getContentAnnotation(unitId);
-        return ann?.content;
-      },
-      getContentUnit: (unitId) => {
-        const allUnits = this.plugin.dataManager.getAllContentUnits();
-        
-        
-        if (allUnits.length > 0) {
-          allUnits.slice(0, 10).forEach(u => {
-          });
-        }
-        
-        // 尝试直接获取
-        const unit = this.plugin.dataManager.getContentUnit(unitId);
-        
-        if (unit) {
-          return unit;
-        } else {
-          
-          const allFlashcards = this.plugin.flashcardManager.getAllFlashcards();
-          
-          // 找出问题：这个 flashcard 的 sourceContentId 对应的 unit 是否存在
-          const matchingUnit = allUnits.find(u => u.id === unitId);
-          if (!matchingUnit) {
-          }
-          
-          return undefined;
-        }
-      }
-    };
-    
-    this.contentList = new ContentList(this.state, cardCallbacks);
-    
-    // 批注编辑器回调
-    const annotationCallbacks: AnnotationEditorCallbacks = {
-      onSave: async (unitId, content) => {
-        await this.saveAnnotation(unitId, content);
-      },
-      onCancel: (unitId) => {
-        // 取消编辑，不做任何操作
-      },
-      getAnnotationContent: (unitId) => {
-        const ann = this.plugin.annotationManager.getContentAnnotation(unitId);
-        return ann?.content;
-      }
-    };
-    this.annotationEditor = new AnnotationEditor(annotationCallbacks);
-  }
-
-  private setupResizeListener(): void {
-    let resizeTimer: number;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(() => {
-        this.detectDisplayMode();
-        this.render();
-      }, 150);
-    });
-  }
-
-  private registerActiveLeafChange(): void {
-    this.registerEvent(
-      this.app.workspace.on('active-leaf-change', () => {
-        const activeFile = this.app.workspace.getActiveFile();
-        if (activeFile && this.state.displayMode === 'sidebar') {
-          this.state.selectedFile = activeFile.path;
-          this.refresh();
-        }
-      })
-    );
-  }
-
-  // ==================== 显示模式检测 ====================
-
-  private detectDisplayMode(): void {
-    if (this.state.forceMainMode) {
-      this.state.displayMode = 'main';
-      return;
-    }
-    
-    const parentSplit = (this.leaf as any).parentSplit;
-    const isLeftSidebar = parentSplit?.type === 'split' && 
-                          this.app.workspace.leftSplit === parentSplit;
-    const isRightSidebar = parentSplit?.type === 'split' && 
-                           this.app.workspace.rightSplit === parentSplit;
-    
-    const width = this.containerEl.clientWidth;
-    const isNarrow = width < 500;
-    
-    const isSidebar = isLeftSidebar || isRightSidebar || isNarrow;
-    this.state.displayMode = isSidebar ? 'sidebar' : 'main';
-  }
-
-  // ==================== 渲染方法 ====================
-
-  refresh(): void {
-    if (this.state.isRendering) {
-      requestAnimationFrame(() => this.refresh());
-      return;
-    }
-    
-    if (this.state.searchDebounceTimer !== null) {
-      window.clearTimeout(this.state.searchDebounceTimer);
-      this.state.searchDebounceTimer = null;
-    }
-    
-    this.state.shouldRestoreScroll = true;
-    this.render();
-  }
-
-  private render(): void {
-    if (this.state.isRendering) return;
-    
-    this.state.isRendering = true;
-    
-    const container = this.containerEl.children[1] as HTMLElement;
-    
-    // 保存滚动位置
-    if (this.state.displayMode === 'sidebar') {
-      const contentList = container.querySelector('.sidebar-content-list') as HTMLElement;
-      if (contentList) {
-        this.state.savedScrollPosition = contentList.scrollTop;
-      }
-    }
-    
-    // 清空容器
-    container.empty();
-    container.addClass('learning-overview-container');
-    container.setAttribute('data-mode', this.state.displayMode);
-    
-    // 根据模式渲染
-    if (this.state.displayMode === 'sidebar') {
-      this.renderSidebarMode(container);
-    } else {
-      this.renderMainMode(container);
-    }
-    
-    // 恢复滚动位置
-    if (this.state.displayMode === 'sidebar' && this.state.shouldRestoreScroll) {
-      const contentList = container.querySelector('.sidebar-content-list') as HTMLElement;
-      if (contentList) {
-        requestAnimationFrame(() => {
-          contentList.scrollTop = this.state.savedScrollPosition;
-        });
-      }
-    }
-    
-    this.state.isRendering = false;
-  }
-
-// src/ui/SidebarOverviewView.ts
-
-private renderSidebarMode(container: HTMLElement): void {
-  // 1. 渲染工具栏
-  const toolbarEl = this.toolbar.renderSidebarToolbar(container);
-
-  // 2. 创建统计行
-  let statsRow = toolbarEl.querySelector('.stats-row') as HTMLElement;
-  if (!statsRow) {
-    statsRow = toolbarEl.createDiv({ cls: 'stats-row' });
-    statsRow.setAttribute('data-stats-container', 'true');
-  }
-  
-  // 3. 获取可见项目
-  const visibleItems = this.getVisibleItems();
-  const items = this.state.viewType === 'cards' 
-    ? (visibleItems.cards || []) 
-    : (visibleItems.units || []);
-  
-  // 4. 创建左侧容器(全选按钮)
-  const leftActions = statsRow.createDiv({ cls: 'stats-left' });
-  this.batchActions.renderSelectAllButton(leftActions, items, 'sidebar');
-  
-  // 5. 创建中间容器(批量操作按钮)
-  const centerActions = statsRow.createDiv({ cls: 'stats-center' });
-  this.batchActions.renderActionButtons(centerActions, 'sidebar');
-  
-  // 6. 创建右侧容器(复习检查按钮)
-  const rightActions = statsRow.createDiv({ cls: 'stats-right' });
-  this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
-  
-  // 7. 创建内容列表容器
-  const contentListEl = container.createDiv({ cls: 'sidebar-content-list' });
-  
-  // 8. 先渲染内容
-  const units = this.getFilteredUnits();
-  this.contentList.renderCompactList(contentListEl, units);
-  
-  // 9. ⭐ 渲染完成后,将提醒插入到最前面
-  this.insertReviewReminderAtTop(contentListEl);
-}
-
-  private renderMainMode(container: HTMLElement): void {
-
-    const layout = container.createDiv({ cls: 'main-layout' });
-
-    // 左侧面板
-    const leftPanel = layout.createDiv({ cls: 'left-panel' });
-    this.renderLeftPanel(leftPanel);
-    
-    // 右侧面板
-    const rightPanel = layout.createDiv({ cls: 'right-panel' });
-    this.renderRightPanel(rightPanel);
-  }
-
-  private renderLeftPanel(container: HTMLElement): void {
-    // 工具栏
-    this.toolbar.renderMainToolbar(container);
-    
-    // 固定入口（All Notes, Card List）
-    this.renderFixedEntries(container);
-    
-    // 文件列表
-    this.renderFileList(container);
-  }
-
-  private renderRightPanel(container: HTMLElement): void {
-    if (this.state.viewType === 'cards') {
-      this.renderFlashcardsView(container);
-      return;
-    }
-    
-    // 自动选中第一个分组
-    if (!this.state.selectedFile) {
-      const units = this.getFilteredUnits();
-      const grouped = this.contentList.groupUnits(units);
-      if (grouped.length > 0) {
-        this.state.selectedFile = grouped[0].groupKey;
-      }
-    }
-    
-    if (!this.state.selectedFile) {
-      this.renderEmptyRightPanel(container);
-      return;
-    }
-    
-    // 渲染头部
-    const header = container.createDiv({ cls: 'grid-header' });
-    header.createEl('h2', { text: this.state.selectedFile || '内容' });
-    
-    const headerActions = header.createDiv({ cls: 'header-actions' });
-    const visibleItems = this.getVisibleItems();
-    const items = (visibleItems.units || []);
-    
-    this.batchActions.renderActionButtons(headerActions, 'header');
-    this.batchActions.renderSelectAllButton(headerActions, items, 'header');
-    
-    // 渲染网格
-    const gridContainer = container.createDiv({ cls: 'content-grid' });
-    const filteredUnits = this.getFilteredUnitsForSelectedGroup();
-    this.contentList.renderContentGrid(gridContainer, filteredUnits);
-  }
-
-  private renderFlashcardsView(container: HTMLElement): void {
-    const flashcards = this.plugin.flashcardManager.getAllFlashcards();
-    
-    if (!this.state.selectedFile) {
-      const grouped = this.contentList.groupFlashcards(
-        flashcards,
-        (id) => this.plugin.dataManager.getContentUnit(id)
-      );
-      if (grouped.length > 0) {
-        this.state.selectedFile = grouped[0].groupKey;
-      }
-    }
-    
-    if (!this.state.selectedFile) {
-      this.renderEmptyRightPanel(container);
-      return;
-    }
-    
-    // 渲染头部
-    const header = container.createDiv({ cls: 'grid-header' });
-    header.createEl('h2', { text: this.state.selectedFile || '闪卡' });
-    
-    const headerActions = header.createDiv({ cls: 'header-actions' });
-    const visibleItems = this.getVisibleItems();
-    const items = (visibleItems.cards || []);
-    
-    this.batchActions.renderActionButtons(headerActions, 'header');
-    this.batchActions.renderSelectAllButton(headerActions, items, 'header');
-    
-    // 渲染闪卡网格
-    const gridContainer = container.createDiv({ cls: 'content-grid' });
-    const filteredCards = this.getFilteredCardsForSelectedGroup();
-    this.contentList.renderFlashcardsGrid(gridContainer, filteredCards);
-  }
-
-  private renderFixedEntries(container: HTMLElement): void {
-    const entries = container.createDiv({ cls: 'fixed-entries' });
-    
-    const allNotesBtn = entries.createDiv({
-      cls: `entry-btn ${this.state.viewType === 'notes' ? 'active' : ''}`
-    });
-    allNotesBtn.innerHTML = '📝 <span>All Notes</span>';
-    allNotesBtn.addEventListener('click', () => {
-      if (this.state.setViewType('notes')) {
-        this.render();
-      }
-    });
-    
-    const cardListBtn = entries.createDiv({
-      cls: `entry-btn ${this.state.viewType === 'cards' ? 'active' : ''}`
-    });
-    cardListBtn.innerHTML = '🃏 <span>Card List</span>';
-    cardListBtn.addEventListener('click', () => {
-      if (this.state.setViewType('cards')) {
-        this.render();
-      }
-    });
-  }
-
-  private renderFileList(container: HTMLElement): void {
-    container.createEl('h3', { text: '📁 文档列表', cls: 'panel-title' });
-    
-    const fileListContainer = container.createDiv({ cls: 'file-list' });
-    this.renderFileListContent(fileListContainer);
-  }
-
-  private renderFileListContent(container: HTMLElement): void {
-    container.empty();
-    
-    let grouped: Array<{ groupKey: string; count: number }>;
-    
-    if (this.state.viewType === 'cards') {
-      const flashcards = this.plugin.flashcardManager.getAllFlashcards();
-      const cardGroups = this.contentList.groupFlashcards(
-        flashcards,
-        (id) => this.plugin.dataManager.getContentUnit(id)
-      );
-      grouped = cardGroups.map(g => ({ 
-        groupKey: g.groupKey, 
-        count: g.cards.length 
-      }));
-    } else {
-      const units = this.getFilteredUnits();
-      const unitGroups = this.contentList.groupUnits(units);
-      grouped = unitGroups.map(g => ({ 
-        groupKey: g.groupKey, 
-        count: g.units.length 
-      }));
-    }
-    
-    if (grouped.length === 0) {
-      container.createDiv({ text: '暂无文档', cls: 'empty-hint' });
-      return;
-    }
-    
-    if (!this.state.selectedFile && grouped.length > 0) {
-      this.state.selectedFile = grouped[0].groupKey;
-    }
-    
-    grouped.forEach(({ groupKey, count }) => {
-      const fileItem = container.createDiv({
-        cls: `file-item ${this.state.selectedFile === groupKey ? 'selected' : ''}`
-      });
-      
-      fileItem.innerHTML = `
-        <span class="file-icon">${this.getGroupIcon()}</span>
-        <span class="file-name">${groupKey}</span>
-        <span class="file-count">${count}</span>
-      `;
-      
-      fileItem.addEventListener('click', () => {
-        if (this.state.selectedFile !== groupKey) {
-          this.state.selectedFile = groupKey;
-          
-          const allItems = container.querySelectorAll('.file-item');
-          allItems.forEach(item => item.removeClass('selected'));
-          fileItem.addClass('selected');
-          
-          this.refreshRightPanel();
+    // 滚动到对应的文件组
+    setTimeout(() => {
+      const fileGroups = this.contentEl.querySelectorAll('.file-group');
+      fileGroups.forEach((group) => {
+        const header = group.querySelector('.group-header');
+        if (header?.textContent?.includes(filePath.split('/').pop()?.replace('.md', '') || '')) {
+          group.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
+    }, 100);
+
+  }
+
+  private createToolbar(container: Element) {
+    const toolbar = container.createDiv({ cls: 'learning-system-toolbar' });
+
+    const searchContainer = toolbar.createDiv({ cls: 'search-container' });
+    const searchInput = searchContainer.createEl('input', {
+      type: 'text',
+      placeholder: 'Search content...',
+      cls: 'search-input'
     });
-  }
 
-  private renderEmptyRightPanel(container: HTMLElement): void {
-    const empty = container.createDiv({ cls: 'empty-right-panel' });
-    empty.innerHTML = `
-      <div class="empty-icon">📭</div>
-      <div class="empty-text">暂无内容</div>
-    `;
-  }
-
-  // ==================== 事件处理方法 ====================
-
-  private handleSearchChange(query: string): void {
-    this.state.setSearchQuery(query);
-    
-    if (this.state.searchDebounceTimer !== null) {
-      window.clearTimeout(this.state.searchDebounceTimer);
-    }
-    
-    this.state.searchDebounceTimer = window.setTimeout(() => {
-      this.state.clearSelection();
+    searchInput.addEventListener('input', (e) => {
+      this.searchQuery = (e.target as HTMLInputElement).value;
       this.refresh();
-    }, 300);
-  }
+    });
 
-  private handleFilterChange(mode: typeof this.state.filterMode): void {
-    if (this.state.setFilterMode(mode)) {
-      this.state.shouldRestoreScroll = false;
-      this.render();
-    }
-  }
+    const groupContainer = toolbar.createDiv({ cls: 'group-container' });
+    groupContainer.createSpan({ text: 'Group by: ', cls: 'group-label' });
 
-  private handleGroupChange(mode: typeof this.state.groupMode): void {
-    if (this.state.setGroupMode(mode)) {
-      this.render();
-    }
-  }
+    const groupSelect = groupContainer.createEl('select', { cls: 'group-select' });
+    const options = [
+      { value: 'file', label: 'File' },
+      { value: 'tag', label: 'Tag' },
+      { value: 'date', label: 'Date' }
+    ];
 
-  private handleSelectAll(): void {
-    const visible = this.getVisibleItems();
-    
-    if (this.state.viewType === 'cards') {
-      const cards = visible.cards || [];
-      if (cards.length === 0) {
-        new Notice('⚠️ 没有可选择的闪卡');
-        return;
+    options.forEach(opt => {
+      const option = groupSelect.createEl('option', {
+        value: opt.value,
+        text: opt.label
+      });
+      if (opt.value === this.groupBy) {
+        option.selected = true;
       }
-      this.state.selectAllCards(cards);
-    } else {
-      const units = visible.units || [];
-      if (units.length === 0) {
-        new Notice('⚠️ 没有可选择的笔记');
-        return;
+    });
+
+    groupSelect.addEventListener('change', (e) => {
+      this.groupBy = (e.target as HTMLSelectElement).value as any;
+      this.refresh();
+    });
+
+    // 批量操作按钮（移到前面）
+    const batchActions = toolbar.createDiv({ cls: 'batch-actions-overview' });
+    
+    const batchModeBtn = batchActions.createEl('button', {
+      text: this.batchMode ? '✓ Done' : '☐ Batch Mode',
+      cls: 'batch-mode-btn'
+    });
+    batchModeBtn.addEventListener('click', () => {
+      this.batchMode = !this.batchMode;
+      if (!this.batchMode) {
+        this.selectedUnitIds.clear();
       }
-      this.state.selectAllUnits(units);
-    }
-    
-    this.render();
-  }
+      this.refresh();
+    });
 
-  private handleDeselectAll(): void {
-    const visible = this.getVisibleItems();
-    
-    if (this.state.viewType === 'cards') {
-      this.state.deselectAllCards(visible.cards || []);
+    if (this.batchMode) {
+      // 全选/取消全选按钮
+      const selectAllBtn = batchActions.createEl('button', {
+        text: this.isAllSelected() ? '☑ Deselect All' : '☐ Select All',
+        cls: 'select-all-btn'
+      });
+      selectAllBtn.addEventListener('click', () => {
+        this.toggleSelectAll();
+      });
+
+      const batchDeleteBtn = batchActions.createEl('button', {
+        text: `🗑️ Delete (${this.selectedUnitIds.size})`,
+        cls: 'batch-delete-btn'
+      });
+      batchDeleteBtn.addEventListener('click', () => {
+        this.batchDeleteNotes();
+      });
+
+      const batchCreateBtn = batchActions.createEl('button', {
+        text: `⚡ Create Cards (${this.selectedUnitIds.size})`,
+        cls: 'batch-create-cards-btn'
+      });
+      batchCreateBtn.addEventListener('click', () => {
+        this.batchCreateFlashcards();
+      });
     } else {
-      this.state.deselectAllUnits(visible.units || []);
+      const batchCreateAllBtn = batchActions.createEl('button', {
+        text: '⚡ Batch Create Cards',
+        cls: 'batch-create-btn'
+      });
+      batchCreateAllBtn.addEventListener('click', () => this.showBatchCreateModal());
     }
-    
-    this.render();
+
+    const refreshBtn = toolbar.createEl('button', {
+      text: '⟳',
+      cls: 'refresh-btn'
+    });
+    refreshBtn.addEventListener('click', () => this.refresh());
+
+    const stats = toolbar.createDiv({ cls: 'stats-container' });
+    const totalCount = this.plugin.dataManager.getAllContentUnits().length;
+    stats.createSpan({ text: `Total: ${totalCount}`, cls: 'stats-text' });
   }
 
-  private handleBatchCreate(): void {
-    if (this.state.selectedUnitIds.size === 0) {
-      new Notice('⚠️ 请先选择要创建闪卡的笔记');
-      return;
-    }
-    
-    // 调用批量创建逻辑
-    this.batchCreateFlashcards();
-  }
+  async refresh() {
+    this.contentEl.empty();
 
-  private handleBatchDelete(): void {
-    if (this.state.getSelectedCount() === 0) {
-      new Notice('⚠️ 请先选择要删除的项目');
-      return;
-    }
-    
-    if (this.state.viewType === 'cards') {
-      this.batchDeleteFlashcards();
-    } else {
-      this.batchDeleteNotes();
-    }
-  }
-
-  private handleBatchCancel(): void {
-    this.state.clearSelection();
-    this.render();
-  }
-
-  // ==================== 数据获取方法 ====================
-
-  private getFilteredUnits(): ContentUnit[] {
     let units = this.plugin.dataManager.getAllContentUnits();
-    
-    // 搜索过滤
-    if (this.state.searchQuery) {
-      const query = this.state.searchQuery.toLowerCase();
+
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
       units = units.filter(unit =>
         unit.content.toLowerCase().includes(query) ||
         unit.source.file.toLowerCase().includes(query) ||
         unit.metadata.tags.some(tag => tag.toLowerCase().includes(query))
       );
     }
-    
-    // 类型过滤
-    if (this.state.filterMode === 'annotated') {
-      units = units.filter(u => u.annotationId);
-    } else if (this.state.filterMode === 'flashcards') {
-      units = units.filter(u => u.flashcardIds.length > 0);
+
+    if (units.length === 0) {
+      this.contentEl.createDiv({
+        text: this.searchQuery ? 'No results found' : 'No content extracted yet',
+        cls: 'empty-state'
+      });
+      return;
     }
-    
-    // 侧边栏模式：只显示当前文件的笔记
-    if (this.state.displayMode === 'sidebar' && this.state.selectedFile) {
-      units = units.filter(unit => unit.source.file === this.state.selectedFile);
+
+    switch (this.groupBy) {
+      case 'file':
+        this.renderByFile(units);
+        break;
+      case 'tag':
+        this.renderByTag(units);
+        break;
+      case 'date':
+        this.renderByDate(units);
+        break;
     }
-    
-    return units;
   }
 
-  private getFilteredUnitsForSelectedGroup(): ContentUnit[] {
-    const units = this.getFilteredUnits();
-    const selected = this.state.selectedFile;
-  
-    if (!selected) return [];
-  
-    return units.filter(unit => {
-      if (this.state.groupMode === 'file') {
-        return unit.source.file === selected;
-  
-      } else if (this.state.groupMode === 'annotation') {
-        const hasAnnotation = selected === '有批注';
-        return hasAnnotation ? !!unit.annotationId : !unit.annotationId;
-  
-      } else if (this.state.groupMode === 'tag') {
-        return unit.metadata.tags.includes(selected);
-  
-      } else if (this.state.groupMode === 'date') {
-        return (
-          this.formatDate(new Date(unit.metadata.createdAt)) === selected
-        );
+  private renderByFile(units: ContentUnit[]) {
+    const grouped = new Map<string, ContentUnit[]>();
+
+    units.forEach(unit => {
+      if (!grouped.has(unit.source.file)) {
+        grouped.set(unit.source.file, []);
       }
-      return false;
+      grouped.get(unit.source.file)!.push(unit);
     });
-  }
-  
 
-  private getFilteredCardsForSelectedGroup(): Flashcard[] {
-    const flashcards = this.plugin.flashcardManager.getAllFlashcards();
-    const selected = this.state.selectedFile;
-    if (!selected) return [];
-    
-    return flashcards.filter(card => {
-      if (this.state.groupMode === 'file') {
-        return card.sourceFile === this.state.selectedFile;
-      } else if (this.state.groupMode === 'annotation') {
-        const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
-        const hasAnnotation = this.state.selectedFile === '有批注';
-        return hasAnnotation ? (unit && !!unit.annotationId) : (!unit || !unit.annotationId);
-      } else if (this.state.groupMode === 'tag') {
-        const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
-        return (unit && unit.metadata.tags.includes(selected)) ||
-               (card.tags && card.tags.includes(selected)) ||
-               (card.deck === this.state.selectedFile) ||
-               (this.state.selectedFile === '未分类' && 
-                (!card.tags || card.tags.length === 0) && 
-                !card.deck &&
-                (!unit || !unit.metadata.tags || unit.metadata.tags.length === 0));
-      } else if (this.state.groupMode === 'date') {
-        return this.formatDate(new Date(card.metadata.createdAt)) === this.state.selectedFile;
-      }
-      return false;
+    const sortedFiles = Array.from(grouped.keys()).sort();
+    sortedFiles.forEach(filePath => {
+      const fileUnits = grouped.get(filePath)!;
+      this.renderFileGroup(filePath, fileUnits);
     });
   }
 
-  private getVisibleItems(): { units?: ContentUnit[]; cards?: Flashcard[] } {
-    if (this.state.viewType === 'cards') {
-      const cards = this.getFilteredCardsForSelectedGroup();
-      return { cards };
-    } else {
-      const units = this.state.displayMode === 'sidebar' 
-        ? this.getFilteredUnits() 
-        : this.getFilteredUnitsForSelectedGroup();
-      return { units };
+  private renderFileGroup(filePath: string, units: ContentUnit[]) {
+    const groupContainer = this.contentEl.createDiv({ cls: 'file-group' });
+
+    const header = groupContainer.createDiv({ cls: 'group-header' });
+    const fileName = filePath.split('/').pop()?.replace('.md', '') || filePath;
+    const titleEl = header.createDiv({ cls: 'group-title' });
+    titleEl.createSpan({ text: '📄 ', cls: 'group-icon' });
+    titleEl.createSpan({ text: fileName, cls: 'group-name' });
+
+    header.createSpan({ text: `${units.length}`, cls: 'count-badge' });
+
+    const collapseBtn = header.createSpan({ text: '▼', cls: 'collapse-btn' });
+
+    // 显示文件批注
+    const fileAnnotations = this.plugin.annotationManager.getFileAnnotations(filePath);
+    if (fileAnnotations.length > 0) {
+      const fileAnnotationDisplay = groupContainer.createDiv({ 
+        cls: 'file-annotation-display' 
+      });
+      fileAnnotations.forEach(ann => {
+        const annEl = fileAnnotationDisplay.createDiv({ cls: 'file-annotation-item' });
+        annEl.createEl('strong', { text: '📌 ' });
+        annEl.createSpan({ text: ann.content });
+      });
     }
+
+    const contentContainer = groupContainer.createDiv({ cls: 'group-content' });
+    units.forEach(unit => {
+      this.renderContentUnit(contentContainer, unit);
+    });
+
+    let isCollapsed = false;
+    collapseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isCollapsed = !isCollapsed;
+      contentContainer.style.display = isCollapsed ? 'none' : 'block';
+      collapseBtn.textContent = isCollapsed ? '▶' : '▼';
+    });
+
+    header.addEventListener('click', async () => {
+      const file = this.app.vault.getAbstractFileByPath(filePath);
+      if (file instanceof TFile) {
+        await this.app.workspace.getLeaf(false).openFile(file);
+      }
+    });
   }
 
-  // ==================== 业务逻辑方法 ====================
+  private renderContentUnit(container: HTMLElement, unit: ContentUnit) {
+    const card = container.createDiv({ cls: 'content-card' });
 
- 
+    // 批量选择模式：添加checkbox
+    if (this.batchMode) {
+      const checkbox = card.createEl('input', {
+        type: 'checkbox',
+        cls: 'batch-checkbox'
+      });
+      checkbox.setAttribute('data-unit-id', unit.id);
+      checkbox.checked = this.selectedUnitIds.has(unit.id);
+      checkbox.addEventListener('change', (e) => {
+        if ((e.target as HTMLInputElement).checked) {
+          this.selectedUnitIds.add(unit.id);
+        } else {
+          this.selectedUnitIds.delete(unit.id);
+        }
+        this.updateBatchButtons();
+      });
+    }
 
-private async jumpToSource(unit: ContentUnit): Promise<void> {
-  await this.overviewService.jumpToSource(unit, this.app);
-}
-
-private async jumpToFlashcardSource(card: Flashcard): Promise<void> {
-  try {
-    // 首先尝试通过 ContentUnit 跳转
-    const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+    const contentArea = card.createDiv({ cls: 'card-content' });
+    const typeIcon = this.getTypeIcon(unit.type);
+    contentArea.createSpan({ text: typeIcon + ' ', cls: 'type-icon' });
     
-    if (unit) {
+    const contentText = contentArea.createSpan({ 
+      text: unit.content, 
+      cls: 'content-text clickable-content'
+    });
+    
+    // 点击内容展开批注输入
+    contentText.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.showAnnotationInput(card, unit, this.plugin.annotationManager.getContentAnnotation(unit.id)?.content);
+    });
+
+    if (unit.annotationId) {
+      contentArea.createSpan({
+        text: '📝',
+        cls: 'annotation-badge has-annotation',
+        attr: { title: 'Has annotation' }
+      });
+    }
+
+    if (unit.flashcardIds.length > 0) {
+      contentArea.createSpan({
+        text: '🃏',
+        cls: 'flashcard-badge',
+        attr: { title: `${unit.flashcardIds.length} flashcard(s)` }
+      });
+    }
+
+    // 显示批注内容
+    const annotation = this.plugin.annotationManager.getContentAnnotation(unit.id);
+    if (annotation) {
+      const annotationDisplay = card.createDiv({ cls: 'annotation-display' });
+      
+      if (annotation.badge) {
+        const badge = annotationDisplay.createSpan({
+          text: annotation.badge.text,
+          cls: 'annotation-badge-display'
+        });
+        badge.style.backgroundColor = annotation.badge.color;
+      }
+      
+      const annotationContent = annotationDisplay.createDiv({ 
+        cls: 'annotation-content-display'
+      });
+      annotationContent.createEl('strong', { text: '💬 ' });
+      annotationContent.createSpan({ text: annotation.content });
+      
+      // 时间戳
+      const timestamp = annotationDisplay.createDiv({ cls: 'annotation-timestamp' });
+      const date = new Date(annotation.metadata.createdAt);
+      timestamp.textContent = date.toLocaleString();
+      
+      // 点击批注也可以编辑
+      annotationDisplay.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.showAnnotationInput(card, unit, annotation.content);
+      });
+    }
+
+    const metaArea = card.createDiv({ cls: 'card-meta' });
+
+    if (unit.metadata.tags.length > 0) {
+      const tagsContainer = metaArea.createSpan({ cls: 'tags-container' });
+      unit.metadata.tags.forEach(tag => {
+        tagsContainer.createSpan({ text: tag, cls: 'tag' });
+      });
+    }
+
+    if (unit.source.heading) {
+      metaArea.createSpan({
+        text: `📍 ${unit.source.heading}`,
+        cls: 'heading-info'
+      });
+    }
+
+    const actionsArea = card.createDiv({ cls: 'card-actions' });
+
+    const jumpBtn = actionsArea.createEl('button', {
+      text: '↗',
+      cls: 'action-btn jump-btn',
+      attr: { title: 'Jump to source' }
+    });
+    jumpBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
       await this.jumpToSource(unit);
-      return;
-    }
-    const file = this.app.vault.getAbstractFileByPath(card.sourceFile);
-    if (!(file instanceof TFile)) {
-      new Notice('❌ 源文件不存在');
-      return;
-    }
-    
-    // 打开文件
-    const leaf = this.app.workspace.getLeaf(false);
-    await leaf.openFile(file);
-    
-    // 如果有 anchorLink，尝试跳转到具体位置
-    if (card.anchorLink) {
-      // 从 anchorLink 提取 blockId
-      // 格式: [[filename#^block-id]]
-      const blockIdMatch = card.anchorLink.match(/\^\S+/);
-      if (blockIdMatch) {
-        const blockId = blockIdMatch[0].substring(1); // 移除 ^
-        
-        // 等待编辑器加载
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // 正确获取 MarkdownView
-        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-        if (view && view.editor) {
-          const editor = view.editor;
-          const content = editor.getValue();
-          const lines = content.split('\n');
-          
-          // 查找 block ID
-          for (let i = 0; i < lines.length; i++) {
-            if (lines[i].includes(`^${blockId}`)) {
-              editor.setCursor({ line: i, ch: 0 });
-              editor.scrollIntoView({ from: { line: i, ch: 0 }, to: { line: i, ch: 0 } }, true);
-              break;
-            }
-          }
-        }
-      }
-    }
-    
-    new Notice('✅ 已跳转到源文件');
-  } catch (error) {
-    console.error('Error jumping to flashcard source:', error);
-    new Notice('❌ 跳转失败');
+    });
+
+    // 一键创建闪卡按钮组
+    const flashcardGroup = actionsArea.createDiv({ cls: 'flashcard-btn-group' });
+
+    // 智能创建（主按钮）
+    const quickCardBtn = flashcardGroup.createEl('button', {
+      text: '⚡',
+      cls: 'action-btn quick-card-btn',
+      attr: { title: 'Quick create flashcard (smart)' }
+    });
+    quickCardBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await this.quickCreator.createSmartCard(unit);
+      await this.refresh();
+    });
+
+    // 下拉菜单按钮
+    const moreCardBtn = flashcardGroup.createEl('button', {
+      text: '▼',
+      cls: 'action-btn more-card-btn',
+      attr: { title: 'More flashcard options' }
+    });
+    moreCardBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.showFlashcardMenu(e, unit);
+    });
+
+    const deleteBtn = actionsArea.createEl('button', {
+      text: '🗑',
+      cls: 'action-btn delete-btn',
+      attr: { title: 'Delete' }
+    });
+    deleteBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await this.deleteContentUnit(unit);
+    });
+
+    card.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      this.showContextMenu(e, unit);
+    });
   }
-}
 
-private async saveAnnotation(unitId: string, content: string): Promise<void> {
-  await this.overviewService.saveAnnotation(unitId, content);
-}
+  private renderByTag(units: ContentUnit[]) {
+    const grouped = new Map<string, ContentUnit[]>();
 
-private async quickGenerateFlashcard(unit: ContentUnit): Promise<void> {
-  await this.overviewService.quickGenerateFlashcard(unit);
-  
-  // 刷新 UI
-  requestAnimationFrame(() => {
-    this.refresh();
-  });
-}
-  // ==================== 右键菜单 ====================
-private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
-  const callbacks: ContentUnitMenuCallbacks = {
-    onJumpToSource: (unit) => this.jumpToSource(unit),
-    
-    onToggleAnnotation: (unit) => {
-      const card = event.target as HTMLElement;
-      const cardEl = card.closest('.compact-card, .grid-card') as HTMLElement;
-      if (cardEl) {
-        this.annotationEditor.toggle(cardEl, unit);
-      }
-    },
-    
-    onEditFlashcard: (unit) => {
-      const cardId = unit.flashcardIds[0];
-      const card = this.plugin.flashcardManager.getFlashcard(cardId);
-      if (card) {
-        new EditFlashcardModal(this.app, this.plugin, card).open();
+    units.forEach(unit => {
+      if (unit.metadata.tags.length === 0) {
+        if (!grouped.has('Untagged')) {
+          grouped.set('Untagged', []);
+        }
+        grouped.get('Untagged')!.push(unit);
       } else {
-        new Notice('⚠️ 找不到对应的闪卡');
-      }
-    },
-    
-    onQuickGenerate: (unit) => this.quickGenerateFlashcard(unit),
-    
-    onCreateQA: (unit) => {
-      new ManualFlashcardModal(this.app, this.plugin, unit, 'qa').open();
-    },
-    
-    onCreateCloze: (unit) => {
-      new ManualFlashcardModal(this.app, this.plugin, unit, 'cloze').open();
-    },
-    
-    onViewStats: () => {
-      this.plugin.activateStats();
-    },
-    
-    onDelete: async (unit) => {
-      if (confirm('确定要删除这条笔记吗？')) {
-        if (unit.flashcardIds.length > 0) {
-          for (const cardId of unit.flashcardIds) {
-            await this.plugin.flashcardManager.deleteCard(cardId);
+        unit.metadata.tags.forEach(tag => {
+          if (!grouped.has(tag)) {
+            grouped.set(tag, []);
           }
-        }
-        await this.plugin.dataManager.deleteContentUnit(unit.id);
-        new Notice('🗑️ 笔记已删除');
-        this.refresh();
+          grouped.get(tag)!.push(unit);
+        });
       }
-    }
-  };
-  
-  const menu = ContextMenuBuilder.buildContentUnitMenu(unit, callbacks);
-  menu.showAtMouseEvent(event);
-}
-  
-  private openManualFlashcardModal(unit: ContentUnit, type: 'qa' | 'cloze'): void {
+    });
 
-    
-    new ManualFlashcardModal(this.app, this.plugin, unit, type).open();
+    const sortedTags = Array.from(grouped.keys()).sort();
+    sortedTags.forEach(tag => {
+      const tagUnits = grouped.get(tag)!;
+      this.renderTagGroup(tag, tagUnits);
+    });
   }
 
+  private renderTagGroup(tag: string, units: ContentUnit[]) {
+    const groupContainer = this.contentEl.createDiv({ cls: 'tag-group' });
 
-  private showFlashcardContextMenu(event: MouseEvent, card: Flashcard): void {
-    const callbacks: FlashcardMenuCallbacks = {
-      onJumpToSource: async (card) => {
-        await this.overviewService.jumpToFlashcardSource(card.id, this.app);
-      },
+    const header = groupContainer.createDiv({ cls: 'group-header' });
+    const titleEl = header.createDiv({ cls: 'group-title' });
+    titleEl.createSpan({ text: '🏷️ ', cls: 'group-icon' });
+    titleEl.createSpan({ text: tag, cls: 'group-name' });
+
+    header.createSpan({ text: `${units.length}`, cls: 'count-badge' });
+
+    const collapseBtn = header.createSpan({ text: '▼', cls: 'collapse-btn' });
+
+    const contentContainer = groupContainer.createDiv({ cls: 'group-content' });
+    units.forEach(unit => {
+      this.renderContentUnit(contentContainer, unit);
+    });
+
+    let isCollapsed = false;
+    collapseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isCollapsed = !isCollapsed;
+      contentContainer.style.display = isCollapsed ? 'none' : 'block';
+      collapseBtn.textContent = isCollapsed ? '▶' : '▼';
+    });
+  }
+
+  private renderByDate(units: ContentUnit[]) {
+    const grouped = new Map<string, ContentUnit[]>();
+
+    units.forEach(unit => {
+      const date = new Date(unit.metadata.createdAt);
+      const dateKey = date.toLocaleDateString();
       
-      onEdit: (card) => {
-        new EditFlashcardModal(this.app, this.plugin, card).open();
-      },
-      
-      onViewStats: (card) => {
-        const statsText = ContextMenuBuilder.formatFlashcardStats(card);
-        new Notice(statsText, 10000);
-      },
-      
-      onDelete: async (card) => {
-        if (confirm('确定要删除这张闪卡吗？')) {
-          await this.plugin.flashcardManager.deleteCard(card.id);
-          new Notice('🗑️ 闪卡已删除');
-          this.refresh();
+      if (!grouped.has(dateKey)) {
+        grouped.set(dateKey, []);
+      }
+      grouped.get(dateKey)!.push(unit);
+    });
+
+    const sortedDates = Array.from(grouped.keys()).sort((a, b) => {
+      return new Date(b).getTime() - new Date(a).getTime();
+    });
+
+    sortedDates.forEach(date => {
+      const dateUnits = grouped.get(date)!;
+      this.renderDateGroup(date, dateUnits);
+    });
+  }
+
+  private renderDateGroup(date: string, units: ContentUnit[]) {
+    const groupContainer = this.contentEl.createDiv({ cls: 'date-group' });
+
+    const header = groupContainer.createDiv({ cls: 'group-header' });
+    const titleEl = header.createDiv({ cls: 'group-title' });
+    titleEl.createSpan({ text: '📅 ', cls: 'group-icon' });
+    titleEl.createSpan({ text: date, cls: 'group-name' });
+
+    header.createSpan({ text: `${units.length}`, cls: 'count-badge' });
+
+    const collapseBtn = header.createSpan({ text: '▼', cls: 'collapse-btn' });
+
+    const contentContainer = groupContainer.createDiv({ cls: 'group-content' });
+    units.forEach(unit => {
+      this.renderContentUnit(contentContainer, unit);
+    });
+
+    let isCollapsed = false;
+    collapseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isCollapsed = !isCollapsed;
+      contentContainer.style.display = isCollapsed ? 'none' : 'block';
+      collapseBtn.textContent = isCollapsed ? '▶' : '▼';
+    });
+  }
+
+  private showAnnotationInput(card: HTMLElement, unit: ContentUnit, existingText?: string) {
+    // 检查是否已经有输入框展开
+    let inputContainer = card.querySelector('.annotation-input-container') as HTMLElement;
+    
+    if (inputContainer) {
+      // 如果已展开，则折叠
+      inputContainer.remove();
+      return;
+    }
+
+    // 创建输入区域
+    inputContainer = card.createDiv({ cls: 'annotation-input-container' });
+
+    const textarea = inputContainer.createEl('textarea', {
+      cls: 'annotation-textarea',
+      placeholder: 'Add comment...'
+    });
+    textarea.value = existingText || '';
+    textarea.rows = 3;
+
+    // 按钮区域（简化版）
+    const buttonArea = inputContainer.createDiv({ cls: 'annotation-buttons' });
+
+    if (existingText) {
+      const deleteBtn = buttonArea.createEl('button', {
+        text: 'Delete',
+        cls: 'annotation-delete-btn'
+      });
+      deleteBtn.addEventListener('click', async () => {
+        const annotation = this.plugin.annotationManager.getContentAnnotation(unit.id);
+        if (annotation) {
+          await this.plugin.annotationManager.deleteAnnotation(annotation.id);
+          new Notice('Annotation deleted');
+          await this.refresh();
         }
+      });
+    }
+
+    const saveBtn = buttonArea.createEl('button', {
+      text: 'Save',
+      cls: 'annotation-save-btn'
+    });
+    
+    // 保存函数
+    const saveAnnotation = async () => {
+      const text = textarea.value.trim();
+      if (!text) {
+        inputContainer.remove();
+        return;
+      }
+
+      try {
+        const annotation = this.plugin.annotationManager.getContentAnnotation(unit.id);
+        
+        if (annotation) {
+          // 更新现有批注
+          await this.plugin.annotationManager.updateAnnotation(annotation.id, {
+            content: text
+          });
+        } else {
+          // 创建新批注
+          await this.plugin.annotationManager.addContentAnnotation(
+            unit.id,
+            text
+          );
+        }
+
+        await this.refresh();
+      } catch (error) {
+        console.error('Error saving annotation:', error);
+        new Notice('Error saving annotation');
       }
     };
-    
-    const menu = ContextMenuBuilder.buildFlashcardMenu(card, callbacks);
-    menu.showAtMouseEvent(event);
-  }
-  
 
-  private openEditFlashcardModal(card: Flashcard): void {
-    
-    new EditFlashcardModal(this.app, this.plugin, card).open();
-  }
-    // ==================== 批量操作 ====================
+    saveBtn.addEventListener('click', saveAnnotation);
 
-  private async batchCreateFlashcards(): Promise<void> {
-    const units = Array.from(this.state.selectedUnitIds)
-      .map(id => this.plugin.dataManager.getContentUnit(id))
-      .filter(u => u !== undefined && u.flashcardIds.length === 0) as ContentUnit[];
+    // 支持 Ctrl+Enter 快捷键保存
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        saveAnnotation();
+      }
+      // Esc 键关闭
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        inputContainer.remove();
+      }
+    });
+
+    // 自动聚焦
+    textarea.focus();
+  }
+
+  private showFlashcardMenu(e: MouseEvent, unit: ContentUnit) {
+    const menu = new Menu();
+
+    menu.addItem((item) =>
+      item
+        .setTitle('⚡ Smart create')
+        .setIcon('zap')
+        .onClick(async () => {
+          await this.quickCreator.createSmartCard(unit);
+          await this.refresh();
+        })
+    );
+
+    menu.addItem((item) =>
+      item
+        .setTitle('📝 Create Q&A card')
+        .setIcon('message-square')
+        .onClick(async () => {
+          await this.quickCreator.createQuickQACard(unit);
+          await this.refresh();
+        })
+    );
+
+    menu.addItem((item) =>
+      item
+        .setTitle('✏️ Create Cloze card')
+        .setIcon('edit')
+        .onClick(async () => {
+          await this.quickCreator.createQuickClozeCard(unit);
+          await this.refresh();
+        })
+    );
+
+    menu.addSeparator();
+
+    menu.addItem((item) =>
+      item
+        .setTitle('🎨 Custom card...')
+        .setIcon('settings')
+        .onClick(async () => {
+          const { FlashcardCreateModal } = await import('./FlashcardCreateModal');
+          const modal = new FlashcardCreateModal(
+            this.app,
+            this.plugin,
+            unit,
+            async () => {
+              await this.refresh();
+            }
+          );
+          modal.open();
+        })
+    );
+
+    menu.showAtMouseEvent(e);
+  }
+
+  private async showBatchCreateModal() {
+    const units = this.plugin.dataManager.getAllContentUnits();
     
-    if (units.length === 0) {
-      new Notice('⚠️ 选中的笔记都已创建过闪卡');
+    // 过滤掉已经有闪卡的内容
+    const unitsWithoutCards = units.filter(u => u.flashcardIds.length === 0);
+    
+    if (unitsWithoutCards.length === 0) {
+      new Notice('All content already has flashcards!');
       return;
     }
-    
-    // 显示批量创建模态框
-    const { BatchCreateModal } = await import('./OverviewView');
-    const { QuickFlashcardCreator } = await import('../../core/QuickFlashcardCreator');
-    const quickCreator = new QuickFlashcardCreator(this.plugin);
+
     const modal = new BatchCreateModal(
       this.app,
       this.plugin,
-      quickCreator,
+      this.quickCreator,
+      unitsWithoutCards,
+      () => this.refresh()
+    );
+    modal.open();
+  }
+
+  private isAllSelected(): boolean {
+    const units = this.plugin.dataManager.getAllContentUnits();
+    // 应用搜索过滤
+    let filteredUnits = units;
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      filteredUnits = units.filter(unit =>
+        unit.content.toLowerCase().includes(query) ||
+        unit.source.file.toLowerCase().includes(query) ||
+        unit.metadata.tags.some(tag => tag.toLowerCase().includes(query))
+      );
+    }
+    return filteredUnits.length > 0 && this.selectedUnitIds.size === filteredUnits.length;
+  }
+
+  private toggleSelectAll() {
+    const units = this.plugin.dataManager.getAllContentUnits();
+    // 应用搜索过滤
+    let filteredUnits = units;
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      filteredUnits = units.filter(unit =>
+        unit.content.toLowerCase().includes(query) ||
+        unit.source.file.toLowerCase().includes(query) ||
+        unit.metadata.tags.some(tag => tag.toLowerCase().includes(query))
+      );
+    }
+
+    if (this.isAllSelected()) {
+      // 取消全选
+      this.selectedUnitIds.clear();
+    } else {
+      // 全选
+      filteredUnits.forEach(unit => {
+        this.selectedUnitIds.add(unit.id);
+      });
+    }
+    this.updateBatchButtons();
+    this.updateCheckboxes();
+  }
+
+  private updateCheckboxes() {
+    const container = this.containerEl.children[1];
+    const checkboxes = container.querySelectorAll('.batch-checkbox') as NodeListOf<HTMLInputElement>;
+    
+    checkboxes.forEach(checkbox => {
+      const unitId = checkbox.getAttribute('data-unit-id');
+      if (unitId) {
+        checkbox.checked = this.selectedUnitIds.has(unitId);
+      }
+    });
+  }
+
+  private updateBatchButtons() {
+    const toolbar = this.containerEl.querySelector('.learning-system-toolbar') as HTMLElement;
+    if (toolbar) {
+      const batchActions = toolbar.querySelector('.batch-actions-overview') as HTMLElement;
+      if (batchActions) {
+        const selectAllBtn = batchActions.querySelector('.select-all-btn') as HTMLElement;
+        const deleteBtn = batchActions.querySelector('.batch-delete-btn') as HTMLElement;
+        const createBtn = batchActions.querySelector('.batch-create-cards-btn') as HTMLElement;
+        
+        if (selectAllBtn) {
+          selectAllBtn.textContent = this.isAllSelected() ? '☑ Deselect All' : '☐ Select All';
+        }
+        
+        if (deleteBtn) {
+          deleteBtn.textContent = `🗑️ Delete (${this.selectedUnitIds.size})`;
+        }
+        
+        if (createBtn) {
+          createBtn.textContent = `⚡ Create Cards (${this.selectedUnitIds.size})`;
+        }
+      }
+    }
+  }
+
+  private async batchDeleteNotes() {
+    if (this.selectedUnitIds.size === 0) {
+      new Notice('⚠️ Please select notes to delete');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ${this.selectedUnitIds.size} selected notes?`)) {
+      return;
+    }
+
+    let success = 0;
+    let failed = 0;
+
+    for (const unitId of this.selectedUnitIds) {
+      try {
+        await this.plugin.dataManager.deleteContentUnit(unitId);
+        success++;
+      } catch (error) {
+        console.error('Error deleting note:', error);
+        failed++;
+      }
+    }
+
+    this.selectedUnitIds.clear();
+    new Notice(`✅ Deleted ${success} notes${failed > 0 ? `, ${failed} failed` : ''}`);
+    this.refresh();
+  }
+
+  private async batchCreateFlashcards() {
+    if (this.selectedUnitIds.size === 0) {
+      new Notice('⚠️ Please select notes to create flashcards');
+      return;
+    }
+
+    const units = Array.from(this.selectedUnitIds)
+      .map(id => this.plugin.dataManager.getContentUnit(id))
+      .filter(u => u !== undefined && u.flashcardIds.length === 0) as ContentUnit[];
+
+    if (units.length === 0) {
+      new Notice('⚠️ Selected notes already have flashcards');
+      return;
+    }
+
+    const modal = new BatchCreateModal(
+      this.app,
+      this.plugin,
+      this.quickCreator,
       units,
       () => {
-        this.state.clearSelection();
+        this.selectedUnitIds.clear();
         this.refresh();
       }
     );
     modal.open();
   }
 
-  private async batchDeleteNotes(): Promise<void> {
-    if (!confirm(`确定要删除选中的 ${this.state.selectedUnitIds.size} 条笔记吗？`)) {
-      return;
+  private async jumpToSource(unit: ContentUnit) {
+    const file = this.app.vault.getAbstractFileByPath(unit.source.file);
+    if (!(file instanceof TFile)) return;
+
+    const leaf = this.app.workspace.getLeaf(false);
+    await leaf.openFile(file);
+
+    const view = this.app.workspace.getActiveViewOfType(ItemView);
+    if (view) {
+      const editor = (view as any).editor;
+      if (editor) {
+        editor.setCursor({ line: unit.source.position.line, ch: 0 });
+        editor.scrollIntoView({
+          from: { line: unit.source.position.line, ch: 0 },
+          to: { line: unit.source.position.line, ch: 0 }
+        }, true);
+        
+        setTimeout(() => {
+          editor.setSelection(
+            { line: unit.source.position.line, ch: 0 },
+            { line: unit.source.position.line, ch: 999 }
+          );
+        }, 100);
+      }
     }
-    
-    const { success, failed } = await this.overviewService.batchDeleteNotes(
-      this.state.selectedUnitIds
+  }
+
+  private async deleteContentUnit(unit: ContentUnit) {
+    const confirmed = await this.confirmDelete(unit);
+    if (!confirmed) return;
+
+    await this.plugin.dataManager.deleteContentUnit(unit.id);
+    await this.refresh();
+  }
+
+  private async confirmDelete(unit: ContentUnit): Promise<boolean> {
+    return new Promise((resolve) => {
+      const modal = new ConfirmModal(
+        this.app,
+        'Delete content',
+        `Are you sure you want to delete this content?\n\n"${unit.content.substring(0, 50)}..."`,
+        () => resolve(true),
+        () => resolve(false)
+      );
+      modal.open();
+    });
+  }
+
+  private showContextMenu(e: MouseEvent, unit: ContentUnit) {
+    const menu = new Menu();
+
+    menu.addItem((item) =>
+      item
+        .setTitle('Jump to source')
+        .setIcon('arrow-right')
+        .onClick(() => this.jumpToSource(unit))
     );
+
+    const annotation = this.plugin.annotationManager.getContentAnnotation(unit.id);
     
-    this.state.clearSelection();
-    new Notice(`✅ 已删除 ${success} 条笔记${failed > 0 ? `，${failed} 条失败` : ''}`);
-    this.refresh();
+    menu.addItem((item) =>
+      item
+        .setTitle(annotation ? 'Edit annotation' : 'Add annotation')
+        .setIcon('pencil')
+        .onClick(() => {
+          const card = (e.target as HTMLElement).closest('.content-card') as HTMLElement;
+          if (card) {
+            this.showAnnotationInput(card, unit, annotation?.content);
+          }
+        })
+    );
+
+    menu.addSeparator();
+
+    menu.addItem((item) =>
+      item
+        .setTitle('⚡ Quick create flashcard')
+        .setIcon('zap')
+        .onClick(async () => {
+          await this.quickCreator.createSmartCard(unit);
+          await this.refresh();
+        })
+    );
+
+    menu.addItem((item) =>
+      item
+        .setTitle('Create Q&A card')
+        .setIcon('message-square')
+        .onClick(async () => {
+          await this.quickCreator.createQuickQACard(unit);
+          await this.refresh();
+        })
+    );
+
+    menu.addItem((item) =>
+      item
+        .setTitle('Create Cloze card')
+        .setIcon('edit')
+        .onClick(async () => {
+          await this.quickCreator.createQuickClozeCard(unit);
+          await this.refresh();
+        })
+    );
+
+    menu.addItem((item) =>
+      item
+        .setTitle('Custom flashcard...')
+        .setIcon('settings')
+        .onClick(async () => {
+          const { FlashcardCreateModal } = await import('./FlashcardCreateModal');
+          const modal = new FlashcardCreateModal(
+            this.app,
+            this.plugin,
+            unit,
+            async () => {
+              await this.refresh();
+            }
+          );
+          modal.open();
+        })
+    );
+
+    menu.addSeparator();
+
+    menu.addItem((item) =>
+      item
+        .setTitle('View Statistics')
+        .setIcon('bar-chart')
+        .onClick(() => {
+          this.plugin.activateStats();
+        })
+    );
+
+    menu.addSeparator();
+
+    menu.addItem((item) =>
+      item
+        .setTitle('Delete')
+        .setIcon('trash')
+        .onClick(() => this.deleteContentUnit(unit))
+    );
+
+    menu.showAtMouseEvent(e);
   }
 
-  private async batchDeleteFlashcards(): Promise<void> {
-    if (!confirm(`确定要删除选中的 ${this.state.selectedCardIds.size} 张闪卡吗？`)) {
-      return;
-    }
-    
-    let success = 0;
-    let failed = 0;
-    
-    for (const cardId of this.state.selectedCardIds) {
-      try {
-        await this.plugin.flashcardManager.deleteCard(cardId);
-        success++;
-      } catch (error) {
-        console.error('Error deleting flashcard:', error);
-        failed++;
-      }
-    }
-    
-    this.state.clearSelection();
-    new Notice(`✅ 已删除 ${success} 张闪卡${failed > 0 ? `，${failed} 张失败` : ''}`);
-    this.refresh();
+  private getTypeIcon(type: string): string {
+    const icons: Record<string, string> = {
+      'highlight': '✨',
+      'bold': '**',
+      'tag': '🏷',
+      'custom': '⭐'
+    };
+    return icons[type] || '•';
   }
 
-  // ==================== 工具方法 ====================
 
-  private refreshRightPanel(): void {
-    const container = this.containerEl.children[1] as HTMLElement;
-    const rightPanel = container.querySelector('.right-panel') as HTMLElement;
-    if (rightPanel) {
-      rightPanel.empty();
-      this.renderRightPanel(rightPanel);
-    }
-  }
-
-  private getGroupIcon(): string {
-    switch (this.state.groupMode) {
-      case 'file': return '📄';
-      case 'annotation': return '💬';
-      case 'tag': return '🏷️';
-      case 'date': return '📅';
-      default: return '📁';
-    }
-  }
-
-  private formatDate(date: Date | null): string {
-    if (!date) return '';
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-  
-  }
-
-  // ==================== 复习检查 ====================
 // 每日提醒复习
-// 手动触发复习提醒检查
-public checkReviewReminder(): void {
-  console.log('[Review Check] Manual check triggered');
-  
-  const dueCards = this.getDueFlashcards();
-  console.log('[Review Check] Found due cards:', dueCards.length);
-  
-  if (dueCards.length === 0) {
-    new Notice('✅ 目前没有需要复习的卡片');
-    return;
-  }
-  
-  // 检查当前提醒是否已忽略
-  const dismissed = localStorage.getItem('learning-system-reminder-dismissed');
-  const isCurrentlyDismissed = dismissed === new Date().toDateString();
-  
-  if (isCurrentlyDismissed) {
-    // 当前已忽略 -> 清除忽略状态,显示提醒
-    console.log('[Review Check] Showing reminder');
-    localStorage.removeItem('learning-system-reminder-dismissed');
-  } else {
-    // 当前显示中 -> 忽略提醒,隐藏
-    console.log('[Review Check] Hiding reminder');
-    this.markReminderDismissed();
-  }
-    
-  // 重新渲染
-  this.refresh();
-  
-  // 如果是显示提醒,滚动到顶部
-  if (isCurrentlyDismissed) {
-    requestAnimationFrame(() => {
-      const contentList = this.containerEl.querySelector('.sidebar-content-list') as HTMLElement;
-      if (contentList) {
-        contentList.scrollTop = 0;
-      }
-    });
-  }
-}
-private renderReviewReminderIfNeeded(container: HTMLElement): void {
-  // 如果今天已经忽略过提醒,就不再显示
+private checkDailyReview() {
   if (this.isReminderDismissedToday()) {
-    console.log('[Review Check] Reminder already dismissed today');
     return;
   }
   
   const dueCards = this.getDueFlashcards();
-  console.log('[Review Check] Found due cards:', dueCards.length);
+  console.log('📚 检查复习提醒:', {
+    总卡片数: this.plugin.flashcardManager.getAllFlashcards().length,
+    待复习数: dueCards.length,
+    是否已忽略: this.isReminderDismissedToday()
+  });
+
+  // if (dueCards.length > 0) {
+  //   this.showReviewReminder(dueCards.length);
+  // }
+  if (this.isReminderDismissedToday()) {
+    return;
+  }
   
   if (dueCards.length > 0) {
-    console.log('[Review Check] Showing reminder for', dueCards.length, 'cards');
-    this.renderReviewBanner(container, dueCards.length);
+    this.showReviewReminder(dueCards.length);
+  } else {
+    new Notice('✅ 今天暂无待复习卡片');
   }
 }
-private renderReviewBanner(container: HTMLElement, count: number): void {
-  console.log('[Review Check] Creating reminder banner...');
-  
-  // 创建紧凑的提醒横幅
-  const banner = container.createDiv({ cls: 'content-list-review-reminder' });
-  
-  const header = banner.createDiv({ cls: 'reminder-header' });
-  header.createSpan({ text: '📚', cls: 'reminder-icon' });
-  
-  const textContent = header.createDiv({ cls: 'reminder-text' });
-  textContent.createEl('strong', { text: `${count} 张卡片待复习` });
-    // 计算最紧急的卡片
-    const dueCards = this.getDueFlashcards();
-    const mostUrgent = dueCards.reduce((earliest, card) => 
-      card.scheduling.due < earliest ? card.scheduling.due : earliest
-    , Date.now());
-    
-    const hoursSinceDue = Math.floor((Date.now() - mostUrgent) / (1000 * 60 * 60));
-    
-    if (hoursSinceDue > 0) {
-      textContent.createEl('span', { 
-        text: `已过期 ${hoursSinceDue} 小时 ⏰`, 
-        cls: 'reminder-urgent' 
-      });
-    }
-
-  textContent.createEl('span', { text: '保持每日复习习惯 💪', cls: 'reminder-hint' });
-    // ⭐ 添加进度条（可选）
-    const allCards = this.plugin.flashcardManager.getAllFlashcards().length;
-    if (allCards > 0) {
-      const progress = banner.createDiv({ cls: 'reminder-progress' });
-      const percentage = Math.round((count / allCards) * 100);
-      progress.innerHTML = `
-        <div class="progress-bar">
-          <div class="progress-fill" style="width: ${percentage}%"></div>
-        </div>
-        <span class="progress-text">${percentage}% 需要复习</span>
-      `;
-    }
-
-  const actions = banner.createDiv({ cls: 'reminder-actions' });
-  
-  const reviewBtn = actions.createEl('button', {
-    text: '开始复习',
-    cls: 'reminder-btn primary'
-  });
-  reviewBtn.addEventListener('click', () => {
-    this.startReview();
-    banner.remove();
-  });
-  
-  const dismissBtn = actions.createEl('button', {
-    text: '✕',
-    cls: 'reminder-btn dismiss',
-    attr: { 'aria-label': '稍后提醒' }
-  });
-  dismissBtn.addEventListener('click', () => {
-    banner.remove();
-    this.markReminderDismissed();
-  });
-  
-  console.log('[Review Check] Reminder banner created');
-}
-
-
 
 private getDueFlashcards() {
   const allCards = this.plugin.flashcardManager.getAllFlashcards();
   const now = Date.now();
   
-  console.log('[Review Check] Total cards:', allCards.length);
-  console.log('[Review Check] Current time:', now, new Date(now));
-  
-  const dueCards = allCards.filter(card => {
-    const isDue = card.scheduling.due <= now;
-    if (isDue) {
-      console.log('[Review Check] Due card:', card.id, 'due:', new Date(card.scheduling.due));
-    }
-    return isDue;
-  });
-  
-  return dueCards;
+  return allCards.filter(card => card.scheduling.due <= now);
 }
 
+private showReviewReminder(count: number) {
+  // 创建提醒横幅
+  const banner = this.contentEl.createDiv({ cls: 'review-reminder-banner' });
+  
+  const icon = banner.createSpan({ text: '📚', cls: 'reminder-icon' });
+  
+  const content = banner.createDiv({ cls: 'reminder-content' });
+  content.createEl('strong', { text: `今天有 ${count} 张卡片需要复习!` });
+  content.createEl('p', { text: '保持每日复习习惯,巩固记忆效果最佳 💪' });
+  
+  const actions = banner.createDiv({ cls: 'reminder-actions' });
+  
+  const reviewBtn = actions.createEl('button', {
+    text: '开始复习 →',
+    cls: 'reminder-review-btn'
+  });
+  reviewBtn.addEventListener('click', () => {
+    this.startReview();
+  });
+  
+  const dismissBtn = actions.createEl('button', {
+    text: '稍后提醒',
+    cls: 'reminder-dismiss-btn'
+  });
+  dismissBtn.addEventListener('click', () => {
+    banner.remove();
+    // 可选: 保存"已忽略"状态到今天
+    this.markReminderDismissed();
+  });
+  
+  // 将横幅插入到内容区域顶部
+  this.contentEl.insertBefore(banner, this.contentEl.firstChild);
+}
 
 private startReview() {
   // 激活复习视图
@@ -1136,60 +1064,174 @@ private isReminderDismissedToday(): boolean {
   const dismissed = localStorage.getItem('learning-system-reminder-dismissed');
   return dismissed === today;
 }
-private insertReviewReminderAtTop(container: HTMLElement): void {
-  // 如果今天已经忽略过提醒,就不再显示
-  if (this.isReminderDismissedToday()) {
-    console.log('[Review Check] Reminder already dismissed today');
-    return;
+
+
+
+}
+
+// 批量创建模态框
+export class BatchCreateModal extends Modal {
+  constructor(
+    app: App,
+    private plugin: LearningSystemPlugin,
+    private quickCreator: QuickFlashcardCreator,
+    private units: ContentUnit[],
+    private onComplete: () => void
+  ) {
+    super(app);
   }
-  
-  const dueCards = this.getDueFlashcards();
-  console.log('[Review Check] Found due cards:', dueCards.length);
-  
-  if (dueCards.length > 0) {
-    console.log('[Review Check] Showing reminder for', dueCards.length, 'cards');
+
+  onOpen() {
+    const { contentEl } = this;
     
-    // 创建横幅
-    const banner = this.createReviewBanner(dueCards.length);
+    contentEl.createEl('h2', { text: '⚡ Batch Create Flashcards' });
     
-    // ⭐ 插入到容器最前面
-    if (container.firstChild) {
-      container.insertBefore(banner, container.firstChild);
-    } else {
-      container.appendChild(banner);
-    }
+    contentEl.createEl('p', { 
+      text: `Create flashcards for ${this.units.length} content items without cards.`
+    });
+
+    // 选择类型
+    const typeContainer = contentEl.createDiv({ cls: 'type-select-container' });
+    typeContainer.createEl('h3', { text: 'Card Type' });
+
+    let selectedType: 'smart' | 'qa' | 'cloze' = 'smart';
+
+    const types = [
+      { value: 'smart', label: '⚡ Smart (Auto-detect)', desc: 'Automatically choose the best type' },
+      { value: 'qa', label: '📝 Q&A Cards', desc: 'Question and answer format' },
+      { value: 'cloze', label: '✏️ Cloze Cards', desc: 'Fill in the blanks' }
+    ];
+
+    types.forEach(type => {
+      const option = typeContainer.createDiv({ cls: 'type-option' });
+      
+      const radio = option.createEl('input', {
+        type: 'radio',
+        value: type.value,
+        attr: { name: 'card-type' }
+      });
+      if (type.value === 'smart') radio.checked = true;
+
+      const label = option.createDiv({ cls: 'type-label' });
+      label.createEl('strong', { text: type.label });
+      label.createEl('div', { text: type.desc, cls: 'type-desc' });
+
+      option.addEventListener('click', () => {
+        radio.checked = true;
+        selectedType = type.value as any;
+      });
+    });
+
+    // 按钮
+    const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
+
+    const cancelBtn = buttonContainer.createEl('button', { text: 'Cancel' });
+    cancelBtn.addEventListener('click', () => this.close());
+
+    const createBtn = buttonContainer.createEl('button', { 
+      text: `Create ${this.units.length} Cards`,
+      cls: 'mod-cta'
+    });
+    createBtn.addEventListener('click', async () => {
+      await this.batchCreate(selectedType);
+    });
+
+    this.addStyles();
+  }
+
+  private async batchCreate(type: 'smart' | 'qa' | 'cloze') {
+    const { success, failed } = await this.quickCreator.createBatchCards(this.units, type);
+    
+    new Notice(`✅ Created ${success} flashcards! ${failed > 0 ? `(${failed} failed)` : ''}`);
+    
+    this.close();
+    this.onComplete();
+  }
+
+  private addStyles() {
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `
+      .type-select-container {
+        margin: 20px 0;
+      }
+
+      .type-option {
+        padding: 15px;
+        margin: 10px 0;
+        background: var(--background-secondary);
+        border: 2px solid var(--background-modifier-border);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .type-option:hover {
+        border-color: var(--interactive-accent);
+        background: var(--background-modifier-hover);
+      }
+
+      .type-option input[type="radio"] {
+        margin-right: 10px;
+      }
+
+      .type-label {
+        display: inline-block;
+        vertical-align: top;
+      }
+
+      .type-desc {
+        font-size: 0.9em;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+    `;
+
+    document.head.appendChild(styleEl);
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
   }
 }
 
-private createReviewBanner(count: number): HTMLElement {
-console.log('[Review Check] Creating reminder banner...');
+class ConfirmModal extends Modal {
+  constructor(
+    app: App,
+    private title: string,
+    private message: string,
+    private onConfirm: () => void,
+    private onCancel: () => void
+  ) {
+    super(app);
+  }
 
-// 创建临时容器用于构建元素
-const tempDiv = document.createElement('div');
-const banner = tempDiv.createDiv({ cls: 'content-list-review-reminder' });
+  onOpen() {
+    const { contentEl } = this;
+    
+    contentEl.createEl('h2', { text: this.title });
+    contentEl.createEl('p', { text: this.message });
 
-const header = banner.createDiv({ cls: 'reminder-header' });
-header.createSpan({ text: '', cls: 'reminder-icon' });
+    const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
+    
+    const cancelBtn = buttonContainer.createEl('button', { text: 'Cancel' });
+    cancelBtn.addEventListener('click', () => {
+      this.close();
+      this.onCancel();
+    });
 
-const textContent = header.createDiv({ cls: 'reminder-text' });
-textContent.createEl('strong', { text: `📚${count} 张卡片待复习` });
-textContent.createEl('span', { text: '保持每日复习习惯 💪', cls: 'reminder-hint' });
+    const confirmBtn = buttonContainer.createEl('button', { 
+      text: 'Delete',
+      cls: 'mod-warning'
+    });
+    confirmBtn.addEventListener('click', () => {
+      this.close();
+      this.onConfirm();
+    });
+  }
 
-const actions = banner.createDiv({ cls: 'reminder-actions' });
-
-const reviewBtn = actions.createEl('button', {
-  text: '开始复习',
-  cls: 'reminder-btn primary'
-});
-reviewBtn.addEventListener('click', () => {
-  this.startReview();
-  banner.remove();
-});
-
-
-
-console.log('[Review Check] Reminder banner created');
-return banner;
-}
-
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
 }

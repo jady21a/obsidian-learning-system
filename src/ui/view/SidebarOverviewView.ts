@@ -22,7 +22,7 @@ import {
   ContentUnitMenuCallbacks, 
   FlashcardMenuCallbacks 
 } from '../components/ContextMenuBuilder';
-
+import { BatchCreateModal } from '../components/modals/BatchCreateModal';
 
 export const VIEW_TYPE_SIDEBAR_OVERVIEW = 'learning-system-sidebar-overview';
 export const VIEW_TYPE_MAIN_OVERVIEW = 'learning-system-main-overview';
@@ -911,9 +911,7 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
     }
     
     // 显示批量创建模态框
-    const { BatchCreateModal } = await import('./OverviewView');
-    const { QuickFlashcardCreator } = await import('../../core/QuickFlashcardCreator');
-    const quickCreator = new QuickFlashcardCreator(this.plugin);
+   const quickCreator = new QuickFlashcardCreator(this.plugin);
     const modal = new BatchCreateModal(
       this.app,
       this.plugin,
