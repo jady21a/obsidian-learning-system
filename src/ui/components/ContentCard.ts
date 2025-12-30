@@ -61,7 +61,6 @@ export class ContentCard {
     header.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      alert('Header clicked! Check console for details.');
       this.callbacks.onJumpToSource(unit);
     });
 

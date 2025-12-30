@@ -130,7 +130,8 @@ export class FlashcardManager {
       flashcard = await this.createClozeCard(unit.id, text, deletions);
     }
   
-    
+    // 🎯 解锁系统检查点
+await this.plugin.unlockSystem.onCardExtracted();
   
     return flashcard;
   }
@@ -179,6 +180,8 @@ export class FlashcardManager {
     await this.dataManager.saveContentUnits([contentUnit]);
     
     await this.persistFlashcards();
+    // 🎯 解锁系统检查点
+// await this.plugin.unlockSystem.onCardExtracted();
     return card;
   }
 
@@ -236,8 +239,10 @@ export class FlashcardManager {
     await this.dataManager.saveContentUnits([contentUnit]);
     
     await this.persistFlashcards();
+    // 🎯 解锁系统检查点
+// await this.plugin.unlockSystem.onCardExtracted();
     return card;  // ← 必须有这一行!
-  }
+  } 
   
   // ← 添加辅助方法
   private isTableFormat(text: string): boolean {

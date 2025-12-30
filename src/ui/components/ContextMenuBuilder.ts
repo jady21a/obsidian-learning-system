@@ -54,6 +54,7 @@ export class ContextMenuBuilder {
       item
         .setTitle('💬 编辑批注')
         .setIcon('message-square')
+        
         .onClick(() => callbacks.onToggleAnnotation(unit))
     );
     

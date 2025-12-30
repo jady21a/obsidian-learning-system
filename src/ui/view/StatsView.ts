@@ -29,6 +29,8 @@ export class StatsView extends ItemView {
   }
 
   async onOpen() {
+      // 🎯 解锁系统检查点
+  await this.plugin.unlockSystem.onStatsPageVisited();
     this.render();
     this.addStyles();
   }

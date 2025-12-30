@@ -141,7 +141,13 @@ export class SidebarOverviewView extends ItemView {
     const cardCallbacks: CardCallbacks = {
       onJumpToSource: (unit) => this.jumpToSource(unit),
       onJumpToFlashcard: (card) => this.jumpToFlashcardSource(card), 
-      onToggleAnnotation: (card, unit) => this.annotationEditor.toggle(card, unit),
+      onToggleAnnotation: (card, unit) => {
+        // 🎯 添加 Lv2 权限检查
+        if (!this.plugin.unlockSystem.tryUseFeature('annotation', 'Annotation')) {
+          return;
+        }
+        this.annotationEditor.toggle(card, unit);
+      },
       onQuickFlashcard: (unit) => this.quickGenerateFlashcard(unit),
       onShowContextMenu: (event, unit) => this.showContextMenu(event, unit),
       onFlashcardContextMenu: (event, card) => this.showFlashcardContextMenu(event, card),
@@ -332,7 +338,26 @@ private renderSidebarMode(container: HTMLElement): void {
   const centerActions = statsRow.createDiv({ cls: 'stats-center' });
   this.batchActions.renderActionButtons(centerActions, 'sidebar');
   
-  // 6. 创建右侧容器(复习检查按钮)
+// 显示等级徽章
+const progress = this.plugin.unlockSystem.getProgress();
+const levelBadge = container.createDiv({ cls: 'level-badge' });
+
+// 🎯 添加等级名称映射
+const levelNames: Record<number, string> = {
+  1: '采集者',
+  2: '思考者',
+  3: '记忆师',
+  4: '训练者',
+  5: '分析师'
+};
+const levelName = levelNames[progress.currentLevel] || '';
+
+levelBadge.textContent = `Lv${progress.currentLevel} ${levelName}`;
+
+const progressText = container.createDiv({ cls: 'progress-text' });
+progressText.textContent = this.plugin.unlockSystem.getNextStepsForLevel(progress.currentLevel);
+ 
+// 6. 创建右侧容器(复习检查按钮)
   const rightActions = statsRow.createDiv({ cls: 'stats-right' });
   this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
   
@@ -809,6 +834,10 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
     onJumpToSource: (unit) => this.jumpToSource(unit),
     
     onToggleAnnotation: (unit) => {
+        // 🎯 Lv2 权限检查
+  if (!this.plugin.unlockSystem.tryUseFeature('annotation', 'Annotation')) {
+    return;
+  }
       const card = event.target as HTMLElement;
       const cardEl = card.closest('.compact-card, .grid-card') as HTMLElement;
       if (cardEl) {

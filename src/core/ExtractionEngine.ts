@@ -3,12 +3,14 @@ import { App, TFile, Notice, Editor, Menu } from 'obsidian';
 import { DataManager, ContentUnit } from './DataManager';
 import { FlashcardManager } from './FlashcardManager';
 import { SidebarOverviewView } from '../ui/view/SidebarOverviewView';
+import type LearningSystemPlugin from 'src/main';
 
 export class ExtractionEngine {
   constructor(
     private app: App,
     private dataManager: DataManager,
-    private flashcardManager: FlashcardManager 
+    private flashcardManager: FlashcardManager ,
+    private plugin?: LearningSystemPlugin 
   ) {}
 
   
@@ -104,6 +106,11 @@ export class ExtractionEngine {
           
         } catch (error) {
           console.error('[extractSelectedText] 创建闪卡失败:', error);
+        }
+      } else if (extractType === 'text') {
+        // 🎯 纯文本提取也算作提取任务
+        if (this.plugin?.unlockSystem) {
+          await this.plugin.unlockSystem.onCardExtracted();
         }
       }
       
@@ -375,8 +382,8 @@ export class ExtractionEngine {
     
     // 1️⃣ 先提取所有 units（不创建闪卡）
     const qaUnits = this.extractQACards(file, content);
-    const clozeUnits = this.extractClozeCards(file, content);
-    
+    const clozeUnits = await this.extractClozeCards(file, content);
+
     const allExtractedUnits = [...qaUnits, ...clozeUnits];
     
     // 2️⃣ 🆕 过滤重复的 units
@@ -510,13 +517,11 @@ export class ExtractionEngine {
       
       // ✅ 跳过任务完成标记
       if (this.isTaskCompletion(fullMatch)) {
-        console.log('[extractQACards] 跳过任务标记:', fullMatch);
         continue;
       }
       
       // ✅ 跳过日期时间字段
       if (this.isDateTimeField(question, answer)) {
-        console.log('[extractQACards] 跳过日期时间字段:', fullMatch);
         continue;
       }
       
@@ -578,7 +583,6 @@ export class ExtractionEngine {
       
   //     // ✅ 跳过 Excalidraw 高亮
   //     if (this.isExcalidrawHighlight(extractedText, currentLine)) {
-  //       console.log('[extractClozeCards] 跳过 Excalidraw 高亮:', extractedText);
   //       continue;
   //     }
       
@@ -846,8 +850,7 @@ const actualSeparatorIndex = separatorIndex !== -1 ? separatorIndex : 1;
   });
   return result.join('\n');
 }
-
-private extractClozeCards(file: TFile, content: string): ContentUnit[] {
+private async extractClozeCards(file: TFile, content: string): Promise<ContentUnit[]> {
   const units: ContentUnit[] = [];
   const highlightRegex = /==(.+?)==/g;
   const processedTables = new Set<string>(); // 记录已处理的表格
@@ -871,7 +874,6 @@ private extractClozeCards(file: TFile, content: string): ContentUnit[] {
     
     // ✅ 跳过 Excalidraw 高亮
     if (this.isExcalidrawHighlight(extractedText, currentLine)) {
-      console.log('[extractClozeCards] 跳过 Excalidraw 高亮:', extractedText);
       continue;
     }
     
@@ -967,7 +969,11 @@ if (!hasSeparator && extractedLines.length >= 2) {
         };
         
         units.push(unit);
-        console.log(`[extractClozeCards] 提取表格: ${tableInfo.highlightCount} 个高亮`);
+
+// 🎯 解锁系统检查点 - 扫描到表格
+if (this.plugin?.unlockSystem) {
+  await this.plugin.unlockSystem.onTableScanned();
+}
         continue;
       }
     }

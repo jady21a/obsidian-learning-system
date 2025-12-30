@@ -1,3 +1,4 @@
+// main.ts
 import { Plugin, TFile, WorkspaceLeaf, Notice, MarkdownView } from 'obsidian';
 import { SettingsTab } from './ui/view/SettingsTab';
 import { SidebarOverviewView, VIEW_TYPE_SIDEBAR_OVERVIEW, VIEW_TYPE_MAIN_OVERVIEW  } from './ui/view/SidebarOverviewView';
@@ -8,6 +9,7 @@ import { ExtractionEngine } from './core/ExtractionEngine';
 import { AnnotationManager } from './core/AnnotationManager';
 import { FlashcardManager } from './core/FlashcardManager';
 import { AnalyticsEngine } from './core/AnalyticsEngine';
+import { UnlockSystem } from './core/UnlockSystem';
 
 interface LearningSystemSettings {
   extractionEnabled: boolean;
@@ -28,34 +30,41 @@ export default class LearningSystemPlugin extends Plugin {
   annotationManager: AnnotationManager;
   flashcardManager: FlashcardManager;
   analyticsEngine: AnalyticsEngine;
+  unlockSystem: UnlockSystem;
+
 
   async onload() {
     console.log('Loading Learning System Plugin');
-
+  
     await this.loadSettings();
-
-    // 初始化核心模块
+  
+    // 🔥 1. 最优先:初始化解锁系统
+    this.unlockSystem = new UnlockSystem(this.app, this);
+    await this.unlockSystem.initialize();
+    console.log(`[UnlockSystem] 当前等级: Lv${this.unlockSystem.getCurrentLevel()}`);
+  
+    // 2. 初始化核心模块
     this.dataManager = new DataManager(this.app, this);
     await this.dataManager.initialize();
-
+  
     this.annotationManager = new AnnotationManager(this.app, this);
     await this.annotationManager.initialize();
-
+  
     this.flashcardManager = new FlashcardManager(
       this.app,
       this.dataManager,
       this
     );
     await this.flashcardManager.initialize();
-    
-
+  
     this.extractionEngine = new ExtractionEngine(
       this.app,
       this.dataManager,
-      this.flashcardManager
+      this.flashcardManager,
+      this
     );
-
-    // 注册视图
+  
+    // 3. 注册视图
     this.registerView(
       VIEW_TYPE_SIDEBAR_OVERVIEW,
       (leaf) => new SidebarOverviewView(leaf, this, false)
@@ -65,17 +74,17 @@ export default class LearningSystemPlugin extends Plugin {
       VIEW_TYPE_MAIN_OVERVIEW,
       (leaf) => new SidebarOverviewView(leaf, this, true)
     );
-
+  
     this.registerView(
       VIEW_TYPE_REVIEW,
       (leaf) => new ReviewView(leaf, this)
     );
-
+  
     this.registerView(
       VIEW_TYPE_STATS,
       (leaf) => new StatsView(leaf, this)
     );
-
+  
     this.registerEvent(
       this.app.workspace.on('editor-menu', (menu, editor, view) => {
         if (view instanceof MarkdownView) {
@@ -86,23 +95,29 @@ export default class LearningSystemPlugin extends Plugin {
         }
       })
     );
+  
     this.addSettingTab(new SettingsTab(this.app, this));
+    
+    // 🔥 4. 现在才注册命令(确保 unlockSystem 已就绪)
     this.addCommands();
-
-    // Ribbon 图标
+  
+    // 5. Ribbon 图标(带权限检查)
     this.addRibbonIcon('layout-list', 'Open Learning Overview(Sidebar)', () => {
       this.activateSidebarOverview();
     });
-
+  
     this.addRibbonIcon('layers', 'Start Review', () => {
+      if (!this.unlockSystem.tryUseFeature('review-page', 'Start Review')) {
+        return;
+      }
       this.activateReview();
     });
-
-    // 状态栏 - 显示待复习数量
+  
+    // 6. 状态栏
     this.setupStatusBar();
     
     this.analyticsEngine = new AnalyticsEngine(this);
-
+  
     console.log('Learning System Plugin loaded');
   }
 
@@ -132,6 +147,10 @@ export default class LearningSystemPlugin extends Plugin {
       id: 'scan-current-file',
       name: 'Scan current file for content',
       callback: async () => {
+            // 🎯 权限检查
+    if (!this.unlockSystem.tryUseFeature('scan-file', 'Scan Current File')) {
+      return;
+    }
         const activeFile = this.app.workspace.getActiveFile();
         if (!activeFile) return;
         await this.extractionEngine.scanFile(activeFile);
@@ -143,6 +162,10 @@ export default class LearningSystemPlugin extends Plugin {
       id: 'scan-vault',
       name: 'Scan entire vault',
       callback: async () => {
+            // 🎯 权限检查
+    if (!this.unlockSystem.tryUseFeature('scan-vault', 'Scan Entire Vault')) {
+      return;
+    }
         await this.extractionEngine.scanVault();
         this.refreshOverview();
       }
@@ -160,6 +183,10 @@ export default class LearningSystemPlugin extends Plugin {
       id: 'open-main-overview',
       name: 'Toggle Learning Overview (Main View)',
       callback: async () => {
+                    // 🎯 权限检查
+    if (!this.unlockSystem.tryUseFeature('open-main- overview', 'Toggle Learning Overview (Main View)')) {
+      return;
+    }
         await this.toggleMainView();
       }
     });
@@ -168,6 +195,10 @@ export default class LearningSystemPlugin extends Plugin {
       id: 'add-file-annotation',
       name: 'Add file annotation',
       callback: async () => {
+           // 🎯 权限检查
+    if (!this.unlockSystem.tryUseFeature('annotation', 'File Annotation')) {
+      return;
+    }
         const activeFile = this.app.workspace.getActiveFile();
         if (!activeFile) return;
 
@@ -186,6 +217,10 @@ export default class LearningSystemPlugin extends Plugin {
       id: 'start-review',
       name: 'Start flashcard review',
       callback: () => {
+            // 🎯 权限检查
+    if (!this.unlockSystem.tryUseFeature('review-page', 'Flashcard Review')) {
+      return;
+    }
         this.activateReview();
       }
     });
@@ -194,6 +229,11 @@ export default class LearningSystemPlugin extends Plugin {
       id: 'show-stats',
       name: 'Show flashcard statistics',
       callback: () => {
+            // 🎯 权限检查
+    if (!this.unlockSystem.tryUseFeature('stats-page', 'Statistics')) {
+      return;
+    }
+
         this.activateStats();
       }
     });

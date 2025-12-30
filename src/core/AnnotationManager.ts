@@ -77,7 +77,8 @@ export class AnnotationManager {
 
     this.annotations.set(annotation.id, annotation);
     await this.persist();
-
+// 🎯 解锁系统检查点
+await this.plugin.unlockSystem.onAnnotationCompleted();
     // 更新 ContentUnit 关联
     const contentUnit = this.plugin.dataManager.getContentUnit(contentUnitId);
     if (contentUnit) {
@@ -110,6 +111,9 @@ export class AnnotationManager {
     this.annotations.set(annotation.id, annotation);
     await this.persist();
 
+
+// 🎯 解锁系统检查点
+await this.plugin.unlockSystem.onAnnotationCompleted();
     return annotation;
   }
 

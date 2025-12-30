@@ -477,7 +477,9 @@ export class ReviewView extends ItemView {
       id: `log-${Date.now()}`,
       ...reviewLog
     });
-  
+  // 🎯 解锁系统检查点
+await this.plugin.unlockSystem.onCardReviewed();
+
     // ✅ 提交后清除该卡片的答案缓存
     this.stateManager.clearCache(this.currentCard.id);
     
