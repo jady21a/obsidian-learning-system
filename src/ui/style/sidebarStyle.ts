@@ -1204,6 +1204,14 @@ export class StyleLoader {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
+
+/* 卡片中表格的完形填空高亮 - 橙色 */
+.learning-system-table .card-cloze-highlight {
+  background-color: rgba(255, 140, 0, 0.25);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 500;
+}
   }
       `;
     }

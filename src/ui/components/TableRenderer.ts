@@ -118,19 +118,19 @@ export class TableRenderer {
     return cells;
   }
 
-  // 处理单元格内容
-  private static processCellContent(cell: string, showAnswer: boolean): string {
-    if (!cell.includes('==')) {
-      return cell;
-    }
-    if (showAnswer) {
-      const result = cell.replace(/==([^=]+)==/g, '<span class="revealed">$1</span>');
-      return result;
-    } else {
-      const result = cell.replace(/==([^=]+)==/g, '<span class="cloze-blank"></span>');
-      return result;
-    }
+// 处理单元格内容
+private static processCellContent(cell: string, showAnswer: boolean): string {
+  if (!cell.includes('==')) {
+    return cell;
   }
+  if (showAnswer) {
+    const result = cell.replace(/==([^=]+)==/g, '<span class="revealed">$1</span>');
+    return result;
+  } else {
+    const result = cell.replace(/==([^=]+)==/g, '<span class="cloze-blank"></span>');
+    return result;
+  }
+}
 
   // 渲染带用户答案的表格（完形填空用）
   static renderTableWithUserAnswers(

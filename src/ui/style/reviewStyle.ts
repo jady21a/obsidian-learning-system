@@ -75,8 +75,8 @@ export class reviewStyle {
       }
 
       .progress-text {
-        font-weight: 600;
-        font-size: 1em;
+        font-weight: 300;
+        font-size: 0.9em;
       }
 
       .bar-container {
@@ -779,7 +779,13 @@ export class reviewStyle {
   border-radius: 3px;
 }
 
-
+/* 卡片中表格的完形填空高亮 - 橙色 */
+.learning-system-table .card-cloze-highlight {
+  background-color: rgba(255, 140, 0, 0.25);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 500;
+}
 `
       ;
 }

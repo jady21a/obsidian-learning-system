@@ -273,7 +273,7 @@ export class UnlockSystem {
       case 4:
         return `📋 扫描添加表格: ${stats.tablesScanned}/2\n📊 访问统计页: ${stats.statsPageVisited ? '✓' : '✗'}\n 📈 总使用天数: ${stats.totalDays}/21`;
         case 5:
-            return `🎉 成功解锁所有功能!\n\n智囊团尚未解锁\n达到人数与段位条件后自动开放\n🔗 <a href="https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%8A%E5%9B%A2">了解智囊团（点击查看）</a>`;
+            return `🎉 成功解锁所有功能!\n\n智囊团尚未开放\n达到人数与段位条件后自动开放\n🔗 <a href="https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%8A%E5%9B%A2">了解智囊团（点击查看）</a>`;
           default:
         return '';
     }

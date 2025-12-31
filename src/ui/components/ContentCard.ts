@@ -432,8 +432,12 @@ private renderTableWithHighlights(container: HTMLElement, markdown: string): voi
     const th = headerRow.createEl('th');
     
     if (cell.includes('==')) {
-      const processed = cell.replace(/==([^=]+)==/g, '<mark>$1</mark>');
+      const processed = cell.replace(
+        /==([^=]+)==/g, 
+        '<span style="background-color: rgba(255, 140, 0, 0.25); padding: 2px 4px; border-radius: 3px; font-weight: 500;">$1</span>'
+      );
       th.innerHTML = processed;
+
     } else {
       th.textContent = cell;
     }
@@ -455,7 +459,10 @@ private renderTableWithHighlights(container: HTMLElement, markdown: string): voi
       const td = row.createEl('td');
       
       if (cell.includes('==')) {
-        const processed = cell.replace(/==([^=]+)==/g, '<mark>$1</mark>');
+        const processed = cell.replace(
+          /==([^=]+)==/g, 
+          '<span style="background-color: rgba(255, 140, 0, 0.25); padding: 2px 4px; border-radius: 3px; font-weight: 500;">$1</span>'
+        );
         td.innerHTML = processed;
       } else {
         td.textContent = cell;
@@ -467,3 +474,4 @@ private renderTableWithHighlights(container: HTMLElement, markdown: string): voi
 }
   
 
+ 
