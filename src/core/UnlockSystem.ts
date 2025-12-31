@@ -1,5 +1,5 @@
 // src/core/UnlockSystem.ts
-import { App, Notice } from 'obsidian';
+import { App, Notice,Modal } from 'obsidian';
 import type LearningSystemPlugin from '../main';
 
 export type UserLevel = 1 | 2 | 3 | 4 | 5;
@@ -145,11 +145,8 @@ export class UnlockSystem {
     
     console.log(`[UnlockSystem] ❌ ${feature} 需要 Lv${requiredLevel}, 当前 Lv${this.progress.currentLevel}`);
     
-    new Notice(
-      `🔒 "${featureName}" 需要 Lv${requiredLevel} 解锁\n\n` +
-      `当前进度:\n${nextSteps}`,
-      8000
-    );
+    // 使用 Modal 替代 Notice
+    new UnlockNoticeModal(this.app, featureName, requiredLevel, nextSteps).open();
     
     return false;
   }
@@ -265,24 +262,19 @@ export class UnlockSystem {
 
   getNextStepsForLevel(level: UserLevel): string {
     const stats = this.progress.stats;
-
+  
     switch (level) {
       case 1:
-        return `📊 提取卡片: ${stats.cardsExtracted}/10`;
+        return `📦 提取卡片: ${stats.cardsExtracted}/10`;
       case 2:
         return `📝 完成批注: ${stats.annotationsCompleted}/5`;
       case 3:
-        return `🔄 复习卡片: ${stats.cardsReviewed}/10\n📋 扫描添加表格: ${stats.tablesScanned}/2`;
+        return `🔄 复习卡片: ${stats.cardsReviewed}/30\n🔥 连续使用天数: ${stats.consecutiveDays}/7`;
       case 4:
-        return (
-          `🔄 复习卡片: ${stats.cardsReviewed}/70\n` +
-          `📅 连续天数: ${stats.consecutiveDays}/7\n` +
-          `📈 总使用天数: ${stats.totalDays}/21\n` +
-          `📊 访问统计页: ${stats.statsPageVisited ? '✓' : '✗'}`
-        );
-      case 5:
-        return '🎉 已完成所有等级!';
-      default:
+        return `📋 扫描添加表格: ${stats.tablesScanned}/2\n📊 访问统计页: ${stats.statsPageVisited ? '✓' : '✗'}\n 📈 总使用天数: ${stats.totalDays}/21`;
+        case 5:
+            return `🎉 成功解锁所有功能!\n\n智囊团尚未解锁\n达到人数与段位条件后自动开放\n🔗 <a href="https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%8A%E5%9B%A2">了解智囊团（点击查看）</a>`;
+          default:
         return '';
     }
   }
@@ -358,3 +350,47 @@ export class UnlockSystem {
     };
   }
 }
+
+class UnlockNoticeModal extends Modal {
+    constructor(
+      app: App,
+      private featureName: string,
+      private requiredLevel: number,
+      private nextSteps: string
+    ) {
+      super(app);
+    }
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        
+        contentEl.createEl('h2', { text: '🔒 功能未解锁' });
+        contentEl.createEl('p', { 
+          text: `"${this.featureName}" 需要 Lv${this.requiredLevel} 解锁` 
+        });
+        
+        contentEl.createEl('h3', { text: '当前进度:' });
+        
+        // 创建容器并设置样式
+        const container = contentEl.createDiv();
+        container.style.padding = '10px';
+        container.style.backgroundColor = 'var(--background-secondary)';
+        container.style.borderRadius = '5px';
+        container.style.lineHeight = '1.8';
+        
+    // 使用 innerHTML 直接插入带 <br> 的 HTML
+    container.innerHTML = this.nextSteps.replace(/\n/g, '<br>');
+
+    // 添加分隔线 - 直接在 container 后面
+    const divider = contentEl.createEl('div');
+    divider.style.width = '100%';
+    divider.style.height = '2px';
+    divider.style.backgroundColor = '#666';
+    divider.style.margin = '20px 0';
+      
+    }
+    onClose() {
+      const { contentEl } = this;
+      contentEl.empty();
+    }
+  }

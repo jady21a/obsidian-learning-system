@@ -342,7 +342,6 @@ private renderSidebarMode(container: HTMLElement): void {
 const progress = this.plugin.unlockSystem.getProgress();
 const levelBadge = container.createDiv({ cls: 'level-badge' });
 
-// 🎯 添加等级名称映射
 const levelNames: Record<number, string> = {
   1: '采集者',
   2: '思考者',
@@ -353,13 +352,21 @@ const levelNames: Record<number, string> = {
 const levelName = levelNames[progress.currentLevel] || '';
 
 levelBadge.textContent = `Lv${progress.currentLevel} ${levelName}`;
+levelBadge.style.fontSize = '1em'; // 设置等级徽章字体大小
 
 const progressText = container.createDiv({ cls: 'progress-text' });
-progressText.textContent = this.plugin.unlockSystem.getNextStepsForLevel(progress.currentLevel);
- 
+progressText.innerHTML = this.plugin.unlockSystem.getNextStepsForLevel(progress.currentLevel).replace(/\n/g, '<br>');
+progressText.style.fontSize = '0.93em'; // 设置进度文本字体大小
+// 添加第一条分隔线
+const divider = container.createDiv({ cls: 'level-divider' });
+divider.style.width = 'calc(100% - 24px)'; // 左右各留12px空白
+divider.style.height = '1px';
+divider.style.backgroundColor = 'var(--background-modifier-border)';
+divider.style.margin = '12px auto'; // 使用 auto 水平居中
 // 6. 创建右侧容器(复习检查按钮)
   const rightActions = statsRow.createDiv({ cls: 'stats-right' });
   this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
+
   
   // 7. 创建内容列表容器
   const contentListEl = container.createDiv({ cls: 'sidebar-content-list' });
@@ -1071,6 +1078,19 @@ private insertReviewReminderAtTop(container: HTMLElement): void {
   
   const banner = this.createReviewBanner(dueCount);
   container.insertBefore(banner, container.firstChild);
+    // 在 banner 后面添加第二条分隔线
+    const divider2 = document.createElement('div');
+    divider2.className = 'review-divider';
+    divider2.style.width = '100%';
+    divider2.style.height = '1px';
+    divider2.style.backgroundColor = 'var(--background-modifier-border)';
+    divider2.style.margin = '12px 0';
+    
+    if (banner.nextSibling) {
+      container.insertBefore(divider2, banner.nextSibling);
+    } else {
+      container.appendChild(divider2);
+    }
 }
 
 
@@ -1124,28 +1144,36 @@ private createReviewBanner(count: number): HTMLElement {
   const streakDays = this.getReviewStreak();
   
   banner.innerHTML = `
-    <div class="reminder-header">
-      <div class="reminder-text">
-        <strong>今日复习任务</strong>  
+  <div class="reminder-header">
+    <div class="reminder-text">
+      <strong>今日复习:${reviewedToday} / ${totalToday}</strong>  
+    </div>
+  </div>
+  
+  <div class="reminder-stats">
+    <div class="stat-item delay-warning">
+      ${delayText}
+    </div>
+    ${streakDays > 0 ? `
+      <div class="stat-item streak-info">
+        🔥 连续复习第 ${streakDays} 天!
       </div>
-      <div class="progress-text">${reviewedToday} / ${totalToday}</div>
-    </div>
-    
-    <div class="reminder-stats">
-      <div class="stat-item delay-warning">
-        ${delayText}
-      </div>
-      ${streakDays > 0 ? `
-        <div class="stat-item streak-info">
-          🔥 连续复习第 ${streakDays} 天!
-        </div>
-      ` : ''}
-    </div>
-    
-    <div class="reminder-actions">
-      <button class="reminder-btn primary">开始复习</button>
-    </div>
-  `;
+    ` : ''}
+  </div>
+  
+  <div class="reminder-actions">
+    <button class="reminder-btn primary">开始复习</button>
+  </div>
+`;
+
+// 设置字体大小
+banner.style.fontSize = '0.85em';
+// 设置按钮居中
+const actions = banner.querySelector('.reminder-actions') as HTMLElement;
+if (actions) {
+  actions.style.display = 'flex';
+  actions.style.justifyContent = 'center';
+}
   
   banner.querySelector('.primary')!.addEventListener('click', () => {
     this.startReview();
