@@ -1,5 +1,6 @@
 // src/ui/SidebarOverviewView.ts - 重构后版本
 import { StyleLoader } from '../style/sidebarStyle'
+import { reviewStyle } from '../style/reviewStyle';
 
 import { QuickFlashcardCreator } from '../../core/QuickFlashcardCreator';
 import { ItemView, WorkspaceLeaf, TFile, Menu, Notice, Modal, Setting, TextAreaComponent, ButtonComponent,App, MarkdownView} from 'obsidian';
@@ -99,7 +100,7 @@ export class SidebarOverviewView extends ItemView {
     // 先渲染界面
     this.render();
     StyleLoader.inject();
-    
+    reviewStyle.inject();
     // 界面渲染后再检查复习提醒
     await new Promise(resolve => setTimeout(resolve, 100));
 }
