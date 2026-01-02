@@ -39,15 +39,32 @@ export class ContentList {
 
     grouped.forEach(({ groupKey, units: groupUnits }) => {
       const groupEl = container.createDiv({ cls: 'content-group' });
-
+  
       this.renderGroupHeader(groupEl, groupKey, groupUnits.length);
-
+  
       groupUnits.forEach(unit => {
         this.cardRenderer.renderCompact(groupEl, unit);
       });
     });
   }
 
+  /**
+ * 渲染紧凑列表（侧边栏模式 - 不分组）
+ */
+renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): void {
+  const existingCards = container.querySelectorAll('.compact-card, .group-section, .empty-state');
+  existingCards.forEach(el => el.remove());
+
+  if (units.length === 0) {
+    this.renderEmptyState(container);
+    return;
+  }
+
+  // ⭐ 直接渲染，不分组
+  units.forEach(unit => {
+    this.cardRenderer.renderCompact(container, unit);
+  });
+}
   /**
    * 渲染内容网格（主界面模式）
    */

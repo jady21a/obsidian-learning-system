@@ -15,12 +15,14 @@ interface LearningSystemSettings {
   extractionEnabled: boolean;
   autoScan: boolean;
   defaultDeck: string;
+  language: 'en' | 'zh-CN'; 
 }
 
 const DEFAULT_SETTINGS: LearningSystemSettings = {
   extractionEnabled: true,
   autoScan: false,
-  defaultDeck: 'Default'
+  defaultDeck: 'Default',
+    language: 'en'
 };
 
 export default class LearningSystemPlugin extends Plugin {

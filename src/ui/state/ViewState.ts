@@ -74,7 +74,9 @@ export class ViewState {
   setGroupMode(mode: GroupMode) {
     if (this.groupMode !== mode) {
       this.groupMode = mode;
-      this.selectedFile = null;
+      if (this.displayMode !== 'sidebar') {
+        this.selectedFile = null;
+      }
       this.clearSelection();
       return true;
     }

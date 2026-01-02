@@ -1,6 +1,7 @@
 // src/core/UnlockSystem.ts
 import { App, Notice,Modal } from 'obsidian';
 import type LearningSystemPlugin from '../main';
+import { StyleLoader } from 'src/ui/style/sidebarStyle';
 
 export type UserLevel = 1 | 2 | 3 | 4 | 5;
 
@@ -272,9 +273,9 @@ export class UnlockSystem {
         return `🔄 复习卡片: ${stats.cardsReviewed}/30\n🔥 连续使用天数: ${stats.consecutiveDays}/7`;
       case 4:
         return `📋 扫描添加表格: ${stats.tablesScanned}/2\n📊 访问统计页: ${stats.statsPageVisited ? '✓' : '✗'}\n 📈 总使用天数: ${stats.totalDays}/21`;
-        case 5:
-            return `🎉 成功解锁所有功能!\n\n智囊团尚未开放\n达到人数与段位条件后开启\n🔗 <a href="https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%8A%E5%9B%A2">了解智囊团（点击查看）</a>`;
-          default:
+      case 5:
+        return `🎉 恭喜解锁所有功能!\n\n🔮 智囊团功能尚未开放\n达到人数与段位条件后开启\n🔗 <a href="https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%8A%E5%9B%A2" target="_blank">了解智囊团（点击查看）</a>`;
+            default:
         return '';
     }
   }
@@ -389,6 +390,96 @@ class UnlockNoticeModal extends Modal {
     divider.style.margin = '20px 0';
       
     }
+    onClose() {
+      const { contentEl } = this;
+      contentEl.empty();
+    }
+    
+  }
+  export class LevelInfoModal extends Modal {
+    constructor(
+      app: App,
+      private progress: UnlockProgress,
+      private unlockSystem: UnlockSystem
+    ) {
+      super(app);
+    }
+    
+    onOpen() {
+      const { contentEl } = this;
+      contentEl.empty();
+      contentEl.addClass('level-info-modal');
+      
+      // 标题
+      const levelNames: Record<number, string> = {
+        1: '采集者',
+        2: '思考者',
+        3: '记忆师', 
+        4: '训练者',
+        5: '分析师'
+      };
+      
+      contentEl.createEl('h2', { 
+        text: `🏆 Lv${this.progress.currentLevel} ${levelNames[this.progress.currentLevel]}`
+      });
+      
+      // 进度信息
+      const progressSection = contentEl.createDiv({ cls: 'progress-section' });
+      
+      const progressBox = progressSection.createDiv({ cls: 'progress-box' });
+      const progressText = this.unlockSystem.getNextStepsForLevel(this.progress.currentLevel);
+      progressBox.innerHTML = progressText.replace(/\n/g, '<br>');
+      
+      // 统计信息
+      const statsSection = contentEl.createDiv({ cls: 'stats-section' });
+      statsSection.createEl('h4', { text: '累计统计' });
+      
+      const statsGrid = statsSection.createDiv({ cls: 'stats-grid' });
+      
+      const stats = [
+        { icon: '📦', label: '提取卡片', value: this.progress.stats.cardsExtracted },
+        { icon: '📝', label: '完成批注', value: this.progress.stats.annotationsCompleted },
+        { icon: '🔄', label: '复习卡片', value: this.progress.stats.cardsReviewed },
+        { icon: '📋', label: '扫描表格', value: this.progress.stats.tablesScanned },
+        { icon: '🔥', label: '连续天数', value: this.progress.stats.consecutiveDays },
+        { icon: '📅', label: '总使用天数', value: this.progress.stats.totalDays }
+      ];
+      
+      stats.forEach(stat => {
+        const item = statsGrid.createDiv({ cls: 'stat-item' });
+        item.innerHTML = `
+          <span class="stat-icon">${stat.icon}</span>
+          <span class="stat-label">${stat.label}</span>
+          <span class="stat-value">${stat.value}</span>
+        `;
+      });
+      
+      // 里程碑
+      if (this.progress.milestones.length > 0) {
+        const milestonesSection = contentEl.createDiv({ cls: 'milestones-section' });
+        milestonesSection.createEl('h4', { text: '🎯 成就里程碑' 
+          });
+        
+        const milestonesList = milestonesSection.createDiv({ cls: 'milestones-list' });
+        
+        this.progress.milestones
+          .slice()
+          .reverse()
+          .forEach((milestone) => {
+            const item = milestonesList.createDiv({ cls: 'milestone-item' });
+            const date = new Date(milestone.unlockedAt).toLocaleDateString('zh-CN');
+            item.innerHTML = `
+              <div class="milestone-message">${date} ${milestone.message} </div>
+            `;
+          });
+      }
+      
+    //   // 关闭按钮
+    //   const footer = contentEl.createDiv({ cls: 'modal-footer' });
+    //   const closeBtn = footer.createEl('button', { text: '关闭' });
+    //   closeBtn.addEventListener('click', () => this.close());
+    }
+    
     onClose() {
       const { contentEl } = this;
       contentEl.empty();

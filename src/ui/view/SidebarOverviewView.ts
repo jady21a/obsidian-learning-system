@@ -1,6 +1,7 @@
 // src/ui/SidebarOverviewView.ts - 重构后版本
 import { StyleLoader } from '../style/sidebarStyle'
 import { reviewStyle } from '../style/reviewStyle';
+import { t } from '../../i18n/translations';
 
 import { QuickFlashcardCreator } from '../../core/QuickFlashcardCreator';
 import { ItemView, WorkspaceLeaf, TFile, Menu, Notice, Modal, Setting, TextAreaComponent, ButtonComponent,App, MarkdownView} from 'obsidian';
@@ -24,6 +25,8 @@ import {
   FlashcardMenuCallbacks 
 } from '../components/ContextMenuBuilder';
 import { BatchCreateModal } from '../components/modals/BatchCreateModal';
+import { LevelInfoModal ,UnlockProgress} from '../../core/UnlockSystem'
+
 
 export const VIEW_TYPE_SIDEBAR_OVERVIEW = 'learning-system-sidebar-overview';
 export const VIEW_TYPE_MAIN_OVERVIEW = 'learning-system-main-overview';
@@ -124,8 +127,11 @@ export class SidebarOverviewView extends ItemView {
       onSearchChange: (query) => this.handleSearchChange(query),
       onFilterChange: (mode) => this.handleFilterChange(mode),
       onGroupChange: (mode) => this.handleGroupChange(mode),
-      onCheckReview: () => this.checkReviewReminder()
-    });
+      onCheckReview: () => this.checkReviewReminder(),
+
+      checkFilterHasNotes: (mode) => this.checkFilterHasNotes(mode),
+      checkGroupHasNotes: (mode) => this.checkGroupHasNotes(mode)
+    }, this.plugin.settings.language); 
     
     
     // 批量操作回调
@@ -136,7 +142,7 @@ export class SidebarOverviewView extends ItemView {
       onBatchDelete: () => this.handleBatchDelete(),
       onCancel: () => this.handleBatchCancel()
     };
-    this.batchActions = new BatchActions(this.state, batchCallbacks,this.toolbar);
+    this.batchActions = new BatchActions(this.state, batchCallbacks,this.toolbar,  this.plugin.settings.language);
     
     // 卡片回调
     const cardCallbacks: CardCallbacks = {
@@ -326,10 +332,11 @@ private renderSidebarMode(container: HTMLElement): void {
   }
   
   // 3. 获取可见项目
-  const visibleItems = this.getVisibleItems();
+  const currentFileUnits = this.getFilteredUnits(); 
   const items = this.state.viewType === 'cards' 
-    ? (visibleItems.cards || []) 
-    : (visibleItems.units || []);
+    ? this.getFilteredCardsForCurrentFile() 
+    : currentFileUnits;
+  
   
   // 4. 创建左侧容器(全选按钮)
   const leftActions = statsRow.createDiv({ cls: 'stats-left' });
@@ -339,43 +346,54 @@ private renderSidebarMode(container: HTMLElement): void {
   const centerActions = statsRow.createDiv({ cls: 'stats-center' });
   this.batchActions.renderActionButtons(centerActions, 'sidebar');
   
-// 显示等级徽章
+// 显示等级徽章（Lv1-Lv4 始终显示，Lv5 显示30分钟后隐藏）
 const progress = this.plugin.unlockSystem.getProgress();
-const levelBadge = container.createDiv({ cls: 'level-badge' });
+const shouldShowFullBadge = this.shouldShowFullLevelBadge(progress);
 
-const levelNames: Record<number, string> = {
-  1: '采集者',
-  2: '思考者',
-  3: '记忆师',
-  4: '训练者',
-  5: '分析师'
-};
-const levelName = levelNames[progress.currentLevel] || '';
+if (shouldShowFullBadge) {
+  const levelBadge = container.createDiv({ cls: 'level-badge' });
 
-levelBadge.textContent = `Lv${progress.currentLevel} ${levelName}`;
-levelBadge.style.fontSize = '1em'; // 设置等级徽章字体大小
+  const levelNames: Record<number, string> = {
+    1: 'Collector',
+    2: 'Thinker',
+    3: 'Memorizer',
+    4: 'Trainer',
+    5: 'Analyst'
+  };
+  const levelName = levelNames[progress.currentLevel] || '';
 
-const progressText = container.createDiv({ cls: 'progress-text' });
-progressText.innerHTML = this.plugin.unlockSystem.getNextStepsForLevel(progress.currentLevel).replace(/\n/g, '<br>');
-progressText.style.fontSize = '0.93em'; // 设置进度文本字体大小
-// 添加第一条分隔线
-const divider = container.createDiv({ cls: 'level-divider' });
-divider.style.width = 'calc(100% - 24px)'; // 左右各留12px空白
-divider.style.height = '1px';
-divider.style.backgroundColor = 'var(--background-modifier-border)';
-divider.style.margin = '12px auto'; // 使用 auto 水平居中
-// 6. 创建右侧容器(复习检查按钮)
-  const rightActions = statsRow.createDiv({ cls: 'stats-right' });
-  this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
+  levelBadge.textContent = `Lv${progress.currentLevel} ${levelName}`;
+  levelBadge.style.fontSize = '1em';
 
+  const progressText = container.createDiv({ cls: 'progress-text' });
+  progressText.innerHTML = this.plugin.unlockSystem.getNextStepsForLevel(progress.currentLevel).replace(/\n/g, '<br>');
+  progressText.style.fontSize = '0.93em';
+  
+  // 添加第一条分隔线
+  const divider = container.createDiv({ cls: 'level-divider' });
+  divider.style.width = 'calc(100% - 24px)';
+  divider.style.height = '1px';
+  divider.style.backgroundColor = 'var(--background-modifier-border)';
+  divider.style.margin = '12px auto';
+}
+
+// 6. 创建右侧容器(等级徽章 + 复习检查按钮)
+const rightActions = statsRow.createDiv({ cls: 'stats-right' });
+
+// ⭐ Lv5 且30分钟后显示小徽章（复用上面的 progress 变量）
+if (!shouldShowFullBadge && progress.currentLevel === 5) {
+  this.renderLevelBadge(rightActions, progress);
+}
+
+this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
   
   // 7. 创建内容列表容器
   const contentListEl = container.createDiv({ cls: 'sidebar-content-list' });
   
   // 8. 先渲染内容
-  const units = this.getFilteredUnits();
-  this.contentList.renderCompactList(contentListEl, units);
-  
+  this.contentList.renderCompactList(contentListEl, currentFileUnits);
+
+
   // 9. ⭐ 渲染完成后,将提醒插入到最前面
   this.insertReviewReminderAtTop(contentListEl);
 }
@@ -501,8 +519,8 @@ divider.style.margin = '12px auto'; // 使用 auto 水平居中
   }
 
   private renderFileList(container: HTMLElement): void {
-    container.createEl('h3', { text: '📁 文档列表', cls: 'panel-title' });
-    
+    container.createEl('h3', { text: this.t('fileList.title'), cls: 'panel-title' });
+
     const fileListContainer = container.createDiv({ cls: 'file-list' });
     this.renderFileListContent(fileListContainer);
   }
@@ -532,7 +550,7 @@ divider.style.margin = '12px auto'; // 使用 auto 水平居中
     }
     
     if (grouped.length === 0) {
-      container.createDiv({ text: '暂无文档', cls: 'empty-hint' });
+      container.createDiv({ text: this.t('empty.noDocuments'), cls: 'empty-hint' });
       return;
     }
     
@@ -569,7 +587,7 @@ divider.style.margin = '12px auto'; // 使用 auto 水平居中
     const empty = container.createDiv({ cls: 'empty-right-panel' });
     empty.innerHTML = `
       <div class="empty-icon">📭</div>
-      <div class="empty-text">暂无内容</div>
+      <div class="empty-text">${this.t('empty.noContent')}</div>
     `;
   }
 
@@ -607,14 +625,14 @@ divider.style.margin = '12px auto'; // 使用 auto 水平居中
     if (this.state.viewType === 'cards') {
       const cards = visible.cards || [];
       if (cards.length === 0) {
-        new Notice('⚠️ 没有可选择的闪卡');
+        new Notice(this.t('notice.noSelection'));
         return;
       }
       this.state.selectAllCards(cards);
     } else {
       const units = visible.units || [];
       if (units.length === 0) {
-        new Notice('⚠️ 没有可选择的笔记');
+        new Notice(this.t('notice.noSelection'));
         return;
       }
       this.state.selectAllUnits(units);
@@ -637,7 +655,7 @@ divider.style.margin = '12px auto'; // 使用 auto 水平居中
 
   private handleBatchCreate(): void {
     if (this.state.selectedUnitIds.size === 0) {
-      new Notice('⚠️ 请先选择要创建闪卡的笔记');
+      new Notice(this.t('notice.noSelection'));
       return;
     }
     
@@ -647,7 +665,7 @@ divider.style.margin = '12px auto'; // 使用 auto 水平居中
 
   private handleBatchDelete(): void {
     if (this.state.getSelectedCount() === 0) {
-      new Notice('⚠️ 请先选择要删除的项目');
+      new Notice(this.t('notice.noSelection'));
       return;
     }
     
@@ -667,7 +685,11 @@ divider.style.margin = '12px auto'; // 使用 auto 水平居中
 
   private getFilteredUnits(): ContentUnit[] {
     let units = this.plugin.dataManager.getAllContentUnits();
-    
+    // 侧边栏模式：只显示当前文件的笔记
+    if (this.state.displayMode === 'sidebar' && this.state.selectedFile) {
+      units = units.filter(unit => unit.source.file === this.state.selectedFile);
+    }
+
     // 搜索过滤
     if (this.state.searchQuery) {
       const query = this.state.searchQuery.toLowerCase();
@@ -685,10 +707,7 @@ divider.style.margin = '12px auto'; // 使用 auto 水平居中
       units = units.filter(u => u.flashcardIds.length > 0);
     }
     
-    // 侧边栏模式：只显示当前文件的笔记
-    if (this.state.displayMode === 'sidebar' && this.state.selectedFile) {
-      units = units.filter(unit => unit.source.file === this.state.selectedFile);
-    }
+
     
     return units;
   }
@@ -779,7 +798,7 @@ private async jumpToFlashcardSource(card: Flashcard): Promise<void> {
     }
     const file = this.app.vault.getAbstractFileByPath(card.sourceFile);
     if (!(file instanceof TFile)) {
-      new Notice('❌ 源文件不存在');
+      new Notice(this.t('notice.fileNotFound'));
       return;
     }
     
@@ -817,10 +836,10 @@ private async jumpToFlashcardSource(card: Flashcard): Promise<void> {
       }
     }
     
-    new Notice('✅ 已跳转到源文件');
+    new Notice(this.t('notice.jumpedToSource'));
   } catch (error) {
     console.error('Error jumping to flashcard source:', error);
-    new Notice('❌ 跳转失败');
+    new Notice(this.t('notice.jumpFailed'));
   }
 }
 
@@ -859,7 +878,8 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
       if (card) {
         new EditFlashcardModal(this.app, this.plugin, card).open();
       } else {
-        new Notice('⚠️ 找不到对应的闪卡');
+        new Notice(this.t('notice.flashcardNotFound'));
+
       }
     },
     
@@ -878,14 +898,14 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
     },
     
     onDelete: async (unit) => {
-      if (confirm('确定要删除这条笔记吗？')) {
+      if (confirm(this.t('confirm.deleteNote'))) {
         if (unit.flashcardIds.length > 0) {
           for (const cardId of unit.flashcardIds) {
             await this.plugin.flashcardManager.deleteCard(cardId);
           }
         }
         await this.plugin.dataManager.deleteContentUnit(unit.id);
-        new Notice('🗑️ 笔记已删除');
+        new Notice(this.t('notice.deleted'));
         this.refresh();
       }
     }
@@ -918,10 +938,9 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
       },
       
       onDelete: async (card) => {
-        if (confirm('确定要删除这张闪卡吗？')) {
+        if (confirm(this.t('confirm.deleteFlashcard'))) {
           await this.plugin.flashcardManager.deleteCard(card.id);
-          new Notice('🗑️ 闪卡已删除');
-          this.refresh();
+          new Notice(this.t('notice.deleted'));
         }
       }
     };
@@ -943,7 +962,8 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
       .filter(u => u !== undefined && u.flashcardIds.length === 0) as ContentUnit[];
     
     if (units.length === 0) {
-      new Notice('⚠️ 选中的笔记都已创建过闪卡');
+      new Notice(this.t('notice.alreadyHasFlashcards'));
+
       return;
     }
     
@@ -963,7 +983,8 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
   }
 
   private async batchDeleteNotes(): Promise<void> {
-    if (!confirm(`确定要删除选中的 ${this.state.selectedUnitIds.size} 条笔记吗？`)) {
+    if (!confirm(this.t('confirm.batchDeleteNotes', { count: this.state.selectedUnitIds.size }))) {
+
       return;
     }
     
@@ -972,12 +993,13 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
     );
     
     this.state.clearSelection();
-    new Notice(`✅ 已删除 ${success} 条笔记${failed > 0 ? `，${failed} 条失败` : ''}`);
+    new Notice(this.t('notice.batchDeleted', { success, failed: failed > 0 ? failed : 0 }));
+
     this.refresh();
   }
 
   private async batchDeleteFlashcards(): Promise<void> {
-    if (!confirm(`确定要删除选中的 ${this.state.selectedCardIds.size} 张闪卡吗？`)) {
+    if (!confirm(this.t('confirm.batchDeleteFlashcards', { count: this.state.selectedCardIds.size }))) {
       return;
     }
     
@@ -995,7 +1017,7 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
     }
     
     this.state.clearSelection();
-    new Notice(`✅ 已删除 ${success} 张闪卡${failed > 0 ? `，${failed} 张失败` : ''}`);
+    new Notice(this.t('notice.batchDeleted', { success, failed: failed > 0 ? failed : 0 }));
     this.refresh();
   }
 
@@ -1010,6 +1032,57 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
     }
   }
 
+private getFilteredCardsForCurrentFile(): Flashcard[] {
+  if (this.state.displayMode !== 'sidebar' || !this.state.selectedFile) {
+    return [];
+  }
+  
+  const flashcards = this.plugin.flashcardManager.getAllFlashcards();
+  return flashcards.filter(card => card.sourceFile === this.state.selectedFile);
+}
+private checkFilterHasNotes(mode: FilterMode): boolean {
+  // 只在侧边栏模式下检查当前文件
+  if (this.state.displayMode !== 'sidebar' || !this.state.selectedFile) {
+    return true;
+  }
+  
+  const units = this.plugin.dataManager.getAllContentUnits()
+    .filter(u => u.source.file === this.state.selectedFile);
+  
+  if (mode === 'all') {
+    return units.length > 0;
+  } else if (mode === 'annotated') {
+    return units.some(u => u.annotationId);
+  } else if (mode === 'flashcards') {
+    return units.some(u => u.flashcardIds.length > 0);
+  }
+  
+  return true;
+}
+
+private checkGroupHasNotes(mode: GroupMode): boolean {
+  // 只在侧边栏模式下检查
+  if (this.state.displayMode !== 'sidebar' || !this.state.selectedFile) {
+    return true;
+  }
+  
+  const units = this.plugin.dataManager.getAllContentUnits()
+    .filter(u => u.source.file === this.state.selectedFile);
+  
+  if (units.length === 0) return false;
+  
+  if (mode === 'file') {
+    return true; // 文件分组始终可用
+  } else if (mode === 'tag') {
+    return units.some(u => u.metadata.tags.length > 0);
+  } else if (mode === 'date') {
+    return true; // 日期分组始终可用
+  } else if (mode === 'annotation') {
+    return units.some(u => u.annotationId);
+  }
+  
+  return true;
+}
   private getGroupIcon(): string {
     switch (this.state.groupMode) {
       case 'file': return '📄';
@@ -1030,6 +1103,45 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
   
   }
 
+// ==================== 等级徽章显示 ====================
+
+/**
+ * 判断是否显示完整的等级徽章
+ * Lv1-4: 始终显示
+ * Lv5: 达成后30分钟内显示，之后隐藏
+ */
+private shouldShowFullLevelBadge(progress: UnlockProgress): boolean {
+  if (progress.currentLevel < 5) {
+    return true;
+  }
+  
+  // Lv5: 检查是否在30分钟内
+  const lv5UnlockedTime = progress.levelUnlockedAt[5];
+  if (!lv5UnlockedTime) {
+    return false;
+  }
+  
+  const now = Date.now();
+  const thirtyMinutes = 30 * 60 * 1000;
+  return (now - lv5UnlockedTime) < thirtyMinutes;
+}
+
+/**
+ * 渲染小型等级徽章（Lv5专用）
+ */
+private renderLevelBadge(container: HTMLElement, progress: UnlockProgress): void {
+  const levelBadge = container.createDiv({ cls: 'level-badge-icon' });
+  
+
+  const levelName = this.t(`level.${progress.currentLevel}`);
+  levelBadge.textContent = `Lv${progress.currentLevel}`;
+  levelBadge.title = `${this.t('level.current')}: ${levelName} - ${this.t('level.clickDetails')}`;
+  
+  // 点击显示等级详情
+  levelBadge.addEventListener('click', () => {
+    new LevelInfoModal(this.app, progress, this.plugin.unlockSystem).open();
+  });
+}
   // ==================== 复习检查 ====================
 // 每日提醒复习
 // 手动触发复习提醒检查
@@ -1229,5 +1341,7 @@ private getReviewStreak(): number {
   
   return streak;
 }
-
+private t(key: string, params?: Record<string, string | number>): string {
+  return t(key, this.plugin.settings.language, params);
+}
 }

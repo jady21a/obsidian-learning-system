@@ -182,7 +182,7 @@ export class StyleLoader {
 .stats-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 1px;
   flex-shrink: 0;
   margin-left: auto; /* 推到最右侧 */
 }
@@ -1212,7 +1212,131 @@ export class StyleLoader {
   border-radius: 3px;
   font-weight: 500;
 }
-  }
+    }
+  /* ==================== 等级徽章图标 ==================== */
+.level-badge-icon {
+  padding: 4px 6px ;
+  color: var(--text-muted);
+  border-radius: 7px;
+  font-size: 0.85em;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 0px;
+  user-select: none;
+}
+
+.level-badge-icon:hover {
+  transform: translateY(-2px);
+}
+
+/* ==================== 等级信息模态框 ==================== */
+.level-info-modal {
+  padding: 20px;
+  max-width: 600px;.stats-right
+}
+
+.level-info-modal h2 {
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 1.8em;
+}
+
+.level-info-modal h3 {
+  margin-top: 20px;
+  margin-bottom: 12px;
+  color: var(--text-muted);
+  font-size: 1.1em;
+}
+
+.progress-section,
+.stats-section,
+.milestones-section {
+  margin-bottom: 24px;
+}
+
+.progress-box {
+  padding: 16px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  border-left: 4px solid var(--interactive-accent);
+  line-height: 1.8;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.stats-grid .stat-item {
+  padding: 12px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-icon {
+  font-size: 1.5em;
+}
+
+.stat-label {
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+.stat-value {
+  font-size: 1.3em;
+  font-weight: bold;
+  color: var(--text-accent);
+}
+
+.milestones-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.milestone-item {
+  padding: 12px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  border-left: 3px solid var(--interactive-accent);
+}
+
+.milestone-message {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.milestone-date {
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+.modal-footer {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.modal-footer button {
+  padding: 8px 24px;
+  background: var(--interactive-accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1em;
+}
+
+.modal-footer button:hover {
+  background: var(--interactive-accent-hover);
+}
+  
       `;
     }
   }

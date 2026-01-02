@@ -97,10 +97,6 @@ export class ContentCard {
       }
     });
 
-    const typeLabel = header.createDiv({
-      cls: `flashcard-type ${card.type}`,
-      text: card.type === 'qa' ? 'Q&A' : '填空'
-    });
 
     const tools = header.createDiv({ cls: 'grid-card-tools' });
     const moreBtn = tools.createDiv({ cls: 'tool-btn-grid' });
@@ -170,7 +166,8 @@ export class ContentCard {
     });
 
     const annotationBtn = header.createDiv({ cls: 'annotation-btn' });
-    annotationBtn.innerHTML = '💬';
+    // annotationBtn.innerHTML = 'Note';
+    this.renderSideLine(annotationBtn, unit);    
 
     const tools = header.createDiv({ cls: 'card-tools' });
     tools.addEventListener('click', (e) => {
@@ -180,7 +177,7 @@ export class ContentCard {
     if (!this.state.batchMode) {
       const flashcardBtn = tools.createDiv({ cls: 'tool-btn flashcard-btn' });
       flashcardBtn.innerHTML = '⚡';
-      flashcardBtn.setAttribute('aria-label', '生成闪卡');
+      flashcardBtn.setAttribute('aria-label', 'Generate Flashcards');
       flashcardBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.callbacks.onQuickFlashcard(unit);
@@ -225,7 +222,10 @@ export class ContentCard {
       return unit.content;
     }
   }
-
+  private renderSideLine(meta: HTMLElement, unit: ContentUnit): void {
+    meta.createSpan({ text: `L${unit.source.position.line}`, cls: 'line-info' });
+    
+  }
   private renderAnnotationPreview(
     content: HTMLElement, 
     card: HTMLElement, 
@@ -239,7 +239,7 @@ export class ContentCard {
       const annText = annotationContent.length > 60
         ? annotationContent.substring(0, 60) + '...'
         : annotationContent;
-      annEl.textContent = `💬 ${annText}`;
+      annEl.textContent = `${annText}`;
       
       annEl.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -250,7 +250,12 @@ export class ContentCard {
 
   private renderCardMeta(content: HTMLElement, unit: ContentUnit): void {
     const meta = content.createDiv({ cls: 'card-meta' });
-    
+    if (unit.flashcardIds.length > 0) {
+      meta.createSpan({ 
+        text: `🃏 ${unit.flashcardIds.length}`, 
+        cls: 'badge' 
+      });
+    } 
     if (unit.metadata.tags.length > 0) {
       unit.metadata.tags.slice(0, 2).forEach(tag => {
         meta.createSpan({ text: `#${tag}`, cls: 'tag' });
@@ -263,12 +268,7 @@ export class ContentCard {
       }
     }
 
-    if (unit.flashcardIds.length > 0) {
-      meta.createSpan({ 
-        text: `🃏 ${unit.flashcardIds.length}`, 
-        cls: 'badge' 
-      });
-    }
+
   }
 
   private renderTypeIndicator(header: HTMLElement, unit: ContentUnit): void {
@@ -296,7 +296,7 @@ export class ContentCard {
     if (!this.state.batchMode) {
       const flashcardBtn = tools.createDiv({ cls: 'tool-btn-grid' });
       flashcardBtn.innerHTML = '⚡';
-      flashcardBtn.setAttribute('aria-label', '生成闪卡');
+      flashcardBtn.setAttribute('aria-label', 'Generate Flashcards');
       flashcardBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.callbacks.onQuickFlashcard(unit);
@@ -331,7 +331,7 @@ export class ContentCard {
     const annotationContent = this.callbacks.getAnnotationContent(unit.id);
     if (annotationContent) {
       const annEl = content.createDiv({ cls: 'grid-annotation' });
-      annEl.innerHTML = `<strong>批注：</strong>${annotationContent}`;
+      annEl.innerHTML = `${annotationContent}`;
       
       annEl.addEventListener('click', (e) => {
         e.stopPropagation();

@@ -90,7 +90,7 @@ export class AnnotationEditor {
     
     const hint = document.createElement('div');
     hint.className = 'inline-annotation-hint';
-    hint.textContent = 'Shift + Enter 换行';
+    hint.textContent = 'Shift + Enter to insert a new line';
     
     editor.appendChild(textarea);
     editor.appendChild(hint);

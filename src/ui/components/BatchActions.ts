@@ -4,6 +4,9 @@ import { ViewState } from '../state/ViewState';
 import { ContentUnit } from '../../core/DataManager';
 import { Flashcard } from '../../core/FlashcardManager';
 import { Toolbar } from './Toolbar';
+import { t, Language } from '../../i18n/translations'; 
+
+
 export interface BatchActionCallbacks {
   onSelectAll: () => void;
   onDeselectAll: () => void;
@@ -16,17 +19,22 @@ export class BatchActions {
   private state: ViewState;
   private callbacks: BatchActionCallbacks;
   private toolbar?: Toolbar; 
+  private language: Language;
 
   constructor(
     state: ViewState, 
     callbacks: BatchActionCallbacks,
-    toolbar?: Toolbar
+    toolbar?: Toolbar,
+    language: Language = 'en'
   ) {
     this.state = state;
     this.callbacks = callbacks;
     this.toolbar = toolbar;
+    this.language = language; 
   }
-
+  private t(key: string, params?: Record<string, string | number>): string {
+    return t(key, this.language, params);
+  }
   /**
    * 渲染全选按钮
    */
@@ -43,12 +51,14 @@ export class BatchActions {
     const itemCount = visibleItems.length;
     
     const selectAllBtn = container.createEl('button', {
-      text: isAllChecked ? '✓ 取消全选' : '☐ 全选',
-      cls: `${btnClass} ${isAllChecked ? 'completed' : ''}`,
-      title: isAllChecked 
-        ? '取消当前页面的全选' 
-        : `全选当前 ${itemCount} 项`
-    });
+      text: isAllChecked 
+      ? `✓ ${this.t('batch.deselectAll')}`  
+      : `☐ ${this.t('batch.selectAll')}`,   
+    cls: `${btnClass} ${isAllChecked ? 'completed' : ''}`,
+    title: isAllChecked 
+      ? this.t('batch.deselectAll.tooltip')  
+      : this.t('batch.selectAll.tooltip', { count: itemCount }) 
+  });
     
     const shouldDisable = (
       itemCount === 0 ||
@@ -62,8 +72,8 @@ export class BatchActions {
       selectAllBtn.style.opacity = '0.5';
       selectAllBtn.style.cursor = 'not-allowed';
       selectAllBtn.title = itemCount === 0 
-        ? '没有可选项' 
-        : '请先选择"有批注"或"无批注"';
+        ? this.t('batch.noItems')  
+        : this.t('batch.selectAnnotationFirst');
     }
     
     selectAllBtn.addEventListener('click', () => {
@@ -95,13 +105,14 @@ export class BatchActions {
     
     // 制卡按钮（仅笔记视图）
     if (this.state.viewType === 'notes') {
+      const count = this.state.selectedUnitIds.size;
       const createBtn = this.createButton(
         container,
         styleClass === 'sidebar' 
-          ? `⚡(${this.state.selectedUnitIds.size})` 
-          : `⚡ 批量制卡 (${this.state.selectedUnitIds.size})`,
-        `batch-create-cards-btn-${btnPrefix}`,
-        '批量制卡',
+        ? `⚡(${count})` 
+        : `⚡ ${this.t('batch.create')} (${count})`,
+      `batch-create-cards-btn-${btnPrefix}`,
+      this.t('batch.create.tooltip'),
         () => {
           if (this.state.selectedUnitIds.size === 0) {
             // 这里应该触发 Notice，但为了解耦，通过回调处理
@@ -128,10 +139,10 @@ export class BatchActions {
     const deleteBtn = this.createButton(
       container,
       styleClass === 'sidebar' 
-        ? `🗑️(${count})` 
-        : `🗑️ 删除 (${count})`,
-      `batch-delete-btn-${btnPrefix}`,
-      '批量删除',
+      ? `🗑️(${count})` 
+      : `🗑️ ${this.t('batch.delete')} (${count})`, 
+    `batch-delete-btn-${btnPrefix}`,
+    this.t('batch.delete.tooltip'), 
       () => this.callbacks.onBatchDelete()
     );
     
@@ -148,10 +159,12 @@ export class BatchActions {
     // 取消按钮
     const cancelBtn = this.createButton(
       container,
-      styleClass === 'sidebar' ? '✕' : '✕ 退出',
-      `cancel-selection-btn-${btnPrefix}`,
-      '退出批量模式并清空所有选择',
-      () => this.callbacks.onCancel()
+      styleClass === 'sidebar' 
+      ? '✕' 
+      : `✕ ${this.t('batch.cancel')}`, 
+    `cancel-selection-btn-${btnPrefix}`,
+    this.t('batch.cancel.tooltip'), 
+    () => this.callbacks.onCancel()
     );
   }
 

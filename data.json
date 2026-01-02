@@ -1,6 +1,7 @@
 {
-    "enabled": true,
-    "extractionEnabled": true,
-    "autoScan": false,
-    "defaultDeck": "Default"
-  }
+  "extractionEnabled": true,
+  "autoScan": false,
+  "defaultDeck": "Default",
+  "language": "en",
+  "enabled": true
+}
