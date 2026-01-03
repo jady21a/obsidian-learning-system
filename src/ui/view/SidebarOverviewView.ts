@@ -852,6 +852,7 @@ private refreshContentOnly(): void {
 
   private handleBatchCancel(): void {
     this.state.clearSelection();
+
     this.render();
   }
 

@@ -80,6 +80,7 @@ export class BatchActions {
       e.stopPropagation();
       e.preventDefault();
   
+      
       if (isAllChecked) {
         this.callbacks.onDeselectAll();
       } else {
@@ -180,7 +181,9 @@ export class BatchActions {
     `cancel-selection-btn-${btnPrefix}`,
     this.t('batch.cancel.tooltip'), 
     () => this.callbacks.onCancel()
+    
     );
+
   }
 
   private createButton(
@@ -199,7 +202,7 @@ export class BatchActions {
     btn.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       e.preventDefault();
-      this.callbacks.onBatchCreate();
+      onClick();
     });
     return btn;
   }
