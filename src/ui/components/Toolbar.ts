@@ -66,22 +66,57 @@ export class Toolbar {
 
   private renderSearchBox(container: HTMLElement, isMain = false): void {
     const searchContainer = container.createDiv({ cls: 'search-container' });
+    
     const searchInput = searchContainer.createEl('input', {
       type: 'text',
-     placeholder: this.t('toolbar.search'), 
+      placeholder: this.t('toolbar.search'), 
       cls: isMain ? 'search-input-main' : 'search-input'
     });
     
     searchInput.value = this.state.searchQuery;
     
+    // ========== 焦点管理 ==========
+    
+    // 捕获阶段拦截
+    searchContainer.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+    }, true);
+    
+    // mouseup 时强制聚焦
+    searchContainer.addEventListener('mouseup', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      searchInput.focus();
+    });
+    
+    // click 事件也拦截
+    searchContainer.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+    });
+    
+    // 其他事件
     searchInput.addEventListener('input', (e) => {
+      e.stopPropagation();
       const value = (e.target as HTMLInputElement).value;
       this.onSearchChange(value);
     });
-
     
+    searchInput.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      searchInput.select();
+    });
+    
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        searchInput.value = '';
+        this.onSearchChange('');
+      }
+    });
   }
-
   private renderFilterChips(container: HTMLElement): void {
     const filters = container.createDiv({ cls: 'filter-chips' });
     
@@ -110,7 +145,9 @@ export class Toolbar {
       chip.setAttribute('title', tooltip);
     }
     
-    chip.addEventListener('click', () => {
+    chip.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
             this.onFilterChange(mode);
     });
     });
@@ -157,8 +194,9 @@ export class Toolbar {
       btn.setAttribute('title', tooltip);
     }
     
-    btn.addEventListener('click', () => {
-
+    btn.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
       this.onGroupChange(mode);
     });
     });
@@ -182,7 +220,9 @@ renderReviewCheckButton(container: HTMLElement): HTMLElement | null {
     }
   });
   reviewBtn.innerHTML = '🔔'; 
-  reviewBtn.addEventListener('click', () => {
+  reviewBtn.addEventListener('mousedown', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
     this.onCheckReview?.();
   });
   

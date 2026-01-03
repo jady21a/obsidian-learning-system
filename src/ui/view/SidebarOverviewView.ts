@@ -86,28 +86,164 @@ export class SidebarOverviewView extends ItemView {
 
   async onOpen() {
     console.log('[OverviewView] Opening view...');
-    this.detectDisplayMode();
-      // ⭐ 确保侧边栏模式下设置当前活动文件
-  if (this.state.displayMode === 'sidebar') {
-    const activeFile = this.app.workspace.getActiveFile();
-    if (activeFile) {
-      this.state.selectedFile = activeFile.path;
-      console.log('[SidebarView] Initial file:', activeFile.path);
+    
+
+    
+    // ⭐ 方案1: 在容器级别用捕获阶段拦截点击事件
+    const containerEl = this.containerEl;
+    
+    const captureClickHandler = (e: MouseEvent) => {
+      
+      const containerEl = this.containerEl;
+      console.log('📦 [Setup] Container element:', {
+        exists: !!containerEl,
+        className: containerEl.className,
+        children: containerEl.children.length
+      });
+
+      const target = e.target as HTMLElement;
+      
+      if (!target.closest('.learning-overview-container')) {
+        console.log('🎯 [Capture] Click outside learning container, ignored');
+        return;
+      }
+      
+      console.log('🎯 [Capture] Click inside learning container');
+      
+      // 检查是否点击了 card-header
+      const header = target.closest('.card-header');
+      if (header) {
+        console.log('🎯 [Capture] Click on card-header detected');
+        
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        e.preventDefault(); // ⭐ 添加这行
+        
+        const card = header.closest('.compact-card') as HTMLElement;
+        if (card) {
+          let unitId = card.getAttribute('data-unit-id');
+          
+          if (!unitId) {
+            const checkbox = card.querySelector('.batch-checkbox') as HTMLInputElement;
+            unitId = checkbox?.getAttribute('data-item-id');
+          }
+          
+          console.log('🎯 [Capture] Found unitId:', unitId);
+          
+          if (unitId) {
+            const unit = this.plugin.dataManager.getContentUnit(unitId);
+            if (unit) {
+              console.log('🎯 [Capture] Opening annotation for:', unitId);
+              
+              if (!this.plugin.unlockSystem.tryUseFeature('annotation', 'Annotation')) {
+                return;
+              }
+              
+              this.annotationEditor.toggle(card, unit);
+            } else {
+              console.log('🎯 [Capture] Unit not found:', unitId);
+            }
+          } else {
+            console.log('🎯 [Capture] No unitId found');
+          }
+        }
+        
+        return;
+      }
+      
+      // 同样处理 annotation-preview 点击
+      const annotationPreview = target.closest('.annotation-preview');
+      if (annotationPreview) {
+        console.log('🎯 [Capture] Click on annotation-preview');
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        e.preventDefault(); // ⭐ 添加这行
+        
+        const card = annotationPreview.closest('.compact-card') as HTMLElement;
+        if (card) {
+          let unitId = card.getAttribute('data-unit-id');
+          if (!unitId) {
+            const checkbox = card.querySelector('.batch-checkbox') as HTMLInputElement;
+            unitId = checkbox?.getAttribute('data-item-id');
+          }
+          
+          console.log('🎯 [Capture] Found unitId:', unitId);
+          
+          if (unitId) {
+            const unit = this.plugin.dataManager.getContentUnit(unitId);
+            if (unit) {
+              if (!this.plugin.unlockSystem.tryUseFeature('annotation', 'Annotation')) {
+                return;
+              }
+              this.annotationEditor.toggle(card, unit);
+            }
+          }
+        }
+      }
+    };
+    
+
+    // 使用捕获阶段,在编辑器之前拦截
+    containerEl.addEventListener('click', captureClickHandler, true);
+    
+    console.log('✅ [Setup] Capture handler installed on:', containerEl.className);
+    console.log('✅ [Setup] Current time:', Date.now());
+    
+        // ⭐ 方案3: 阻止编辑器捕获学习系统容器内的事件
+        const editor = document.querySelector('.cm-editor');
+        if (editor) {
+          const stopEditorCapture = (e: Event) => {
+            const target = e.target as HTMLElement;
+            if (target.closest('.learning-overview-container')) {
+              e.stopPropagation();
+              e.stopImmediatePropagation();
+            }
+          };
+          
+          editor.addEventListener('mousedown', stopEditorCapture, true);
+          editor.addEventListener('click', stopEditorCapture, true);
+        }
+        
+        this.detectDisplayMode();
+    // 禁用编辑器自动聚焦
+    const editorContainer = document.querySelector('.cm-content');
+    if (editorContainer) {
+      (editorContainer as HTMLElement).style.pointerEvents = 'auto';
+      editorContainer.addEventListener('mousedown', (e) => {
+        // 如果点击的是搜索框区域，不让编辑器处理
+        const searchBox = document.querySelector('.search-container');
+        if (searchBox && searchBox.contains(e.target as Node)) {
+          e.stopPropagation();
+          e.preventDefault();
+        }
+      }, true);
     }
-  }
+    
+    // 确保侧边栏模式下设置当前活动文件
+    if (this.state.displayMode === 'sidebar') {
+      const activeFile = this.app.workspace.getActiveFile();
+      if (activeFile) {
+        this.state.selectedFile = activeFile.path;
+        console.log('[SidebarView] Initial file:', activeFile.path);
+      }
+    }
+    
     // 注册事件监听
     if (!this.state.forceMainMode) {
       this.registerActiveLeafChange();
     }
+    
     this.state.updateDueCount(this.plugin.flashcardManager);
+    
     // 先渲染界面
     this.render();
     StyleLoader.inject();
     reviewStyle.inject();
+    
     // 界面渲染后再检查复习提醒
     await new Promise(resolve => setTimeout(resolve, 100));
-}
-
+  }
+  
   async onClose() {
     // 清理定时器
     if (this.state.searchDebounceTimer !== null) {
@@ -501,7 +637,9 @@ this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
       cls: `entry-btn ${this.state.viewType === 'notes' ? 'active' : ''}`
     });
     allNotesBtn.innerHTML = '📝 <span>All Notes</span>';
-    allNotesBtn.addEventListener('click', () => {
+    allNotesBtn.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
       if (this.state.setViewType('notes')) {
         this.render();
       }
@@ -511,7 +649,9 @@ this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
       cls: `entry-btn ${this.state.viewType === 'cards' ? 'active' : ''}`
     });
     cardListBtn.innerHTML = '🃏 <span>Card List</span>';
-    cardListBtn.addEventListener('click', () => {
+    cardListBtn.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
       if (this.state.setViewType('cards')) {
         this.render();
       }
@@ -569,7 +709,9 @@ this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
         <span class="file-count">${count}</span>
       `;
       
-      fileItem.addEventListener('click', () => {
+      fileItem.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
         if (this.state.selectedFile !== groupKey) {
           this.state.selectedFile = groupKey;
           
@@ -593,18 +735,50 @@ this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
 
   // ==================== 事件处理方法 ====================
 
-  private handleSearchChange(query: string): void {
-    this.state.setSearchQuery(query);
-    
-    if (this.state.searchDebounceTimer !== null) {
-      window.clearTimeout(this.state.searchDebounceTimer);
-    }
-    
-    this.state.searchDebounceTimer = window.setTimeout(() => {
-      this.state.clearSelection();
-      this.refresh();
-    }, 300);
+private handleSearchChange(query: string): void {
+  this.state.setSearchQuery(query);
+  
+  if (this.state.searchDebounceTimer !== null) {
+    window.clearTimeout(this.state.searchDebounceTimer);
   }
+  
+  this.state.searchDebounceTimer = window.setTimeout(() => {
+    this.state.clearSelection();
+    this.refreshContentOnly();  // ⭐ 只刷新内容区域
+  }, 300);
+}
+
+// 添加新方法:只刷新内容列表
+private refreshContentOnly(): void {
+  const container = this.containerEl.children[1] as HTMLElement;
+  
+  if (this.state.displayMode === 'sidebar') {
+    // 侧边栏模式:只更新内容列表
+    const contentList = container.querySelector('.sidebar-content-list') as HTMLElement;
+    if (contentList) {
+      // 保存滚动位置
+      const scrollPos = contentList.scrollTop;
+      
+      // 清空并重新渲染内容
+      contentList.empty();
+      const currentFileUnits = this.getFilteredUnits();
+      this.contentList.renderCompactList(contentList, currentFileUnits);
+      this.insertReviewReminderAtTop(contentList);
+      
+      // 恢复滚动
+      contentList.scrollTop = scrollPos;
+    }
+  } else {
+    // 主模式:刷新右侧面板
+    this.refreshRightPanel();
+    
+    // 同时更新左侧文件列表的计数
+    const fileListContainer = container.querySelector('.file-list') as HTMLElement;
+    if (fileListContainer) {
+      this.renderFileListContent(fileListContainer);
+    }
+  }
+}
 
   private handleFilterChange(mode: typeof this.state.filterMode): void {
     if (this.state.setFilterMode(mode)) {
@@ -1138,7 +1312,9 @@ private renderLevelBadge(container: HTMLElement, progress: UnlockProgress): void
   levelBadge.title = `${this.t('level.current')}: ${levelName} - ${this.t('level.clickDetails')}`;
   
   // 点击显示等级详情
-  levelBadge.addEventListener('click', () => {
+  levelBadge.addEventListener('mousedown', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
     new LevelInfoModal(this.app, progress, this.plugin.unlockSystem).open();
   });
 }
@@ -1288,7 +1464,9 @@ if (actions) {
   actions.style.justifyContent = 'center';
 }
   
-  banner.querySelector('.primary')!.addEventListener('click', () => {
+  banner.querySelector('.primary')!.addEventListener('mousedown', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
     this.startReview();
     banner.remove();
     this.markReminderDismissed();

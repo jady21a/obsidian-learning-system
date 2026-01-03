@@ -81,6 +81,7 @@ export class StyleLoader {
   /* ==================== 工具栏组件 ==================== */
   .search-container {
     margin-bottom: 10px;
+      pointer-events: auto;
   }
   
   .search-input {
@@ -92,6 +93,7 @@ export class StyleLoader {
     background: var(--background-primary);
     color: var(--text-normal);
     transition: var(--overview-transition);
+      pointer-events: auto;
   }
   
   .search-input:focus {
@@ -451,7 +453,7 @@ export class StyleLoader {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 6px;
+    margin-bottom: 2px;
   }
   
   .card-tools {
@@ -473,16 +475,10 @@ export class StyleLoader {
   
   .annotation-btn {
     cursor: pointer;
-    font-size: 14px;
-    padding: 4px;
-    border-radius: 4px;
-    transition: var(--overview-transition);
+    font-size: 13px;
   }
   
-  .annotation-btn:hover {
-    background: var(--background-modifier-hover);
-    transform: scale(1.1);
-  }
+
   
   .note-text {
     font-size: 12px;
@@ -1013,7 +1009,6 @@ export class StyleLoader {
     padding: 40px 20px;
     color: var(--text-muted);
     font-size: 14px;
-    // pointer-events: none;
     position: relative;
     z-index: 1;
   }
@@ -1068,22 +1063,11 @@ export class StyleLoader {
     .content-grid {
       grid-template-columns: 1fr;
     }
+    }
 
-    // 在 addStyles() 的 styleEl.textContent 中添加
 
-/* 复习提醒横幅 */
+/* 复习图标*/
 
-// 复习图标
-.search-container {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.search-input {
-  flex: 1;
-  
-}
 
 .review-check-btn {
   width: 36px;
@@ -1112,14 +1096,9 @@ export class StyleLoader {
   }
 }
 
-// 复习提醒具体样式
+/* 复习提醒具体样式 */
 .content-list-review-reminder {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
-  color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+
 }
 
 .reminder-header {
@@ -1169,16 +1148,7 @@ export class StyleLoader {
   margin-bottom: 12px;
 }
 
-.stat-item {
-  font-size: 13px;
-  padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
-}
 
-.delay-warning {
-  font-weight: 500;
-}
 
 .streak-info {
   opacity: 0.95;
@@ -1190,14 +1160,9 @@ export class StyleLoader {
 }
 
 .reminder-btn.primary {
-  background: white;
-  color: #667eea;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 600;
+
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
 .reminder-btn.primary:hover {
@@ -1212,7 +1177,7 @@ export class StyleLoader {
   border-radius: 3px;
   font-weight: 500;
 }
-    }
+    
   /* ==================== 等级徽章图标 ==================== */
 .level-badge-icon {
   padding: 4px 6px ;
@@ -1233,7 +1198,7 @@ export class StyleLoader {
 /* ==================== 等级信息模态框 ==================== */
 .level-info-modal {
   padding: 20px;
-  max-width: 600px;.stats-right
+  max-width: 600px;
 }
 
 .level-info-modal h2 {

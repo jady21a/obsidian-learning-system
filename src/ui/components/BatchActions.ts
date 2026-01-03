@@ -76,7 +76,10 @@ export class BatchActions {
         : this.t('batch.selectAnnotationFirst');
     }
     
-    selectAllBtn.addEventListener('click', () => {
+    selectAllBtn.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+  
       if (isAllChecked) {
         this.callbacks.onDeselectAll();
       } else {
@@ -123,12 +126,18 @@ export class BatchActions {
         }
       );
       
-      createBtn.addEventListener('mouseenter', () => {
+      createBtn.addEventListener('mouseenter', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+    
         createBtn.style.background = 'var(--interactive-accent)';
         createBtn.style.color = 'white';
       });
       
-      createBtn.addEventListener('mouseleave', () => {
+      createBtn.addEventListener('mouseleave', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+    
         createBtn.style.background = 'var(--background-secondary)';
         createBtn.style.color = '';
       });
@@ -146,12 +155,18 @@ export class BatchActions {
       () => this.callbacks.onBatchDelete()
     );
     
-    deleteBtn.addEventListener('mouseenter', () => {
+    deleteBtn.addEventListener('mouseenter', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+  
       deleteBtn.style.background = 'var(--color-red)';
       deleteBtn.style.color = 'white';
     });
     
-    deleteBtn.addEventListener('mouseleave', () => {
+    deleteBtn.addEventListener('mouseleave', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+  
       deleteBtn.style.background = 'var(--background-secondary)';
       deleteBtn.style.color = '';
     });
@@ -181,7 +196,11 @@ export class BatchActions {
       title
     });
     
-    btn.addEventListener('click', onClick);
+    btn.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      this.callbacks.onBatchCreate();
+    });
     return btn;
   }
 
@@ -203,6 +222,8 @@ export class BatchActions {
     checkbox.checked = isSelected;
     
     checkbox.addEventListener('change', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
       onChange((e.target as HTMLInputElement).checked);
     });
     
