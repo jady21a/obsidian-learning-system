@@ -33,7 +33,6 @@ export class ContentList {
       const unitId = card.getAttribute('data-unit-id');
       if (unitId) {
         editingUnitIds.add(unitId);
-        console.log('🔒 [List] Unit is being edited:', unitId);
       }
     });
   
@@ -70,7 +69,6 @@ export class ContentList {
         // ⭐ 如果有保存的编辑中卡片，直接重用
         const existingCard = editingCardsMap.get(unit.id);
         if (existingCard) {
-          console.log('♻️ [List] Reusing editing card:', unit.id);
           groupEl.appendChild(existingCard);
         } else {
           this.cardRenderer.renderCompact(groupEl, unit);

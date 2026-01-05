@@ -24,46 +24,44 @@ export class AnnotationEditor {
  */
 toggle(cardEl: HTMLElement, unit: ContentUnit): void {
   if (this.isOpening) {
-    console.log('🔒 [Toggle] Blocked - another editor is opening');
     return;
   }
 
   const now = Date.now();
   const lastToggle = this.toggleLock.get(unit.id) || 0;
   
+  // ⭐ 修改：只对同一个 unit 进行防抖，不同 unit 可以立即切换
   if (now - lastToggle < 200) {
-    console.log('🔄 [Toggle] Debounced - too soon');
     return;
   }
 
   this.toggleLock.set(unit.id, now);
   
-  console.log('🔄 [Toggle] Called for unit:', unit.id);
 
   // ⭐ 使用更严格的检查
   const existingEditor = cardEl.querySelector('.inline-annotation-editor');
   const isCurrentEditing = !!existingEditor;
   
-  console.log('🔄 [Toggle] Editor exists:', isCurrentEditing);
   
   if (isCurrentEditing) {
-    console.log('🔄 [Toggle] Closing current editor');
     this.close(cardEl, unit);
     return;
   }
 
-  // ⭐ 即使没有编辑器，也要清理残留的预览元素
+  // ⭐ 清理残留预览
   const content = cardEl.querySelector('.card-content, .grid-card-content');
   const oldPreviews = content?.querySelectorAll('.annotation-preview, .grid-annotation');
   if (oldPreviews && oldPreviews.length > 0) {
-    console.log('🧹 [Toggle] Cleaning up', oldPreviews.length, 'stale previews');
     oldPreviews.forEach(el => el.remove());
   }
 
+  // ⭐ 修改：先关闭其他编辑器，再异步打开新编辑器
   this.closeAllOthers(unit.id);
   
-  console.log('🔄 [Toggle] Opening new editor');
-  this.open(cardEl, unit);
+  // ⭐ 使用 requestAnimationFrame 确保关闭操作完成后再打开
+  requestAnimationFrame(() => {
+    this.open(cardEl, unit);
+  });
 }
 
 /**
@@ -73,7 +71,6 @@ private closeAllOthers(currentUnitId: string): void {
   const allEditingCards = document.querySelectorAll('[data-editing="true"]');
   
   if (allEditingCards.length > 0) {
-    console.log('🔄 [CloseOthers] Closing editors:', allEditingCards.length);
     
     allEditingCards.forEach((card) => {
       const unitId = card.getAttribute('data-unit-id');
@@ -91,7 +88,6 @@ private closeAllOthers(currentUnitId: string): void {
 private open(cardEl: HTMLElement, unit: ContentUnit): void {
   this.isOpening = true;
   
-  console.log('📝 [Editor] Opening editor for unit:', unit.id);
   
   cardEl.setAttribute('data-editing', 'true');
   
@@ -113,67 +109,30 @@ private open(cardEl: HTMLElement, unit: ContentUnit): void {
     content?.appendChild(editor);
   }
   
-  // ⭐ 多次检查 DOM 状态
-  console.log('🔍 [Editor] Immediately after insert:', {
-    editorInDOM: document.body.contains(editor),
-    editorParent: editor.parentElement?.className,
-    cardEditing: cardEl.getAttribute('data-editing')
-  });
-  
+
   const textarea = editor.querySelector('textarea') as HTMLTextAreaElement;
-  textarea.focus();
-  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+  // ⭐ 延迟聚焦,确保 DOM 完全渲染
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    });
+  });
 
   this.activeEditors.set(unit.id, editor);
   
-  // ⭐ 50ms 后检查
-  setTimeout(() => {
-    console.log('🔍 [Editor] After 50ms:', {
-      editorInDOM: document.body.contains(editor),
-      editorParent: editor.parentElement?.className,
-      cardEditing: cardEl.getAttribute('data-editing')
-    });
-  }, 50);
-  
-  // ⭐ 100ms 后检查
-  setTimeout(() => {
-    console.log('🔍 [Editor] After 100ms:', {
-      editorInDOM: document.body.contains(editor),
-      editorParent: editor.parentElement?.className,
-      cardEditing: cardEl.getAttribute('data-editing')
-    });
-  }, 100);
-  
-  // ⭐ 250ms 后检查（在全局锁释放后）
-  setTimeout(() => {
-    console.log('🔍 [Editor] After 250ms (post-lock):', {
-      editorInDOM: document.body.contains(editor),
-      editorParent: editor.parentElement?.className,
-      cardEditing: cardEl.getAttribute('data-editing'),
-      hasPreview: !!cardEl.querySelector('.annotation-preview')
-    });
-    
-    if (!document.body.contains(editor)) {
-      console.error('🚨 [Editor] EDITOR WAS REMOVED!');
-    }
-    if (cardEl.querySelector('.annotation-preview')) {
-      console.error('🚨 [Editor] PREVIEW WAS RECREATED!');
-    }
-  }, 250);
   
   setTimeout(() => {
     this.isOpening = false;
-    console.log('🔓 [Editor] Global lock released');
   }, 200);
   
-  console.log('📝 [Editor] Editor opened successfully');
 }
   /**
    * 关闭编辑器
    */
 
   private close(cardEl: HTMLElement, unit: ContentUnit): void {
-    console.log('❌ [Editor] Close called', { unitId: unit.id });
     
     const editor = cardEl.querySelector('.inline-annotation-editor') as HTMLElement;
     if (!editor) {
@@ -200,7 +159,6 @@ private open(cardEl: HTMLElement, unit: ContentUnit): void {
       // ⭐ 立即创建新预览
       if (content) {
         this.recreatePreview(content, cardEl, unit, annotationContent);
-        console.log('✅ [Editor] Preview recreated immediately');
       }
     }
   }
@@ -257,56 +215,32 @@ private createEditor(unitId: string, defaultValue: string): HTMLElement {
  * 绑定编辑器事件
  */
 private bindEditorEvents(textarea: HTMLTextAreaElement, unitId: string): void {
-  console.log('🔗 [Editor] Binding events for unit:', unitId);
   
-  let hasFocused = false; // ⭐ 标记是否真正获得过焦点
-  
-  // ⭐ 监听首次获得焦点
-  const onFirstFocus = () => {
-    console.log('✅ [Editor] First focus confirmed for unit:', unitId);
-    hasFocused = true;
-    textarea.removeEventListener('focus', onFirstFocus);
-  };
-  textarea.addEventListener('focus', onFirstFocus);
-  
-  // ⭐ 延迟绑定 blur 事件
-// ⭐ 延迟绑定 blur 事件
-setTimeout(() => {
   textarea.addEventListener('blur', async (e) => {
-    // ⭐ 只有真正获得过焦点后才处理 blur
-    if (!hasFocused) {
-      console.log('⏭️ [Editor] Ignoring blur - never focused');
-      return;
-    }
     
-    console.log('👁️ [Editor] Blur event for unit:', unitId);
     const relatedTarget = e.relatedTarget as HTMLElement;
     const editor = textarea.closest('.inline-annotation-editor') as HTMLElement;
     const card = editor?.closest('.compact-card, .grid-card') as HTMLElement;
     
-    // ⭐ 检查焦点是否移到了编辑器外部
-    if (!relatedTarget || !editor.contains(relatedTarget)) {
+    // ⭐ 检查焦点是否移到编辑器外部
+    if (!relatedTarget || !editor?.contains(relatedTarget)) {
+      // ⭐ 延迟处理,防止误触
       setTimeout(async () => {
-        // ⭐ 再次检查编辑器是否还在 DOM 中
-        if (editor.parentElement && card) {
-          console.log('💾 [Editor] Saving and closing on blur for unit:', unitId);
+        // 再次检查编辑器是否还在 DOM 中
+        if (editor?.parentElement && card) {
           
-          // 保存内容
           await this.callbacks.onSave(unitId, textarea.value.trim());
           
-          // 关闭编辑器
           const unit = { id: unitId } as ContentUnit;
           this.close(card, unit);
         }
-      }, 100);
+      }, 150);
     }
   });
-}, 300);
 
   // Tab 键保存
   textarea.addEventListener('keydown', async (e) => {
     if (e.key === 'Tab') {
-      console.log('⌨️ [Editor] Tab key pressed for unit:', unitId);
       e.preventDefault();
       const editor = textarea.closest('.inline-annotation-editor') as HTMLElement;
       await this.save(editor, unitId, textarea.value);
@@ -326,21 +260,16 @@ setTimeout(() => {
    * 保存批注
    */
   private async save(editorEl: HTMLElement, unitId: string, text: string): Promise<void> {
-    console.log('💾 [Save] Saving annotation for unit:', unitId);
-    console.log('💾 [Save] Editor element:', editorEl);
-    console.log('💾 [Save] Editor parent before save:', editorEl.parentElement);
     
     const trimmedText = text.trim();
     
     await this.callbacks.onSave(unitId, trimmedText);
     
-    console.log('💾 [Save] After callback - Editor parent:', editorEl.parentElement);
     
     const card = editorEl.closest('.compact-card, .grid-card') as HTMLElement;
     editorEl.remove();
     this.activeEditors.delete(unitId);
     
-    console.log('💾 [Save] Editor removed');
 
     
     if (trimmedText && card) {

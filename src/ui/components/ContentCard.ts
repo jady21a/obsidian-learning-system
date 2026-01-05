@@ -34,17 +34,10 @@ export class ContentCard {
     
     const existingCard = container.querySelector(`[data-unit-id="${unit.id}"]`);
     if (existingCard?.getAttribute('data-editing') === 'true') {
-      console.log('⏭️ [Card] Skipping render - card is editing');
       return;
     }
     // ⭐ 使用捕获阶段 + mousedown，但不调用 preventDefault
     card.addEventListener('mousedown', (e) => {
-      console.log('🖱️ [Card] Mousedown event', {
-        unitId: unit.id,
-        target: (e.target as HTMLElement).className,
-        button: e.button
-      });
-      
       // ⭐ 只处理左键点击
       if (e.button !== 0) {
         return;
@@ -56,23 +49,20 @@ export class ContentCard {
       if (target.closest('.card-tools') || 
           target.closest('.batch-checkbox') ||
           target.closest('.annotation-btn')) {
-        console.log('🖱️ [Card] Ignored - excluded element');
         return;
       }
       
       // 排除编辑器内部
       if (target.closest('.inline-annotation-editor')) {
-        console.log('🖱️ [Card] Ignored - editor');
         return;
       }
       
-      // 点击内容区域 = 打开批注
-      if (target.closest('.note-text') || target.closest('.annotation-preview')) {
-        console.log('🖱️ [Card] Opening annotation');
-        
-        // ⭐ 关键：只阻止冒泡，不阻止默认行为
-        e.stopPropagation();
-        // ⭐ 不调用 e.preventDefault()
+  // ⭐ 点击内容区域打开批注
+  if (target.closest('.note-text') || target.closest('.annotation-preview')) {
+    
+    e.stopPropagation();
+    // ⭐ 阻止默认行为,防止干扰聚焦
+    e.preventDefault();
         
         this.callbacks.onToggleAnnotation(card, unit);
       }
@@ -129,7 +119,6 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
   
   const fileName = this.renderFileName(header, unit);
   fileName.onclick = (e) => {
-    console.log('🎯 [FileName] Clicked');
     e.stopPropagation();
     this.callbacks.onJumpToSource(unit);
   };
@@ -320,18 +309,15 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     // ⭐ 移除 isEditing 检查,直接检查是否已有预览
     const existingPreview = content.querySelector('.annotation-preview');
     if (existingPreview) {
-      console.log('⏭️ [Card] Preview already exists');
       return;
     }
     
     // ⭐ 检查是否有编辑器(更可靠)
     const existingEditor = content.querySelector('.inline-annotation-editor');
     if (existingEditor) {
-      console.log('⏭️ [Card] Editor exists, skipping preview');
       return;
     }
     
-    console.log('✏️ [Card] Creating annotation preview for:', unit.id);
     
     const annEl = content.createDiv({ cls: 'annotation-preview' });
     const displayText = annotationContent.length > 60
@@ -440,10 +426,6 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     
     // ⭐ 简化事件处理：只保留 click
     noteText.addEventListener('click', (e) => {
-      console.log('🎯 [NoteText] Click Event!', {
-        target: (e.target as HTMLElement).tagName,
-        unitId: unit.id
-      });
       
       e.stopPropagation();
       // ⭐ 移除 preventDefault

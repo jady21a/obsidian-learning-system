@@ -87,7 +87,6 @@ export class SidebarOverviewView extends ItemView {
   }
 
   async onOpen() {
-    console.log('[OverviewView] Opening view...');
     
         this.detectDisplayMode();
         
@@ -123,7 +122,6 @@ export class SidebarOverviewView extends ItemView {
       const activeFile = this.app.workspace.getActiveFile();
       if (activeFile) {
         this.state.selectedFile = activeFile.path;
-        console.log('[SidebarView] Initial file:', activeFile.path);
       }
     }
     
@@ -191,15 +189,12 @@ export class SidebarOverviewView extends ItemView {
         
         // ⭐ 设置锁
         this.isOpeningEditor = true;
-        console.log('🔒 [View] Editor lock enabled');
         
         this.annotationEditor.toggle(card, unit);
         
-        // ⭐ 1秒后解锁
         setTimeout(() => {
           this.isOpeningEditor = false;
-          console.log('🔓 [View] Editor lock disabled');
-        }, 1500);  // 从 1000 改为 1500
+        }, 500); 
       },
       onQuickFlashcard: (unit) => this.quickGenerateFlashcard(unit),
       onShowContextMenu: (event, unit) => this.showContextMenu(event, unit),
@@ -263,7 +258,6 @@ export class SidebarOverviewView extends ItemView {
       this.app.workspace.on('file-open', (file) => {
         if (file && this.state.displayMode === 'sidebar') {
           this.state.selectedFile = file.path;
-          console.log('[SidebarView] File opened:', file.path);
           this.refresh();
         }
       })
@@ -297,7 +291,6 @@ export class SidebarOverviewView extends ItemView {
   
   const hasActiveEditors = document.querySelector('.inline-annotation-editor') !== null;
   if (hasActiveEditors || this.isOpeningEditor) {
-    console.log('⏸️ [Refresh] Blocked');
     return;
   }
     if (this.state.isRendering) {
@@ -645,7 +638,6 @@ private handleSearchChange(query: string): void {
   this.state.searchDebounceTimer = window.setTimeout(() => {
     const hasActiveEditors = document.querySelector('.inline-annotation-editor') !== null;
     if (hasActiveEditors) {
-      console.log('⏸️ [Search] Refresh cancelled - editors active');
       return;
     }
     this.state.clearSelection();
@@ -657,13 +649,11 @@ private handleSearchChange(query: string): void {
 private refreshContentOnly(): void {
   // ⭐ 如果正在打开编辑器，跳过刷新
   if (this.isOpeningEditor) {
-    console.log('⏸️ [Refresh] Skipped - opening editor');
     return;
   }
   
   const hasActiveEditors = document.querySelector('.inline-annotation-editor') !== null;
   if (hasActiveEditors) {
-    console.log('⏸️ [Refresh] Skipped - editors are active');
     return;
   }
   const container = this.containerEl.children[1] as HTMLElement;
