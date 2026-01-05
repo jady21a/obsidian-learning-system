@@ -4,6 +4,8 @@ import { App, Modal, Setting, TextAreaComponent, ButtonComponent, Notice } from 
 import type LearningSystemPlugin from '../../../main';
 import { ContentUnit } from '../../../core/DataManager';
 import { VIEW_TYPE_SIDEBAR_OVERVIEW, VIEW_TYPE_MAIN_OVERVIEW } from '../../view/SidebarOverviewView';
+import { t } from '../../../i18n/translations';
+
 
 export class ManualFlashcardModal extends Modal {
   unit: ContentUnit;
@@ -30,32 +32,27 @@ export class ManualFlashcardModal extends Modal {
   
   onOpen() {
     const { contentEl } = this;
+    const lang = this.plugin.settings.language;
     contentEl.empty();
     contentEl.addClass('manual-flashcard-modal');
     
     contentEl.createEl('h2', { 
-      text: this.type === 'qa' ? '✏️ 创建 QA 闪卡' : '✏️ 创建填空闪卡' 
+      text: t(this.type === 'qa' ? 'manualCard.title.qa' : 'manualCard.title.cloze', lang)
     });
     
     contentEl.createEl('p', {
-      text: this.type === 'qa' 
-        ? '创建一张问答卡片，可以自定义问题和答案' 
-        : '创建一张填空卡片，在完整文本中标记要挖空的内容',
+      text: t(this.type === 'qa' ? 'manualCard.description.qa' : 'manualCard.description.cloze', lang),
       cls: 'modal-description'
     });
     
     // 问题/完整文本
     new Setting(contentEl)
-      .setName(this.type === 'qa' ? '问题 (Front)' : '完整文本')
-      .setDesc(this.type === 'qa' ? '卡片正面显示的问题' : '包含答案的完整句子或段落')
+      .setName(t(this.type === 'qa' ? 'manualCard.front.qa' : 'manualCard.front.cloze', lang))
+      .setDesc(t(this.type === 'qa' ? 'manualCard.front.desc.qa' : 'manualCard.front.desc.cloze', lang))
       .addTextArea((text: TextAreaComponent) => {
         text
           .setValue(this.question)
-          .setPlaceholder(
-            this.type === 'qa' 
-              ? '例如: 什么是间隔重复?' 
-              : '例如: 间隔重复是一种学习技术'
-          )
+          .setPlaceholder(t(this.type === 'qa' ? 'manualCard.front.placeholder.qa' : 'manualCard.front.placeholder.cloze', lang))
           .onChange((value: string) => this.question = value);
         text.inputEl.rows = 4;
         text.inputEl.style.width = '100%';
@@ -63,16 +60,12 @@ export class ManualFlashcardModal extends Modal {
     
     // 答案/挖空内容
     new Setting(contentEl)
-      .setName(this.type === 'qa' ? '答案 (Back)' : '挖空内容')
-      .setDesc(this.type === 'qa' ? '卡片背面显示的答案' : '要被挖空的关键词或短语')
+      .setName(t(this.type === 'qa' ? 'manualCard.back.qa' : 'manualCard.back.cloze', lang))
+      .setDesc(t(this.type === 'qa' ? 'manualCard.back.desc.qa' : 'manualCard.back.desc.cloze', lang))
       .addTextArea((text: TextAreaComponent) => {
         text
           .setValue(this.answer)
-          .setPlaceholder(
-            this.type === 'qa' 
-              ? '例如: 间隔重复是一种学习技术...' 
-              : '例如: 间隔重复'
-          )
+          .setPlaceholder(t(this.type === 'qa' ? 'manualCard.back.placeholder.qa' : 'manualCard.back.placeholder.cloze', lang))
           .onChange((value: string) => this.answer = value);
         text.inputEl.rows = 3;
         text.inputEl.style.width = '100%';
@@ -83,24 +76,25 @@ export class ManualFlashcardModal extends Modal {
     
     new Setting(buttonContainer)
       .addButton((btn: ButtonComponent) => btn
-        .setButtonText('取消')
+        .setButtonText(t('manualCard.cancel', lang))
         .onClick(() => this.close())
       )
       .addButton((btn: ButtonComponent) => btn
-        .setButtonText('创建闪卡')
+        .setButtonText(t('manualCard.create', lang))
         .setCta()
         .onClick(async () => await this.createFlashcard())
       );
   }
-  
   async createFlashcard() {
+    const lang = this.plugin.settings.language;
+    
     // 验证输入
     if (!this.question.trim()) {
-      new Notice('⚠️ 问题/文本不能为空');
+      new Notice(t('manualCard.error.emptyFront', lang));
       return;
     }
     if (!this.answer.trim()) {
-      new Notice('⚠️ 答案不能为空');
+      new Notice(t('manualCard.error.emptyBack', lang));
       return;
     }
     
@@ -115,11 +109,7 @@ export class ManualFlashcardModal extends Modal {
         }
       );
       
-      new Notice(
-        this.type === 'qa' 
-          ? '✅ QA 闪卡已创建' 
-          : '✅ 填空闪卡已创建'
-      );
+      new Notice(t(this.type === 'qa' ? 'manualCard.success.qa' : 'manualCard.success.cloze', lang));
       
       this.close();
       
@@ -127,7 +117,7 @@ export class ManualFlashcardModal extends Modal {
       this.refreshOverviewView();
       
     } catch (error) {
-      new Notice('❌ 创建闪卡失败');
+      new Notice(t('manualCard.createFailed', lang));
       console.error('Error creating flashcard:', error);
     }
   }

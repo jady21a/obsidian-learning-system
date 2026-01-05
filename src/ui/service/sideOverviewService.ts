@@ -5,6 +5,7 @@ import type LearningSystemPlugin from '../../main';
 import { ContentUnit } from '../../core/DataManager';
 import { QuickFlashcardCreator } from '../../core/QuickFlashcardCreator';
 import { ViewState } from '../state/ViewState';
+import { t } from '../../i18n/translations';
 
 export class sideOverviewService {
   constructor(
@@ -16,9 +17,10 @@ export class sideOverviewService {
    * 跳转到笔记的源文件位置
    */
   async jumpToSource(unit: ContentUnit, app: App): Promise<void> {
+    const lang = this.plugin.settings.language;
     const file = app.vault.getAbstractFileByPath(unit.source.file);
     if (!(file instanceof TFile)) {
-      new Notice('⚠️ 文件不存在');
+      new Notice(t('service.fileNotExist', lang));
       return;
     }
     
@@ -62,6 +64,7 @@ export class sideOverviewService {
    * 保存或删除批注
    */
   async saveAnnotation(unitId: string, content: string): Promise<void> {
+    const lang = this.plugin.settings.language;
     const trimmedText = content.trim();
     const annotation = this.plugin.annotationManager.getContentAnnotation(unitId);
     
@@ -75,7 +78,7 @@ export class sideOverviewService {
       }
     } else if (annotation) {
       await this.plugin.annotationManager.deleteAnnotation(annotation.id);
-      new Notice('🗑️ 批注已删除');
+      new Notice(t('service.annotationDeleted', lang));
     }
   }
 
@@ -83,19 +86,20 @@ export class sideOverviewService {
    * AI 快速生成闪卡
    */
   async quickGenerateFlashcard(unit: ContentUnit): Promise<void> {
+    const lang = this.plugin.settings.language;
     try {
       const creator = new QuickFlashcardCreator(this.plugin);
       
       // 等待闪卡创建完成
       await creator.createSmartCard(unit);
-
+  
       // 给一个短暂延迟确保数据已写入
       await new Promise(resolve => setTimeout(resolve, 150));
       
-      new Notice('⚡ 闪卡已生成');
+      new Notice(t('service.flashcardGenerated', lang));
       
     } catch (error) {
-      new Notice('❌ 生成闪卡失败');
+      new Notice(t('service.generateFailed', lang));
       console.error(error);
     }
   }
@@ -163,12 +167,13 @@ export class sideOverviewService {
    * 跳转到闪卡的源文件
    */
   async jumpToFlashcardSource(cardId: string, app: App): Promise<void> {
+    const lang = this.plugin.settings.language;
     const card = this.plugin.flashcardManager.getFlashcard(cardId);
     if (!card) {
-      new Notice('⚠️ 找不到闪卡');
+      new Notice(t('service.flashcardNotFound', lang));
       return;
     }
-
+  
     const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
     if (unit) {
       await this.jumpToSource(unit, app);
@@ -177,9 +182,9 @@ export class sideOverviewService {
       const file = app.vault.getAbstractFileByPath(card.sourceFile);
       if (file instanceof TFile) {
         await app.workspace.getLeaf(false).openFile(file);
-        new Notice('✅ 已打开源文件');
+        new Notice(t('service.sourceFileOpened', lang));
       } else {
-        new Notice('⚠️ 找不到原始笔记');
+        new Notice(t('service.noteNotFound', lang));
       }
     }
   }

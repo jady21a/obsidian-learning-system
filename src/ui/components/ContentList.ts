@@ -3,6 +3,7 @@ import { ContentUnit } from '../../core/DataManager';
 import { Flashcard } from '../../core/FlashcardManager';
 import { ViewState, GroupMode } from '../state/ViewState';
 import { ContentCard, CardCallbacks } from './ContentCard';
+import { t } from '../../i18n/translations';
 
 export interface GroupedUnits {
   groupKey: string;
@@ -17,12 +18,17 @@ export interface GroupedCards {
 export class ContentList {
   private state: ViewState;
   private cardRenderer: ContentCard;
+  private language: string;
 
-  constructor(state: ViewState, cardCallbacks: CardCallbacks) {
+  constructor(state: ViewState, cardCallbacks: CardCallbacks, language: string = 'en') {
     this.state = state;
     this.cardRenderer = new ContentCard(state, cardCallbacks);
-  }
+    this.language = language;
 
+  }
+  setLanguage(language: string): void {
+    this.language = language;
+  }
   /**
    * 渲染紧凑列表（侧边栏模式）
    */
@@ -117,7 +123,7 @@ renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): 
 
     if (cards.length === 0) {
       container.createDiv({ 
-        text: '📭 该分组下暂无闪卡', 
+        text: t('contentList.empty.noFlashcards', this.language as any),
         cls: 'empty-state' 
       });
       return;
@@ -156,7 +162,8 @@ renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): 
     getUnit: (cardId: string) => ContentUnit | undefined
   ): GroupedCards[] {
     const grouped = new Map<string, Flashcard[]>();
-
+    const annotatedKey = t('contentList.group.annotated', this.language as any);
+  
     cards.forEach(card => {
       const unit = getUnit(card.sourceContentId);
       const keys = this.getFlashcardGroupKeys(card, unit);
@@ -168,13 +175,13 @@ renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): 
         grouped.get(key)!.push(card);
       });
     });
-
+  
     return Array.from(grouped.entries())
       .map(([groupKey, cards]) => ({ groupKey, cards }))
       .sort((a, b) => {
         if (this.state.groupMode === 'annotation') {
-          if (a.groupKey === '有批注') return -1;
-          if (b.groupKey === '有批注') return 1;
+          if (a.groupKey === annotatedKey) return -1;
+          if (b.groupKey === annotatedKey) return 1;
           return 0;
         }
         if (this.state.groupMode === 'date') {
@@ -193,18 +200,21 @@ renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): 
         return [unit.source.file];
       
       case 'annotation':
-        return [unit.annotationId ? '有批注' : '无批注'];
+        return [unit.annotationId 
+          ? t('contentList.group.annotated', this.language as any)
+          : t('contentList.group.notAnnotated', this.language as any)
+        ];
       
       case 'tag':
         return unit.metadata.tags.length > 0 
           ? unit.metadata.tags 
-          : ['未分类'];
+          : [t('group.uncategorized', this.language as any)];
       
       case 'date':
         return [this.formatDate(new Date(unit.metadata.createdAt))];
       
       default:
-        return ['未分组'];
+        return [t('group.uncategorized', this.language as any)];
     }
   }
 
@@ -218,9 +228,9 @@ renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): 
       
       case 'annotation':
         if (unit && unit.annotationId) {
-          return ['有批注'];
+          return [t('contentList.group.annotated', this.language as any)];
         } else {
-          return ['无批注'];
+          return [t('contentList.group.notAnnotated', this.language as any)];
         }
       
       case 'tag':
@@ -231,14 +241,14 @@ renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): 
         } else if (card.deck) {
           return [card.deck];
         } else {
-          return ['未分类'];
+          return [t('group.uncategorized', this.language as any)];
         }
       
       case 'date':
         return [this.formatDate(new Date(card.metadata.createdAt))];
       
       default:
-        return ['未分组'];
+        return [t('group.uncategorized', this.language as any)];
     }
   }
 
@@ -246,12 +256,14 @@ renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): 
    * 排序分组
    */
   private sortGroups(grouped: Map<string, ContentUnit[]>): GroupedUnits[] {
+    const annotatedKey = t('contentList.group.annotated', this.language as any);
+    
     return Array.from(grouped.entries())
       .map(([groupKey, units]) => ({ groupKey, units }))
       .sort((a, b) => {
         if (this.state.groupMode === 'annotation') {
-          if (a.groupKey === '有批注') return -1;
-          if (b.groupKey === '有批注') return 1;
+          if (a.groupKey === annotatedKey) return -1;
+          if (b.groupKey === annotatedKey) return 1;
           return 0;
         }
         if (this.state.groupMode === 'date') {
@@ -284,14 +296,17 @@ renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): 
       emptyDiv.innerHTML = `
         <div style="padding: 20px; text-align: center;">
           <div style="font-size: 32px; margin-bottom: 10px;">📭</div>
-          <div style="color: var(--text-muted);">当前文档暂无笔记</div>
+          <div style="color: var(--text-muted);">${t('contentList.empty.noNotes', this.language as any)}</div>
           <div style="font-size: 12px; color: var(--text-faint); margin-top: 8px;">
-            ${this.state.filterMode !== 'all' ? '尝试切换其他过滤器查看' : '开始高亮文本来创建笔记'}
+            ${this.state.filterMode !== 'all' 
+              ? t('contentList.empty.tryFilter', this.language as any)
+              : t('contentList.empty.startHighlight', this.language as any)
+            }
           </div>
         </div>
       `;
     } else {
-      emptyDiv.textContent = '暂无内容';
+      emptyDiv.textContent = t('contentList.empty.noContent', this.language as any);
     }
   }
 

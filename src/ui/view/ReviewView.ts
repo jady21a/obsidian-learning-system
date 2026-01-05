@@ -10,6 +10,9 @@ import { TableRenderer } from '../components/TableRenderer';
 import { CardRendererFactory } from '../components/reviewCardRender';
 
 import { reviewStyle } from '../style/reviewStyle';
+
+import { t,Language } from '../../i18n/translations';
+
 export const VIEW_TYPE_REVIEW = 'learning-system-review';
 
 
@@ -18,6 +21,7 @@ export const VIEW_TYPE_REVIEW = 'learning-system-review';
 // ============================================================================
 export class ReviewView extends ItemView {
   plugin: LearningSystemPlugin;
+  private language: Language;
   private scheduler: CardScheduler;
   private dueCards: Flashcard[] = [];
   private currentCardIndex: number = 0;
@@ -27,6 +31,7 @@ export class ReviewView extends ItemView {
   constructor(leaf: WorkspaceLeaf, plugin: LearningSystemPlugin) {
     super(leaf);
     this.plugin = plugin;
+    this.language = this.plugin.settings.language || 'en';
     this.scheduler = new CardScheduler();
   }
 
@@ -178,7 +183,7 @@ export class ReviewView extends ItemView {
       {
         label: '🔄 Reset Card Stats',
         onClick: async () => {
-          if (this.currentCard && confirm('确定要重置这张卡片的学习进度吗？')) {
+          if (this.currentCard && confirm(t('confirm.resetCardStats', this.language))) {
             await this.resetCardStats(this.currentCard.id);
           }
         }
@@ -188,10 +193,10 @@ export class ReviewView extends ItemView {
         onClick: async () => {
           if (this.currentCard) {
             const deckName = this.currentCard.deck;
-            if (confirm(`确定要重置卡组"${deckName}"的所有学习进度吗？`)) {
+            if (confirm(t('confirm.resetDeckStats', this.language, { deck: deckName }))) {
               await this.plugin.analyticsEngine.clearDeckStats(deckName);
-              new Notice(`✅ 卡组"${deckName}"的统计已重置`);
-              await this.loadDueCards();
+             new Notice(t('notice.deckStatsReset', this.language, { deck: deckName }));
+            await this.loadDueCards();
               this.render();
             }
           }
@@ -200,7 +205,7 @@ export class ReviewView extends ItemView {
       {
         label: '🗑️ Delete Card',
         onClick: async () => {
-          if (this.currentCard && confirm('确定要删除这张闪卡吗？')) {
+          if (this.currentCard && confirm(t('confirm.deleteFlashcard', this.language))) {
             await this.deleteFlashcard(this.currentCard.id);
           }
         },
@@ -543,7 +548,8 @@ await this.plugin.unlockSystem.onCardReviewed();
   private async deleteFlashcard(cardId: string) {
     try {
       await this.plugin.flashcardManager.deleteCard(cardId);
-      new Notice('🗑️ 闪卡已删除');
+      new Notice(t('notice.flashcardDeleted', this.language));
+   
       
       this.dueCards = this.dueCards.filter(card => card.id !== cardId);
       
@@ -558,7 +564,8 @@ await this.plugin.unlockSystem.onCardReviewed();
       this.render();
     } catch (error) {
       console.error('Error deleting flashcard:', error);
-      new Notice('❌ 删除闪卡失败');
+   
+   new Notice(t('notice.deleteFlashcardFailed', this.language));
     }
   }
 
@@ -567,6 +574,7 @@ await this.plugin.unlockSystem.onCardReviewed();
 
     const modal = new FlashcardEditModal(
       this.app,
+      this.plugin,  
       this.currentCard,
       async (question: string, answer: string) => {
         try {
@@ -581,15 +589,15 @@ await this.plugin.unlockSystem.onCardReviewed();
           };
           
           await this.plugin.flashcardManager.updateCard(updatedCard);
-          new Notice('✅ 闪卡已更新');
+          new Notice(t('notice.flashcardUpdated', this.language));
           
           this.currentCard = updatedCard;
           this.render();
         } catch (error) {
           console.error('Error updating flashcard:', error);
-          new Notice('❌ 更新闪卡失败');
+          new Notice(t('notice.updateFlashcardFailed', this.language));
         }
-      }
+      },
     );
     modal.open();
   }
@@ -623,12 +631,13 @@ await this.plugin.unlockSystem.onCardReviewed();
       );
       await this.plugin.dataManager.save();
       
-      new Notice('✅ 卡片统计已重置');
+      new Notice(t('notice.cardStatsReset', this.language));
+ 
       this.currentCard = card;
       this.render();
     } catch (error) {
       console.error('Error resetting card stats:', error);
-      new Notice('❌ 重置统计失败');
+     new Notice(t('notice.resetStatsFailed', this.language));
     }
   }
 

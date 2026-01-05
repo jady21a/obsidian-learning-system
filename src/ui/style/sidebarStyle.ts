@@ -1122,13 +1122,7 @@ export class StyleLoader {
   margin-bottom: 12px;
 }
 
-.progress-bar {
-  height: 8px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 4px;
-}
+
 
 .progress-fill {
   height: 100%;

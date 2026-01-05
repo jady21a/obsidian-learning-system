@@ -2,18 +2,22 @@
 import { ItemView, WorkspaceLeaf, TFile, Notice } from 'obsidian';
 import type LearningSystemPlugin from '../../main';
 import { AnalyticsEngine } from '../../core/AnalyticsEngine';
+import { t ,Language} from '../../i18n/translations';
 
 export const VIEW_TYPE_STATS = 'learning-system-stats';
 
 export class StatsView extends ItemView {
   plugin: LearningSystemPlugin;
+  private language: Language;
   private analytics: AnalyticsEngine;
   private currentTab: 'overview' | 'trends' | 'decks' | 'difficult' = 'overview';
 
   constructor(leaf: WorkspaceLeaf, plugin: LearningSystemPlugin) {
     super(leaf);
     this.plugin = plugin;
+    this.language = this.plugin.settings.language || 'en';
     this.analytics = new AnalyticsEngine(plugin);
+    
   }
 
   getViewType(): string {
@@ -343,7 +347,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
         cls: 'action-btn-small delete-btn'
       });
       deleteBtn.addEventListener('click', async () => {
-        if (confirm('确定要删除这张闪卡吗？')) {
+        if (confirm(t('notice.flashcardDeleted', this.language))) {
           await this.deleteFlashcard(dc.card.id);
         }
       });
@@ -548,11 +552,11 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
   private async deleteFlashcard(cardId: string) {
     try {
       await this.plugin.flashcardManager.deleteCard(cardId);
-      new Notice('🗑️ 闪卡已删除');
+      new Notice(t('notice.flashcardDeleted', this.language));
       this.render(); // 重新渲染视图
     } catch (error) {
       console.error('Error deleting flashcard:', error);
-      new Notice('❌ 删除闪卡失败');
+      new Notice(t('notice.deleteFlashcardFailed', this.language));
     }
   }
   private showClearStatsModal() {

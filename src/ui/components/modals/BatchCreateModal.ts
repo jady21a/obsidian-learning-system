@@ -3,6 +3,7 @@ import { Modal, App, Notice } from 'obsidian';
 import type LearningSystemPlugin from '../../../main';
 import { ContentUnit } from '../../../core/DataManager';
 import { QuickFlashcardCreator } from '../../../core/QuickFlashcardCreator';
+import { t } from '../../../i18n/translations';
 
 export class BatchCreateModal extends Modal {
   constructor(
@@ -17,24 +18,37 @@ export class BatchCreateModal extends Modal {
 
   onOpen() {
     const { contentEl } = this;
-    
-    contentEl.createEl('h2', { text: '⚡ 批量创建闪卡' });
-    
-    contentEl.createEl('p', { 
-      text: `为 ${this.units.length} 条未创建闪卡的笔记创建闪卡`
-    });
+    const lang = this.plugin.settings.language; 
 
-    // 选择类型
-    const typeContainer = contentEl.createDiv({ cls: 'type-select-container' });
-    typeContainer.createEl('h3', { text: '卡片类型' });
+  contentEl.createEl('h2', { text: t('batchCreate.title', lang) });
+  
+  contentEl.createEl('p', { 
+    text: t('batchCreate.description', lang, { count: this.units.length })
+  });
 
-    let selectedType: 'smart' | 'qa' | 'cloze' = 'smart';
+  const typeContainer = contentEl.createDiv({ cls: 'type-select-container' });
+  typeContainer.createEl('h3', { text: t('batchCreate.cardType', lang) });
 
-    const types = [
-      { value: 'smart', label: '⚡ 智能识别', desc: '自动选择最合适的类型' },
-      { value: 'qa', label: '📝 问答卡片', desc: '问题和答案格式' },
-      { value: 'cloze', label: '✏️ 填空卡片', desc: '挖空填空' }
-    ];
+  let selectedType: 'smart' | 'qa' | 'cloze' = 'smart';
+
+  const types = [
+    { 
+      value: 'smart', 
+      label: t('batchCreate.smartType', lang), 
+      desc: t('batchCreate.smartType.desc', lang) 
+    },
+    { 
+      value: 'qa', 
+      label: t('batchCreate.qaType', lang), 
+      desc: t('batchCreate.qaType.desc', lang) 
+    },
+    { 
+      value: 'cloze', 
+      label: t('batchCreate.clozeType', lang), 
+      desc: t('batchCreate.clozeType.desc', lang) 
+    }
+  ];
+
 
     types.forEach(type => {
       const option = typeContainer.createDiv({ cls: 'type-option' });
@@ -59,11 +73,13 @@ export class BatchCreateModal extends Modal {
     // 按钮
     const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
 
-    const cancelBtn = buttonContainer.createEl('button', { text: '取消' });
+    const cancelBtn = buttonContainer.createEl('button', { 
+      text: t('batchCreate.cancel', lang) 
+    });
     cancelBtn.addEventListener('click', () => this.close());
-
+  
     const createBtn = buttonContainer.createEl('button', { 
-      text: `创建 ${this.units.length} 张卡片`,
+      text: t('batchCreate.createButton', lang, { count: this.units.length }),
       cls: 'mod-cta'
     });
     createBtn.addEventListener('click', async () => {
@@ -76,7 +92,9 @@ export class BatchCreateModal extends Modal {
   private async batchCreate(type: 'smart' | 'qa' | 'cloze') {
     const { success, failed } = await this.quickCreator.createBatchCards(this.units, type);
     
-    new Notice(`✅ 已创建 ${success} 张闪卡！${failed > 0 ? `（${failed} 张失败）` : ''}`);
+    const lang = this.plugin.settings.language;
+  
+    new Notice(t('batchCreate.successNotice', lang, { success, failed }));
     
     this.close();
     this.onComplete();

@@ -833,7 +833,7 @@ private refreshContentOnly(): void {
         return unit.source.file === selected;
   
       } else if (this.state.groupMode === 'annotation') {
-        const hasAnnotation = selected === '有批注';
+        const hasAnnotation = selected === 'filter.annotated';
         return hasAnnotation ? !!unit.annotationId : !unit.annotationId;
   
       } else if (this.state.groupMode === 'tag') {
@@ -859,14 +859,14 @@ private refreshContentOnly(): void {
         return card.sourceFile === this.state.selectedFile;
       } else if (this.state.groupMode === 'annotation') {
         const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
-        const hasAnnotation = this.state.selectedFile === '有批注';
+        const hasAnnotation = this.state.selectedFile === 'filter.annotated';
         return hasAnnotation ? (unit && !!unit.annotationId) : (!unit || !unit.annotationId);
       } else if (this.state.groupMode === 'tag') {
         const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
         return (unit && unit.metadata.tags.includes(selected)) ||
                (card.tags && card.tags.includes(selected)) ||
                (card.deck === this.state.selectedFile) ||
-               (this.state.selectedFile === '未分类' && 
+               (this.state.selectedFile === 'group.uncategorized' && 
                 (!card.tags || card.tags.length === 0) && 
                 !card.deck &&
                 (!unit || !unit.metadata.tags || unit.metadata.tags.length === 0));
@@ -1371,7 +1371,7 @@ private createReviewBanner(count: number): HTMLElement {
   banner.innerHTML = `
   <div class="reminder-header">
     <div class="reminder-text">
-      <strong>今日复习:${reviewedToday} / ${totalToday}</strong>  
+ <strong>${this.t('review.todayProgress', { reviewed: reviewedToday, total: totalToday })}</strong>  
     </div>
   </div>
   
@@ -1381,13 +1381,13 @@ private createReviewBanner(count: number): HTMLElement {
     </div>
     ${streakDays > 0 ? `
       <div class="stat-item streak-info">
-        🔥 连续复习第 ${streakDays} 天!
+         ${this.t('review.streak', { days: streakDays })}
       </div>
     ` : ''}
   </div>
   
   <div class="reminder-actions">
-    <button class="reminder-btn primary">开始复习</button>
+    <button class="reminder-btn primary">${this.t('review.start')}</button>
   </div>
 `;
 
@@ -1414,14 +1414,14 @@ if (actions) {
 // 新增辅助方法 1: 获取延后提示文本
 private getDelayText(hoursSinceDue: number): string {
   if (hoursSinceDue < 1) {
-    return "⏰ 刚刚到期，趁热复习";
+    return this.t('review.justDue');
   } else if (hoursSinceDue < 6) {
-    return `⚠️ 复习已延后 ${hoursSinceDue} 小时，现在处理刚好`;
+    return this.t('review.delayedHoursShort', { hours: hoursSinceDue });
   } else if (hoursSinceDue < 24) {
-    return `⚠️ 复习已延后 ${hoursSinceDue} 小时，建议优先完成`;
+    return this.t('review.urgentHours', { hours: hoursSinceDue });
   } else {
     const days = Math.floor(hoursSinceDue / 24);
-    return `🚨 复习已延后 ${days} 天，建议尽快清空`;
+    return this.t('review.urgentDays', { days });
   }
 }
 

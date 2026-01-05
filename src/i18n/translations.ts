@@ -1,3 +1,4 @@
+// src/i18n/translations.ts
 export type Language = 'en' | 'zh-CN';
 
 // 定义翻译键类型
@@ -82,6 +83,135 @@ type TranslationKey =
 | 'batch.create.tooltip'
 | 'batch.delete.tooltip'
 | 'batch.cancel.tooltip'
+// review
+| 'confirm.resetCardStats'
+| 'confirm.resetDeckStats'
+| 'notice.deckStatsReset'
+| 'notice.flashcardDeleted'
+| 'notice.deleteFlashcardFailed'
+| 'notice.flashcardUpdated'
+| 'notice.updateFlashcardFailed'
+| 'notice.cardStatsReset'
+| 'notice.resetStatsFailed'
+// sidebar
+| 'review.todayProgress'
+| 'review.delayedHoursShort'
+| 'group.uncategorized'
+// component/modal/batch
+| 'batchCreate.title'
+| 'batchCreate.description'
+| 'batchCreate.cardType'
+| 'batchCreate.smartType'
+| 'batchCreate.smartType.desc'
+| 'batchCreate.qaType'
+| 'batchCreate.qaType.desc'
+| 'batchCreate.clozeType'
+| 'batchCreate.clozeType.desc'
+| 'batchCreate.cancel'
+| 'batchCreate.createButton'
+| 'batchCreate.successNotice'
+// component/modal/EditFlashcardModal
+| 'editCard.title'
+| 'editCard.description.qa'
+| 'editCard.description.cloze'
+| 'editCard.info.file'
+| 'editCard.info.deck'
+| 'editCard.info.reviews'
+| 'editCard.info.correct'
+| 'editCard.front.qa'
+| 'editCard.front.cloze'
+| 'editCard.front.desc'
+| 'editCard.back.qa'
+| 'editCard.back.cloze'
+| 'editCard.back.desc.qa'
+| 'editCard.back.desc.cloze'
+| 'editCard.cancel'
+| 'editCard.save'
+| 'editCard.error.emptyFront'
+| 'editCard.error.emptyBack'
+| 'editCard.success'
+| 'editCard.saveFailed'
+// component/modal/FlashcardEditModal
+| 'flashcardEdit.title'
+| 'flashcardEdit.question'
+| 'flashcardEdit.answer'
+| 'flashcardEdit.save'
+// component/modal/ManualFlashcardModal.ts
+| 'manualCard.title.qa'
+| 'manualCard.title.cloze'
+| 'manualCard.description.qa'
+| 'manualCard.description.cloze'
+| 'manualCard.front.qa'
+| 'manualCard.front.cloze'
+| 'manualCard.front.desc.qa'
+| 'manualCard.front.desc.cloze'
+| 'manualCard.front.placeholder.qa'
+| 'manualCard.front.placeholder.cloze'
+| 'manualCard.back.qa'
+| 'manualCard.back.cloze'
+| 'manualCard.back.desc.qa'
+| 'manualCard.back.desc.cloze'
+| 'manualCard.back.placeholder.qa'
+| 'manualCard.back.placeholder.cloze'
+| 'manualCard.cancel'
+| 'manualCard.create'
+| 'manualCard.error.emptyFront'
+| 'manualCard.error.emptyBack'
+| 'manualCard.success.qa'
+| 'manualCard.success.cloze'
+| 'manualCard.createFailed'
+// src/ui/components/ContentList.ts 
+| 'contentList.group.annotated'
+| 'contentList.group.notAnnotated'
+| 'contentList.empty.noFlashcards'
+| 'contentList.empty.noNotes'
+| 'contentList.empty.tryFilter'
+| 'contentList.empty.startHighlight'
+| 'contentList.empty.noContent'
+// src/ui/components/ContextMenuBuilder.ts
+| 'contextMenu.jumpToSource'
+| 'contextMenu.editAnnotation'
+| 'contextMenu.editFlashcard'
+| 'contextMenu.generateFlashcard'
+| 'contextMenu.createQA'
+| 'contextMenu.createCloze'
+| 'contextMenu.viewStats'
+| 'contextMenu.deleteNote'
+| 'contextMenu.editCard'
+| 'contextMenu.deleteCard'
+| 'stats.title'
+| 'stats.file'
+| 'stats.type'
+| 'stats.type.qa'
+| 'stats.type.cloze'
+| 'stats.deck'
+| 'stats.tags'
+| 'stats.tags.none'
+| 'stats.reviewCount'
+| 'stats.correctCount'
+| 'stats.accuracy'
+| 'stats.averageTime'
+| 'stats.difficulty'
+| 'stats.createdAt'
+| 'stats.lastReview'
+| 'stats.lastReview.never'
+| 'stats.nextReview'
+| 'stats.interval'
+| 'stats.ease'
+| 'stats.separator'
+| 'stats.times'
+| 'stats.seconds'
+| 'stats.days'
+// src/ui/services/OverviewService.ts
+| 'service.fileNotExist'
+| 'service.annotationDeleted'
+| 'service.flashcardGenerated'
+| 'service.generateFailed'
+| 'service.flashcardNotFound'
+| 'service.sourceFileOpened'
+| 'service.noteNotFound'
+
+
 
 // 定义翻译字典类型
 type TranslationDict = Record<TranslationKey, string> & {
@@ -131,7 +261,7 @@ export const translations: Record<Language, TranslationDict> = {
     'review.justDue': '⏰ Just due, review while hot',
     'review.delayed': '⚠️ Review delayed {hours} hours',
     'review.urgentHours': '⚠️ Review delayed {hours} hours, recommend priority',
-    'review.urgentDays': '🚨 Review delayed {days} days, clear ASAP',
+    'review.urgentDays': '🚨 Review delayed {days} days, clear ASAP!',
     'review.streak': '🔥 Day {days} streak!',
     
     // Notices
@@ -194,6 +324,134 @@ export const translations: Record<Language, TranslationDict> = {
 'batch.delete.tooltip': 'Batch delete',
 'batch.cancel.tooltip': 'Exit batch mode and clear all selections',
 
+// review
+'confirm.resetCardStats': 'Are you sure you want to reset this card\'s learning progress?',
+'confirm.resetDeckStats': 'Are you sure you want to reset all learning progress for deck "{deck}"?',
+'notice.deckStatsReset': '✅ Deck "{deck}" statistics reset',
+'notice.flashcardDeleted': '🗑️ Flashcard deleted',
+'notice.deleteFlashcardFailed': '❌ Failed to delete flashcard',
+'notice.flashcardUpdated': '✅ Flashcard updated',
+'notice.updateFlashcardFailed': '❌ Failed to update flashcard',
+'notice.cardStatsReset': '✅ Card statistics reset',
+'notice.resetStatsFailed': '❌ Failed to reset statistics',
+// sidebar
+'review.todayProgress': 'Today\'s Review: {reviewed} / {total}',
+'review.delayedHoursShort': '⚠️ Review delayed {hours} hours, good time to handle',
+'group.uncategorized': 'Uncategorized',
+// component/modal/batch
+
+'batchCreate.title': '⚡ Batch Create Flashcards',
+  'batchCreate.description': 'Create flashcards for {count} notes without cards',
+  'batchCreate.cardType': 'Card Type',
+  'batchCreate.smartType': '⚡ Smart Recognition',
+  'batchCreate.smartType.desc': 'Automatically choose the best type',
+  'batchCreate.qaType': '📝 Q&A Card',
+  'batchCreate.qaType.desc': 'Question and answer format',
+  'batchCreate.clozeType': '✏️ Cloze Card',
+  'batchCreate.clozeType.desc': 'Fill in the blank',
+  'batchCreate.cancel': 'Cancel',
+  'batchCreate.createButton': 'Create {count} cards',
+  'batchCreate.successNotice': '✅ Created {success} flashcards!{failed, plural, =0 {} other { ({failed} failed)}}',
+// component/modal/EditFlashcardModal
+'editCard.title': '✏️ Edit Flashcard',
+'editCard.description.qa': 'Edit Q&A card content',
+'editCard.description.cloze': 'Edit Cloze card content',
+'editCard.info.file': '📁 File',
+'editCard.info.deck': '📚 Deck',
+'editCard.info.reviews': '📊 Reviews',
+'editCard.info.correct': 'Correct',
+'editCard.front.qa': 'Question (Front)',
+'editCard.front.cloze': 'Full Text',
+'editCard.front.desc': 'Content shown on card front',
+'editCard.back.qa': 'Answer (Back)',
+'editCard.back.cloze': 'Cloze Answers',
+'editCard.back.desc.qa': 'Answer shown on card back',
+'editCard.back.desc.cloze': 'Separate multiple answers with commas',
+'editCard.cancel': 'Cancel',
+'editCard.save': 'Save',
+'editCard.error.emptyFront': '⚠️ Question/Text cannot be empty',
+'editCard.error.emptyBack': '⚠️ Answer cannot be empty',
+'editCard.success': '✅ Flashcard updated',
+'editCard.saveFailed': '❌ Save failed',
+// component/modal/FlashcardEditModal
+'flashcardEdit.title': 'Edit Flashcard',
+'flashcardEdit.question': 'Question',
+'flashcardEdit.answer': 'Answer',
+'flashcardEdit.save': 'Save',
+// component/modal/ManualFlashcardModal.ts
+'manualCard.title.qa': '✏️ Create Q&A Flashcard',
+'manualCard.title.cloze': '✏️ Create Cloze Flashcard',
+'manualCard.description.qa': 'Create a Q&A card with custom question and answer',
+'manualCard.description.cloze': 'Create a cloze card by marking content to be hidden in full text',
+'manualCard.front.qa': 'Question (Front)',
+'manualCard.front.cloze': 'Full Text',
+'manualCard.front.desc.qa': 'Question displayed on card front',
+'manualCard.front.desc.cloze': 'Complete sentence or paragraph containing the answer',
+'manualCard.front.placeholder.qa': 'e.g., What is spaced repetition?',
+'manualCard.front.placeholder.cloze': 'e.g., Spaced repetition is a learning technique',
+'manualCard.back.qa': 'Answer (Back)',
+'manualCard.back.cloze': 'Cloze Content',
+'manualCard.back.desc.qa': 'Answer displayed on card back',
+'manualCard.back.desc.cloze': 'Keyword or phrase to be hidden',
+'manualCard.back.placeholder.qa': 'e.g., Spaced repetition is a learning technique...',
+'manualCard.back.placeholder.cloze': 'e.g., spaced repetition',
+'manualCard.cancel': 'Cancel',
+'manualCard.create': 'Create Flashcard',
+'manualCard.error.emptyFront': '⚠️ Question/Text cannot be empty',
+'manualCard.error.emptyBack': '⚠️ Answer cannot be empty',
+'manualCard.success.qa': '✅ Q&A flashcard created',
+'manualCard.success.cloze': '✅ Cloze flashcard created',
+'manualCard.createFailed': '❌ Failed to create flashcard',
+// src/ui/components/ContentList.ts 
+'contentList.group.annotated': 'Annotated',
+'contentList.group.notAnnotated': 'Not Annotated',
+'contentList.empty.noFlashcards': '📭 No flashcards in this group',
+'contentList.empty.noNotes': 'No notes in current document',
+'contentList.empty.tryFilter': 'Try switching filters to view',
+'contentList.empty.startHighlight': 'Start highlighting text to create notes',
+'contentList.empty.noContent': 'No content yet',
+// src/ui/components/ContextMenuBuilder.ts
+'contextMenu.jumpToSource': '📖 Jump to Source',
+'contextMenu.editAnnotation': '💬 Edit Annotation',
+'contextMenu.editFlashcard': '✏️ Edit Flashcard',
+'contextMenu.generateFlashcard': '⚡ Generate Flashcard',
+'contextMenu.createQA': '➕ Create Q&A Card',
+'contextMenu.createCloze': '➕ Create Cloze Card',
+'contextMenu.viewStats': '📊 View Stats',
+'contextMenu.deleteNote': '🗑️ Delete Note',
+'contextMenu.editCard': '✏️ Edit Card',
+'contextMenu.deleteCard': '🗑️ Delete Card',
+'stats.title': '📊 Flashcard Statistics',
+'stats.file': '📁 File',
+'stats.type': '🃏 Type',
+'stats.type.qa': 'Q&A',
+'stats.type.cloze': 'Cloze',
+'stats.deck': '📚 Deck',
+'stats.tags': '🏷️ Tags',
+'stats.tags.none': 'None',
+'stats.reviewCount': '📈 Review Count',
+'stats.correctCount': '✅ Correct Count',
+'stats.accuracy': '📊 Accuracy',
+'stats.averageTime': '⏱️ Average Time',
+'stats.difficulty': '🎯 Difficulty',
+'stats.createdAt': '📅 Created',
+'stats.lastReview': '🔄 Last Review',
+'stats.lastReview.never': 'Never',
+'stats.nextReview': '⏰ Next Review',
+'stats.interval': '📏 Interval',
+'stats.ease': '💪 Ease',
+'stats.separator': '━━━━━━━━━━━━━━━',
+'stats.times': 'times',
+'stats.seconds': 's',
+'stats.days': 'days',
+// src/ui/services/OverviewService.ts
+'service.fileNotExist': '⚠️ File does not exist',
+'service.annotationDeleted': '🗑️ Annotation deleted',
+'service.flashcardGenerated': '⚡ Flashcard generated',
+'service.generateFailed': '❌ Failed to generate flashcard',
+'service.flashcardNotFound': '⚠️ Flashcard not found',
+'service.sourceFileOpened': '✅ Source file opened',
+'service.noteNotFound': '⚠️ Original note not found',
 
 
 },
@@ -241,7 +499,7 @@ export const translations: Record<Language, TranslationDict> = {
     'review.justDue': '⏰ 刚刚到期,趁热复习',
     'review.delayed': '⚠️ 复习已延后 {hours} 小时',
     'review.urgentHours': '⚠️ 复习已延后 {hours} 小时,建议优先完成',
-    'review.urgentDays': '🚨 复习已延后 {days} 天,建议尽快清空',
+    'review.urgentDays': '🚨 复习已延后 {days} 天,建议尽快清空!',
     'review.streak': '🔥 连续复习第 {days} 天!',
     
     // Notices
@@ -303,6 +561,135 @@ export const translations: Record<Language, TranslationDict> = {
 'batch.create.tooltip': '批量制卡',
 'batch.delete.tooltip': '批量删除',
 'batch.cancel.tooltip': '退出批量模式并清空所有选择',
+
+//review 
+'confirm.resetCardStats': '确定要重置这张卡片的学习进度吗？',
+'confirm.resetDeckStats': '确定要重置卡组"{deck}"的所有学习进度吗？',
+'notice.deckStatsReset': '✅ 卡组"{deck}"的统计已重置',
+'notice.flashcardDeleted': '🗑️ 闪卡已删除',
+'notice.deleteFlashcardFailed': '❌ 删除闪卡失败',
+'notice.flashcardUpdated': '✅ 闪卡已更新',
+'notice.updateFlashcardFailed': '❌ 更新闪卡失败',
+'notice.cardStatsReset': '✅ 卡片统计已重置',
+'notice.resetStatsFailed': '❌ 重置统计失败',
+// sidebar
+'review.todayProgress': '今日复习: {reviewed} / {total}',
+'review.delayedHoursShort': '⚠️ 复习已延后 {hours} 小时，现在处理刚好',
+'group.uncategorized': '未分类',
+// component/modal/batch
+'batchCreate.title': '⚡ 批量创建闪卡',
+  'batchCreate.description': '为 {count} 条未创建闪卡的笔记创建闪卡',
+  'batchCreate.cardType': '卡片类型',
+  'batchCreate.smartType': '⚡ 智能识别',
+  'batchCreate.smartType.desc': '自动选择最合适的类型',
+  'batchCreate.qaType': '📝 问答卡片',
+  'batchCreate.qaType.desc': '问题和答案格式',
+  'batchCreate.clozeType': '✏️ 填空卡片',
+  'batchCreate.clozeType.desc': '挖空填空',
+  'batchCreate.cancel': '取消',
+  'batchCreate.createButton': '创建 {count} 张卡片',
+  'batchCreate.successNotice': '✅ 已创建 {success} 张闪卡！{failed, plural, =0 {} other {（{failed} 张失败）}}',
+// component/modal/EditFlashcardModal
+'editCard.title': '✏️ 编辑闪卡',
+'editCard.description.qa': '编辑 Q&A 卡片内容',
+'editCard.description.cloze': '编辑填空卡片内容',
+'editCard.info.file': '📁 文件',
+'editCard.info.deck': '📚 卡组',
+'editCard.info.reviews': '📊 复习',
+'editCard.info.correct': '正确',
+'editCard.front.qa': '问题 (Front)',
+'editCard.front.cloze': '完整文本',
+'editCard.front.desc': '卡片正面显示的内容',
+'editCard.back.qa': '答案 (Back)',
+'editCard.back.cloze': '挖空答案',
+'editCard.back.desc.qa': '卡片背面显示的答案',
+'editCard.back.desc.cloze': '多个答案用逗号分隔',
+'editCard.cancel': '取消',
+'editCard.save': '保存',
+'editCard.error.emptyFront': '⚠️ 问题/文本不能为空',
+'editCard.error.emptyBack': '⚠️ 答案不能为空',
+'editCard.success': '✅ 闪卡已更新',
+'editCard.saveFailed': '❌ 保存失败',
+
+// component/modal/FlashcardEditModal
+'flashcardEdit.title': '编辑闪卡',
+'flashcardEdit.question': '问题',
+'flashcardEdit.answer': '答案',
+'flashcardEdit.save': '保存',
+// component/modal/ManualFlashcardModal.ts
+'manualCard.title.qa': '✏️ 创建 QA 闪卡',
+'manualCard.title.cloze': '✏️ 创建填空闪卡',
+'manualCard.description.qa': '创建一张问答卡片，可以自定义问题和答案',
+'manualCard.description.cloze': '创建一张填空卡片，在完整文本中标记要挖空的内容',
+'manualCard.front.qa': '问题 (Front)',
+'manualCard.front.cloze': '完整文本',
+'manualCard.front.desc.qa': '卡片正面显示的问题',
+'manualCard.front.desc.cloze': '包含答案的完整句子或段落',
+'manualCard.front.placeholder.qa': '例如: 什么是间隔重复?',
+'manualCard.front.placeholder.cloze': '例如: 间隔重复是一种学习技术',
+'manualCard.back.qa': '答案 (Back)',
+'manualCard.back.cloze': '挖空内容',
+'manualCard.back.desc.qa': '卡片背面显示的答案',
+'manualCard.back.desc.cloze': '要被挖空的关键词或短语',
+'manualCard.back.placeholder.qa': '例如: 间隔重复是一种学习技术...',
+'manualCard.back.placeholder.cloze': '例如: 间隔重复',
+'manualCard.cancel': '取消',
+'manualCard.create': '创建闪卡',
+'manualCard.error.emptyFront': '⚠️ 问题/文本不能为空',
+'manualCard.error.emptyBack': '⚠️ 答案不能为空',
+'manualCard.success.qa': '✅ QA 闪卡已创建',
+'manualCard.success.cloze': '✅ 填空闪卡已创建',
+'manualCard.createFailed': '❌ 创建闪卡失败',
+// src/ui/components/ContentList.ts 
+'contentList.group.annotated': '有批注',
+'contentList.group.notAnnotated': '无批注',
+'contentList.empty.noFlashcards': '📭 该分组下暂无闪卡',
+'contentList.empty.noNotes': '当前文档暂无笔记',
+'contentList.empty.tryFilter': '尝试切换其他过滤器查看',
+'contentList.empty.startHighlight': '开始高亮文本来创建笔记',
+'contentList.empty.noContent': '暂无内容',
+// src/ui/components/ContextMenuBuilder.ts
+'contextMenu.jumpToSource': '📖 跳转到原文',
+'contextMenu.editAnnotation': '💬 编辑批注',
+'contextMenu.editFlashcard': '✏️ 编辑闪卡',
+'contextMenu.generateFlashcard': '⚡ 生成闪卡',
+'contextMenu.createQA': '➕ 创建 QA 闪卡',
+'contextMenu.createCloze': '➕ 创建填空闪卡',
+'contextMenu.viewStats': '📊 查看统计',
+'contextMenu.deleteNote': '🗑️ 删除笔记',
+'contextMenu.editCard': '✏️ 编辑卡片',
+'contextMenu.deleteCard': '🗑️ 删除卡片',
+'stats.title': '📊 闪卡统计',
+'stats.file': '📁 文件',
+'stats.type': '🃏 类型',
+'stats.type.qa': 'Q&A',
+'stats.type.cloze': '填空',
+'stats.deck': '📚 卡组',
+'stats.tags': '🏷️ 标签',
+'stats.tags.none': '无',
+'stats.reviewCount': '📈 复习次数',
+'stats.correctCount': '✅ 正确次数',
+'stats.accuracy': '📊 正确率',
+'stats.averageTime': '⏱️ 平均用时',
+'stats.difficulty': '🎯 难度',
+'stats.createdAt': '📅 创建时间',
+'stats.lastReview': '🔄 上次复习',
+'stats.lastReview.never': '未复习',
+'stats.nextReview': '⏰ 下次复习',
+'stats.interval': '📏 间隔',
+'stats.ease': '💪 熟练度',
+'stats.separator': '━━━━━━━━━━━━━━━',
+'stats.times': '次',
+'stats.seconds': '秒',
+'stats.days': '天',
+// src/ui/services/OverviewService.ts
+'service.fileNotExist': '⚠️ 文件不存在',
+'service.annotationDeleted': '🗑️ 批注已删除',
+'service.flashcardGenerated': '⚡ 闪卡已生成',
+'service.generateFailed': '❌ 生成闪卡失败',
+'service.flashcardNotFound': '⚠️ 找不到闪卡',
+'service.sourceFileOpened': '✅ 已打开源文件',
+'service.noteNotFound': '⚠️ 找不到原始笔记',
 
   }
 } as const;
