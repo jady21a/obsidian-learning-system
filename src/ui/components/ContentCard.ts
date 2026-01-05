@@ -359,7 +359,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     } 
     if (unit.metadata.tags.length > 0) {
       unit.metadata.tags.slice(0, 2).forEach(tag => {
-        meta.createSpan({ text: `#${tag}`, cls: 'tag' });
+        meta.createSpan({ text: `${tag}`, cls: 'tag' });
       });
       if (unit.metadata.tags.length > 2) {
         meta.createSpan({ 
@@ -461,7 +461,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     if (unit.metadata.tags.length > 0) {
       const tags = content.createDiv({ cls: 'grid-tags' });
       unit.metadata.tags.forEach(tag => {
-        tags.createSpan({ text: `#${tag}`, cls: 'tag-grid' });
+        tags.createSpan({ text: `${tag}`, cls: 'tag-grid' });
       });
     }
   }
