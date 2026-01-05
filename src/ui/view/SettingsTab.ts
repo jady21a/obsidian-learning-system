@@ -67,7 +67,7 @@ new Setting(containerEl)
     
     // 刷新所有视图
     this.plugin.refreshOverview();
-    new Notice('Language updated. Some changes require reload. / 语言已更新,部分更改需要重新加载。');
+    new Notice('Language updated. Some changes require reload. ');
   })
 );
   }

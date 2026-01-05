@@ -315,7 +315,7 @@ private bindEditorEvents(textarea: HTMLTextAreaElement, unitId: string): void {
     annEl.className = isGridCard ? 'grid-annotation' : 'annotation-preview';
     
     if (isGridCard) {
-      annEl.innerHTML = `<strong>批注：</strong>${annotationText}`;
+      annEl.innerHTML = `💬 ${annotationText}`;
     } else {
       const displayText = annotationText.length > 60
         ? annotationText.substring(0, 60) + '...'

@@ -70,7 +70,7 @@ export class AnnotationModal extends Modal {
 
     new Setting(contentEl)
       .setName('Badge text')
-      .setDesc('Short text to display as a badge (e.g., "重要", "待复习")')
+      .setDesc('Short text to display as a badge (e.g., “Important”, “To Review”")')
       .addText(text =>
         text
           .setPlaceholder('Badge text')

@@ -441,7 +441,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     const annotationContent = this.callbacks.getAnnotationContent(unit.id);
     if (annotationContent) {
       const annEl = content.createDiv({ cls: 'grid-annotation' });
-      annEl.innerHTML = `<strong>批注：</strong>${annotationContent}`;
+      annEl.innerHTML = `💬 ${annotationContent}`;
       
       annEl.addEventListener('mousedown', (e) => {
         e.stopPropagation();
