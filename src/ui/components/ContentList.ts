@@ -27,27 +27,57 @@ export class ContentList {
    * 渲染紧凑列表（侧边栏模式）
    */
   renderCompactList(container: HTMLElement, units: ContentUnit[]): void {
-    const existingCards = container.querySelectorAll('.compact-card, .group-section, .empty-state');
-    existingCards.forEach(el => el.remove());
-
-    if (units.length === 0) {
+    // ⭐ 找出正在编辑的 unit IDs
+    const editingUnitIds = new Set<string>();
+    container.querySelectorAll('.compact-card[data-editing="true"]').forEach((card: HTMLElement) => {
+      const unitId = card.getAttribute('data-unit-id');
+      if (unitId) {
+        editingUnitIds.add(unitId);
+        console.log('🔒 [List] Unit is being edited:', unitId);
+      }
+    });
+  
+    // ⭐ 保留正在编辑的卡片 DOM
+    const editingCardsMap = new Map<string, HTMLElement>();
+    editingUnitIds.forEach(unitId => {
+      const card = container.querySelector(`[data-unit-id="${unitId}"]`);
+      if (card) {
+        editingCardsMap.set(unitId, card as HTMLElement);
+      }
+    });
+  
+    // ⭐ 只删除非编辑状态的元素
+    const allElements = Array.from(container.children);
+    allElements.forEach((el: HTMLElement) => {
+      const unitId = el.getAttribute('data-unit-id');
+      if (!unitId || !editingUnitIds.has(unitId)) {
+        el.remove();
+      }
+    });
+  
+    if (units.length === 0 && editingUnitIds.size === 0) {
       this.renderEmptyState(container);
       return;
     }
-
+  
     const grouped = this.groupUnits(units);
-
+  
     grouped.forEach(({ groupKey, units: groupUnits }) => {
       const groupEl = container.createDiv({ cls: 'content-group' });
-  
       this.renderGroupHeader(groupEl, groupKey, groupUnits.length);
   
       groupUnits.forEach(unit => {
-        this.cardRenderer.renderCompact(groupEl, unit);
+        // ⭐ 如果有保存的编辑中卡片，直接重用
+        const existingCard = editingCardsMap.get(unit.id);
+        if (existingCard) {
+          console.log('♻️ [List] Reusing editing card:', unit.id);
+          groupEl.appendChild(existingCard);
+        } else {
+          this.cardRenderer.renderCompact(groupEl, unit);
+        }
       });
     });
   }
-
   /**
  * 渲染紧凑列表（侧边栏模式 - 不分组）
  */

@@ -574,13 +574,14 @@ export class StyleLoader {
     z-index: 10;
   }
   
-  /* ==================== 批注编辑器 ==================== */
-  .inline-annotation-editor {
-    margin-top: 8px;
-    padding: 0;
-    background: transparent;
-    animation: slideDown 0.15s ease-out;
-  }
+/* ==================== 批注编辑器 ==================== */
+.inline-annotation-editor {
+  display: block !important;
+  visibility: visible !important;
+  margin-top: 8px;
+  padding: 0;
+  background: transparent;
+}
   
   .inline-annotation-textarea {
     width: 100%;

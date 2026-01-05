@@ -31,14 +31,61 @@ export class ContentCard {
   renderCompact(container: HTMLElement, unit: ContentUnit): void {
     const card = container.createDiv({ cls: 'compact-card' });
     card.setAttribute('data-unit-id', unit.id);
+    
+    const existingCard = container.querySelector(`[data-unit-id="${unit.id}"]`);
+    if (existingCard?.getAttribute('data-editing') === 'true') {
+      console.log('⏭️ [Card] Skipping render - card is editing');
+      return;
+    }
+    // ⭐ 使用捕获阶段 + mousedown，但不调用 preventDefault
+    card.addEventListener('mousedown', (e) => {
+      console.log('🖱️ [Card] Mousedown event', {
+        unitId: unit.id,
+        target: (e.target as HTMLElement).className,
+        button: e.button
+      });
+      
+      // ⭐ 只处理左键点击
+      if (e.button !== 0) {
+        return;
+      }
+      
+      const target = e.target as HTMLElement;
+      
+      // 排除工具按钮等
+      if (target.closest('.card-tools') || 
+          target.closest('.batch-checkbox') ||
+          target.closest('.annotation-btn')) {
+        console.log('🖱️ [Card] Ignored - excluded element');
+        return;
+      }
+      
+      // 排除编辑器内部
+      if (target.closest('.inline-annotation-editor')) {
+        console.log('🖱️ [Card] Ignored - editor');
+        return;
+      }
+      
+      // 点击内容区域 = 打开批注
+      if (target.closest('.note-text') || target.closest('.annotation-preview')) {
+        console.log('🖱️ [Card] Opening annotation');
+        
+        // ⭐ 关键：只阻止冒泡，不阻止默认行为
+        e.stopPropagation();
+        // ⭐ 不调用 e.preventDefault()
+        
+        this.callbacks.onToggleAnnotation(card, unit);
+      }
+    }, false); // ⭐ false = 冒泡阶段（默认）
+  
     // 批量选择 checkbox
     if (this.state.batchMode) {
       this.renderCheckbox(card, unit.id, this.state.selectedUnitIds.has(unit.id));
     }
-
+  
     // 左侧指示器
     this.renderIndicator(card, unit);
-
+  
     // 内容区域
     const content = card.createDiv({ cls: 'card-content' });
     this.renderCardHeader(content, card, unit);
@@ -46,68 +93,60 @@ export class ContentCard {
     this.renderAnnotationPreview(content, card, unit);
     this.renderCardMeta(content, unit);
   }
-
   /**
    * 渲染网格卡片（主界面模式）
    */
-  renderGrid(container: HTMLElement, unit: ContentUnit): void {
-    const card = container.createDiv({ cls: 'grid-card' });
-    
-    // ⭐ 直接在 card 级别处理所有点击
-    card.onclick = (e) => {
-      console.log('🎯 [Card onclick] Triggered', {
-        target: (e.target as HTMLElement).className,
-        targetTag: (e.target as HTMLElement).tagName
-      });
-      
-      const target = e.target as HTMLElement;
-      
-      // 排除工具按钮和 checkbox
-      if (target.closest('.grid-card-tools') || 
-          target.closest('.batch-checkbox') ||
-          target.closest('.grid-card-header')) {
-        console.log('🎯 [Card] Ignored - clicked on excluded element');
-        return;
-      }
-      
-      // 点击内容区域 = 打开批注
-      if (target.closest('.grid-card-content')) {
-        console.log('🎯 [Card] Opening annotation');
-        e.stopPropagation();
-        this.callbacks.onToggleAnnotation(card, unit);
-        return;
-      }
-    };
-    
-    card.style.cursor = 'default';
+renderGrid(container: HTMLElement, unit: ContentUnit): void {
+  const card = container.createDiv({ cls: 'grid-card' });
+  card.setAttribute('data-unit-id', unit.id); // ⭐ 添加这行，方便查找
   
-    if (this.state.batchMode) {
-      this.renderCheckbox(card, unit.id, this.state.selectedUnitIds.has(unit.id));
+  card.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    
+    // 排除工具按钮、checkbox、header
+    if (target.closest('.grid-card-tools') || 
+        target.closest('.batch-checkbox') ||
+        target.closest('.grid-card-header') ||
+        target.closest('.doc-name')) {
+      return;
     }
-  
-    const header = card.createDiv({ cls: 'grid-card-header' });
-    this.renderTypeIndicator(header, unit);
     
-    const fileName = this.renderFileName(header, unit);
-    fileName.onclick = (e) => {
-      console.log('🎯 [FileName] Clicked');
+    // 点击内容区域 = 打开批注
+    if (target.closest('.grid-card-content')) {
       e.stopPropagation();
-      this.callbacks.onJumpToSource(unit);
-    };
-    fileName.style.cursor = 'pointer';
-    
-    this.renderGridTools(header, unit);
+      this.callbacks.onToggleAnnotation(card, unit);
+    }
+  });
   
-    const content = card.createDiv({ cls: 'grid-card-content' });
-    content.style.cursor = 'pointer'; // ⭐ 添加指针样式
-    
-    this.renderGridContent(content, card, unit);
-    this.renderGridAnnotation(content, card, unit);
-    this.renderGridTags(content, unit);
-  
-    const meta = card.createDiv({ cls: 'grid-card-meta' });
-    this.renderGridMeta(meta, unit);
+  card.style.cursor = 'default';
+
+  if (this.state.batchMode) {
+    this.renderCheckbox(card, unit.id, this.state.selectedUnitIds.has(unit.id));
   }
+
+  const header = card.createDiv({ cls: 'grid-card-header' });
+  this.renderTypeIndicator(header, unit);
+  
+  const fileName = this.renderFileName(header, unit);
+  fileName.onclick = (e) => {
+    console.log('🎯 [FileName] Clicked');
+    e.stopPropagation();
+    this.callbacks.onJumpToSource(unit);
+  };
+  fileName.style.cursor = 'pointer';
+  
+  this.renderGridTools(header, unit);
+
+  const content = card.createDiv({ cls: 'grid-card-content' });
+  content.style.cursor = 'pointer';
+  
+  this.renderGridContent(content, card, unit);
+  this.renderGridAnnotation(content, card, unit);
+  this.renderGridTags(content, unit);
+
+  const meta = card.createDiv({ cls: 'grid-card-meta' });
+  this.renderGridMeta(meta, unit);
+}
 
   /**
    * 渲染闪卡网格
@@ -198,38 +237,41 @@ export class ContentCard {
   private renderCardHeader(content: HTMLElement, card: HTMLElement, unit: ContentUnit): void {
     const header = content.createDiv({ cls: 'card-header' });
     
-    // ⭐ 删除所有 header.addEventListener 代码
-    // 因为现在由容器级别的事件委托处理
-    
+    // ⭐ 左侧批注按钮区域 - 点击跳转原文
     const annotationBtn = header.createDiv({ cls: 'annotation-btn' });
-    this.renderSideLine(annotationBtn, unit);    
+    this.renderSideLine(annotationBtn, unit);
+    
+    // ⭐ 使用 mousedown 代替 click，并且只 stopPropagation
+    annotationBtn.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      this.callbacks.onJumpToSource(unit);
+    });
+    annotationBtn.style.cursor = 'pointer';
   
+    // ⭐ 右侧工具按钮区域
     const tools = header.createDiv({ cls: 'card-tools' });
     
-    // ⭐ 保留 tools 的事件阻止（防止冒泡到 header）
-    tools.addEventListener('click', (e) => {
+    // 阻止工具区域事件冒泡
+    tools.addEventListener('mousedown', (e) => {
       e.stopPropagation();
-      e.preventDefault();
-    }, true);
+    });
   
     if (!this.state.batchMode) {
       const flashcardBtn = tools.createDiv({ cls: 'tool-btn flashcard-btn' });
       flashcardBtn.innerHTML = '⚡';
       flashcardBtn.setAttribute('aria-label', 'Generate Flashcards');
-      flashcardBtn.addEventListener('click', (e) => {
+      flashcardBtn.addEventListener('mousedown', (e) => {
         e.stopPropagation();
-        e.preventDefault();
         this.callbacks.onQuickFlashcard(unit);
-      }, true);
+      });
     }
   
     const moreBtn = tools.createDiv({ cls: 'tool-btn more-btn' });
     moreBtn.innerHTML = '⋮';
-    moreBtn.addEventListener('click', (e) => {
+    moreBtn.addEventListener('mousedown', (e) => {
       e.stopPropagation();
-      e.preventDefault();
       this.callbacks.onShowContextMenu(e, unit);
-    }, true);
+    });
   }
 
   private renderCardContent(content: HTMLElement, unit: ContentUnit): void {
@@ -242,12 +284,10 @@ export class ContentCard {
       noteText.innerHTML = displayHTML;
     }
   
-    // ⭐ 只绑定跳转功能,不干扰批注点击
-    noteText.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.callbacks.onJumpToSource(unit);
-    });
+    // ⭐ 只设置样式,不绑定事件
+    noteText.style.cursor = 'pointer';
   }
+  
 
   private formatContent(unit: ContentUnit): string {
     if (unit.type === 'QA' && unit.answer) {
@@ -275,18 +315,54 @@ export class ContentCard {
     if (!this.callbacks.getAnnotationContent) return;
     
     const annotationContent = this.callbacks.getAnnotationContent(unit.id);
-    if (annotationContent) {
-      const annEl = content.createDiv({ cls: 'annotation-preview' });
-      const annText = annotationContent.length > 60
-        ? annotationContent.substring(0, 60) + '...'
-        : annotationContent;
-      annEl.textContent = `${annText}`;
-  
-      // ⭐ 删除所有 addEventListener 代码
-      // 因为现在由容器级别的事件委托处理
+    if (!annotationContent) return;
+    
+    // ⭐ 移除 isEditing 检查,直接检查是否已有预览
+    const existingPreview = content.querySelector('.annotation-preview');
+    if (existingPreview) {
+      console.log('⏭️ [Card] Preview already exists');
+      return;
     }
+    
+    // ⭐ 检查是否有编辑器(更可靠)
+    const existingEditor = content.querySelector('.inline-annotation-editor');
+    if (existingEditor) {
+      console.log('⏭️ [Card] Editor exists, skipping preview');
+      return;
+    }
+    
+    console.log('✏️ [Card] Creating annotation preview for:', unit.id);
+    
+    const annEl = content.createDiv({ cls: 'annotation-preview' });
+    const displayText = annotationContent.length > 60
+      ? annotationContent.substring(0, 60) + '...'
+      : annotationContent;
+    annEl.textContent = `💬 ${displayText}`;
+    
+    // 点击事件
+    annEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.callbacks.onToggleAnnotation(card, unit);
+    });
+    
+    // Tab 键事件
+    annEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        e.stopPropagation();
+        this.callbacks.onToggleAnnotation(card, unit);
+      }
+    });
+    
+    const noteText = content.querySelector('.note-text, .grid-note-text') as HTMLElement;
+    if (noteText) {
+      noteText.insertAdjacentElement('afterend', annEl);
+    } else {
+      content.appendChild(annEl);
+    }
+    
+    annEl.setAttribute('tabindex', '0');
   }
-
   private renderCardMeta(content: HTMLElement, unit: ContentUnit): void {
     const meta = content.createDiv({ cls: 'card-meta' });
     if (unit.flashcardIds.length > 0) {
@@ -362,38 +438,19 @@ export class ContentCard {
       noteText.innerHTML = this.formatContent(unit);
     }
     
-    // ⭐ 添加所有可能的事件监听
-    noteText.addEventListener('mousedown', (e) => {
-      console.log('🎯 [NoteText] MouseDown', {
-        target: e.target,
-        button: e.button,
-        defaultPrevented: e.defaultPrevented
-      });
-    });
-    
-    noteText.addEventListener('mouseup', (e) => {
-      console.log('🎯 [NoteText] MouseUp');
-    });
-    
+    // ⭐ 简化事件处理：只保留 click
     noteText.addEventListener('click', (e) => {
       console.log('🎯 [NoteText] Click Event!', {
         target: (e.target as HTMLElement).tagName,
-        targetClass: (e.target as HTMLElement).className,
-        currentTarget: (e.currentTarget as HTMLElement).className,
-        defaultPrevented: e.defaultPrevented,
-        propagationStopped: e.cancelBubble
+        unitId: unit.id
       });
       
       e.stopPropagation();
-      
-      console.log('🎯 [NoteText] About to call onToggleAnnotation');
+      // ⭐ 移除 preventDefault
       this.callbacks.onToggleAnnotation(card, unit);
     });
     
     noteText.style.cursor = 'pointer';
-    
-    // ⭐ 验证事件监听器已绑定
-    console.log('🎯 [NoteText] Event listeners attached for unit:', unit.id);
   }
   
   private renderGridAnnotation(content: HTMLElement, card: HTMLElement, unit: ContentUnit): void {
@@ -402,7 +459,7 @@ export class ContentCard {
     const annotationContent = this.callbacks.getAnnotationContent(unit.id);
     if (annotationContent) {
       const annEl = content.createDiv({ cls: 'grid-annotation' });
-      annEl.innerHTML = `${annotationContent}`;
+      annEl.innerHTML = `<strong>批注：</strong>${annotationContent}`;
       
       annEl.addEventListener('mousedown', (e) => {
         e.stopPropagation();

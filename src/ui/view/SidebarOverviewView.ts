@@ -45,6 +45,8 @@ export class SidebarOverviewView extends ItemView {
   private overviewService: sideOverviewService; 
 
   private _forceMainMode: boolean;
+
+  private isOpeningEditor: boolean = false;
   constructor(leaf: WorkspaceLeaf, plugin: LearningSystemPlugin, forceMainMode = false) {
     super(leaf);
     this.plugin = plugin;
@@ -87,109 +89,8 @@ export class SidebarOverviewView extends ItemView {
   async onOpen() {
     console.log('[OverviewView] Opening view...');
     
-
-    
-    // ⭐ 方案1: 在容器级别用捕获阶段拦截点击事件
-    const containerEl = this.containerEl;
-    
-    const captureClickHandler = (e: MouseEvent) => {
-      
-      const containerEl = this.containerEl;
-      console.log('📦 [Setup] Container element:', {
-        exists: !!containerEl,
-        className: containerEl.className,
-        children: containerEl.children.length
-      });
-
-      const target = e.target as HTMLElement;
-      
-      if (!target.closest('.learning-overview-container')) {
-        console.log('🎯 [Capture] Click outside learning container, ignored');
-        return;
-      }
-      
-      console.log('🎯 [Capture] Click inside learning container');
-      
-      // 检查是否点击了 card-header
-      const header = target.closest('.card-header');
-      if (header) {
-        console.log('🎯 [Capture] Click on card-header detected');
+        this.detectDisplayMode();
         
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        e.preventDefault(); // ⭐ 添加这行
-        
-        const card = header.closest('.compact-card') as HTMLElement;
-        if (card) {
-          let unitId = card.getAttribute('data-unit-id');
-          
-          if (!unitId) {
-            const checkbox = card.querySelector('.batch-checkbox') as HTMLInputElement;
-            unitId = checkbox?.getAttribute('data-item-id');
-          }
-          
-          console.log('🎯 [Capture] Found unitId:', unitId);
-          
-          if (unitId) {
-            const unit = this.plugin.dataManager.getContentUnit(unitId);
-            if (unit) {
-              console.log('🎯 [Capture] Opening annotation for:', unitId);
-              
-              if (!this.plugin.unlockSystem.tryUseFeature('annotation', 'Annotation')) {
-                return;
-              }
-              
-              this.annotationEditor.toggle(card, unit);
-            } else {
-              console.log('🎯 [Capture] Unit not found:', unitId);
-            }
-          } else {
-            console.log('🎯 [Capture] No unitId found');
-          }
-        }
-        
-        return;
-      }
-      
-      // 同样处理 annotation-preview 点击
-      const annotationPreview = target.closest('.annotation-preview');
-      if (annotationPreview) {
-        console.log('🎯 [Capture] Click on annotation-preview');
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        e.preventDefault(); // ⭐ 添加这行
-        
-        const card = annotationPreview.closest('.compact-card') as HTMLElement;
-        if (card) {
-          let unitId = card.getAttribute('data-unit-id');
-          if (!unitId) {
-            const checkbox = card.querySelector('.batch-checkbox') as HTMLInputElement;
-            unitId = checkbox?.getAttribute('data-item-id');
-          }
-          
-          console.log('🎯 [Capture] Found unitId:', unitId);
-          
-          if (unitId) {
-            const unit = this.plugin.dataManager.getContentUnit(unitId);
-            if (unit) {
-              if (!this.plugin.unlockSystem.tryUseFeature('annotation', 'Annotation')) {
-                return;
-              }
-              this.annotationEditor.toggle(card, unit);
-            }
-          }
-        }
-      }
-    };
-    
-
-    // 使用捕获阶段,在编辑器之前拦截
-    containerEl.addEventListener('click', captureClickHandler, true);
-    
-    console.log('✅ [Setup] Capture handler installed on:', containerEl.className);
-    console.log('✅ [Setup] Current time:', Date.now());
-    
-        // ⭐ 方案3: 阻止编辑器捕获学习系统容器内的事件
         const editor = document.querySelector('.cm-editor');
         if (editor) {
           const stopEditorCapture = (e: Event) => {
@@ -203,8 +104,6 @@ export class SidebarOverviewView extends ItemView {
           editor.addEventListener('mousedown', stopEditorCapture, true);
           editor.addEventListener('click', stopEditorCapture, true);
         }
-        
-        this.detectDisplayMode();
     // 禁用编辑器自动聚焦
     const editorContainer = document.querySelector('.cm-content');
     if (editorContainer) {
@@ -285,11 +184,22 @@ export class SidebarOverviewView extends ItemView {
       onJumpToSource: (unit) => this.jumpToSource(unit),
       onJumpToFlashcard: (card) => this.jumpToFlashcardSource(card), 
       onToggleAnnotation: (card, unit) => {
-        // 🎯 添加 Lv2 权限检查
+        // 🎯 Lv2 权限检查
         if (!this.plugin.unlockSystem.tryUseFeature('annotation', 'Annotation')) {
           return;
         }
+        
+        // ⭐ 设置锁
+        this.isOpeningEditor = true;
+        console.log('🔒 [View] Editor lock enabled');
+        
         this.annotationEditor.toggle(card, unit);
+        
+        // ⭐ 1秒后解锁
+        setTimeout(() => {
+          this.isOpeningEditor = false;
+          console.log('🔓 [View] Editor lock disabled');
+        }, 1500);  // 从 1000 改为 1500
       },
       onQuickFlashcard: (unit) => this.quickGenerateFlashcard(unit),
       onShowContextMenu: (event, unit) => this.showContextMenu(event, unit),
@@ -300,27 +210,11 @@ export class SidebarOverviewView extends ItemView {
       },
       getContentUnit: (unitId) => {
         const allUnits = this.plugin.dataManager.getAllContentUnits();
-        
-        
-        if (allUnits.length > 0) {
-          allUnits.slice(0, 10).forEach(u => {
-          });
-        }
-        
-        // 尝试直接获取
         const unit = this.plugin.dataManager.getContentUnit(unitId);
         
         if (unit) {
           return unit;
         } else {
-          
-          const allFlashcards = this.plugin.flashcardManager.getAllFlashcards();
-          
-          // 找出问题：这个 flashcard 的 sourceContentId 对应的 unit 是否存在
-          const matchingUnit = allUnits.find(u => u.id === unitId);
-          if (!matchingUnit) {
-          }
-          
           return undefined;
         }
       }
@@ -400,6 +294,12 @@ export class SidebarOverviewView extends ItemView {
   // ==================== 渲染方法 ====================
 
   refresh(): void {
+  
+  const hasActiveEditors = document.querySelector('.inline-annotation-editor') !== null;
+  if (hasActiveEditors || this.isOpeningEditor) {
+    console.log('⏸️ [Refresh] Blocked');
+    return;
+  }
     if (this.state.isRendering) {
       requestAnimationFrame(() => this.refresh());
       return;
@@ -528,7 +428,6 @@ this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
   
   // 8. 先渲染内容
   this.contentList.renderCompactList(contentListEl, currentFileUnits);
-
 
   // 9. ⭐ 渲染完成后,将提醒插入到最前面
   this.insertReviewReminderAtTop(contentListEl);
@@ -713,6 +612,7 @@ this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
         e.stopPropagation();
         e.preventDefault();
         if (this.state.selectedFile !== groupKey) {
+          this.annotationEditor.closeAll();
           this.state.selectedFile = groupKey;
           
           const allItems = container.querySelectorAll('.file-item');
@@ -743,6 +643,11 @@ private handleSearchChange(query: string): void {
   }
   
   this.state.searchDebounceTimer = window.setTimeout(() => {
+    const hasActiveEditors = document.querySelector('.inline-annotation-editor') !== null;
+    if (hasActiveEditors) {
+      console.log('⏸️ [Search] Refresh cancelled - editors active');
+      return;
+    }
     this.state.clearSelection();
     this.refreshContentOnly();  // ⭐ 只刷新内容区域
   }, 300);
@@ -750,29 +655,69 @@ private handleSearchChange(query: string): void {
 
 // 添加新方法:只刷新内容列表
 private refreshContentOnly(): void {
+  // ⭐ 如果正在打开编辑器，跳过刷新
+  if (this.isOpeningEditor) {
+    console.log('⏸️ [Refresh] Skipped - opening editor');
+    return;
+  }
+  
+  const hasActiveEditors = document.querySelector('.inline-annotation-editor') !== null;
+  if (hasActiveEditors) {
+    console.log('⏸️ [Refresh] Skipped - editors are active');
+    return;
+  }
   const container = this.containerEl.children[1] as HTMLElement;
   
   if (this.state.displayMode === 'sidebar') {
-    // 侧边栏模式:只更新内容列表
     const contentList = container.querySelector('.sidebar-content-list') as HTMLElement;
     if (contentList) {
-      // 保存滚动位置
       const scrollPos = contentList.scrollTop;
-      
-      // 清空并重新渲染内容
+
+      const editingCards = new Map<string, HTMLElement>();
+      contentList.querySelectorAll('.inline-annotation-editor').forEach((editor: HTMLElement) => {
+        const card = editor.closest('[data-unit-id]') as HTMLElement;
+        if (card) {
+          const unitId = card.getAttribute('data-unit-id');
+          if (unitId) {
+            editingCards.set(unitId, editor.cloneNode(true) as HTMLElement);
+          }
+        }
+      });
+
       contentList.empty();
       const currentFileUnits = this.getFilteredUnits();
       this.contentList.renderCompactList(contentList, currentFileUnits);
       this.insertReviewReminderAtTop(contentList);
       
-      // 恢复滚动
+      if (editingCards.size > 0) {
+        requestAnimationFrame(() => {
+          editingCards.forEach((editor, unitId) => {
+            const card = contentList.querySelector(`[data-unit-id="${unitId}"]`) as HTMLElement;
+            if (card) {
+              card.setAttribute('data-editing', 'true');
+              
+              const preview = card.querySelector('.annotation-preview');
+              if (preview) {
+                preview.replaceWith(editor);
+                
+                const textarea = editor.querySelector('textarea') as HTMLTextAreaElement;
+                if (textarea) {
+                  this.annotationEditor['bindEditorEvents'](textarea, unitId);
+                  requestAnimationFrame(() => {
+                    textarea.focus();
+                  });
+                }
+              }
+            }
+          });
+        });
+      }
+            
       contentList.scrollTop = scrollPos;
     }
   } else {
-    // 主模式:刷新右侧面板
     this.refreshRightPanel();
     
-    // 同时更新左侧文件列表的计数
     const fileListContainer = container.querySelector('.file-list') as HTMLElement;
     if (fileListContainer) {
       this.renderFileListContent(fileListContainer);
