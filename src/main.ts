@@ -10,6 +10,10 @@ import { AnnotationManager } from './core/AnnotationManager';
 import { FlashcardManager } from './core/FlashcardManager';
 import { AnalyticsEngine } from './core/AnalyticsEngine';
 import { UnlockSystem } from './core/UnlockSystem';
+import { ViewState } from './ui/state/ViewState';
+import { t } from './i18n/translations'
+import { RecentlyDeletedModal } from './ui/view/RecentlyDeletedView';
+
 
 interface LearningSystemSettings {
   extractionEnabled: boolean;
@@ -86,17 +90,37 @@ export default class LearningSystemPlugin extends Plugin {
       VIEW_TYPE_STATS,
       (leaf) => new StatsView(leaf, this)
     );
-  
-    this.registerEvent(
-      this.app.workspace.on('editor-menu', (menu, editor, view) => {
-        if (view instanceof MarkdownView) {
-          const file = view.file;
-          if (file) {
-            this.extractionEngine.registerContextMenu(menu, editor, file);
+
+
+this.registerEvent(
+  this.app.vault.on('delete', async (file) => {
+    if (file instanceof TFile && file.extension === 'md') {
+      const stats = ViewState.getFileDeleteStats(file.path, this);
+      
+      if (stats.notes > 0 || stats.cards > 0) {
+        // ✅ 直接删除，不弹窗
+        const units = this.dataManager.getAllContentUnits()
+          .filter(u => u.source.file === file.path);
+        
+        for (const unit of units) {
+          // 删除关联的闪卡
+          for (const cardId of unit.flashcardIds) {
+            await this.flashcardManager.deleteCard(cardId, 'file-deleted');
           }
+          // 删除笔记
+          await this.dataManager.deleteContentUnit(unit.id, 'file-deleted');
         }
-      })
-    );
+        
+        // 简短提示
+        new Notice(t('notice.fileDeletedSimple', this.settings.language, {
+          notes: stats.notes,
+          cards: stats.cards
+        }), 3000);
+
+      }
+    }
+  })
+);
   
     this.addSettingTab(new SettingsTab(this.app, this));
     
@@ -239,8 +263,21 @@ export default class LearningSystemPlugin extends Plugin {
         this.activateStats();
       }
     });
+    this.addCommand({
+      id: 'show-recently-deleted',
+      name: 'Show recently deleted items',
+      callback: async () => { 
+        this.openRecentlyDeletedModal();  
+      }
+    
+    });
+    
   }
-  
+  async openRecentlyDeletedModal() {
+    const modal = new RecentlyDeletedModal(this);
+    modal.open();
+  }
+
   async activateMainView() {
     const { workspace } = this.app;
 

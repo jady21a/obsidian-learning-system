@@ -1007,18 +1007,14 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
       this.plugin.activateStats();
     },
     
-    onDelete: async (unit) => {
-      if (confirm(this.t('confirm.deleteNote'))) {
-        if (unit.flashcardIds.length > 0) {
-          for (const cardId of unit.flashcardIds) {
-            await this.plugin.flashcardManager.deleteCard(cardId);
-          }
-        }
-        await this.plugin.dataManager.deleteContentUnit(unit.id);
-        new Notice(this.t('notice.deleted'));
-        this.refresh();
-      }
-    }
+onDelete: async (unit) => {
+  
+  await this.plugin.dataManager.deleteContentUnit(unit.id, 'user-deleted');
+  
+  new Notice(this.t('notice.movedToTrash'));
+  this.refresh();
+  
+}
   };
   
   const menu = ContextMenuBuilder.buildContentUnitMenu(unit, callbacks);
@@ -1048,10 +1044,9 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
       },
       
       onDelete: async (card) => {
-        if (confirm(this.t('confirm.deleteFlashcard'))) {
-          await this.plugin.flashcardManager.deleteCard(card.id);
-          new Notice(this.t('notice.deleted'));
-        }
+        await this.plugin.flashcardManager.deleteCard(card.id, 'user-deleted');
+        new Notice(this.t('notice.movedToTrash'));
+        this.refresh();
       }
     };
     
@@ -1093,8 +1088,25 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
   }
 
   private async batchDeleteNotes(): Promise<void> {
-    if (!confirm(this.t('confirm.batchDeleteNotes', { count: this.state.selectedUnitIds.size }))) {
-
+    // 获取删除统计
+    const stats = this.state.getDeleteStats(this.plugin);
+    
+    // 构建确认消息
+    let confirmMsg = this.t('confirm.deleteItems');
+    const details: string[] = [];
+    
+    if (stats.notes > 0) {
+      details.push(this.t('confirm.notesCount', { count: stats.notes }));
+    }
+    if (stats.cards > 0) {
+      details.push(this.t('confirm.cardsCount', { count: stats.cards }));
+    }
+    
+    if (details.length > 0) {
+      confirmMsg += '\n\n' + details.join('\n');
+    }
+    
+    if (!confirm(confirmMsg)) {
       return;
     }
     
@@ -1104,12 +1116,15 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
     
     this.state.clearSelection();
     new Notice(this.t('notice.batchDeleted', { success, failed: failed > 0 ? failed : 0 }));
-
     this.refresh();
   }
 
   private async batchDeleteFlashcards(): Promise<void> {
-    if (!confirm(this.t('confirm.batchDeleteFlashcards', { count: this.state.selectedCardIds.size }))) {
+    const stats = this.state.getDeleteStats(this.plugin);
+    
+    const confirmMsg = this.t('confirm.deleteFlashcards', { count: stats.cards });
+    
+    if (!confirm(confirmMsg)) {
       return;
     }
     

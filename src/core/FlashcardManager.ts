@@ -73,6 +73,14 @@ export interface ReviewLog {
     newEase: number;
   };
 }
+interface DeletedItem {
+  type: 'flashcard' | 'note';
+  id: string;
+  content: any;
+  deletedAt: number;
+  deletedBy: string;
+  metadata?: any;
+}
 
 export class FlashcardManager {
   private flashcards: Map<string, Flashcard> = new Map();
@@ -90,6 +98,8 @@ export class FlashcardManager {
   async initialize() {
     await this.loadFlashcards();
     await this.loadReviewLogs();
+    await this.loadDeleteHistory();
+    await this.loadDeleteHistory();
   }
 
   // ==================== 统一创建入口 ====================
@@ -106,6 +116,11 @@ export class FlashcardManager {
       cardType?: 'qa' | 'cloze';
     }
   ): Promise<Flashcard> {
+    console.log('=== 开始创建闪卡 ===');
+    console.log('unit.id:', unit.id);
+    console.log('unit.type:', unit.type);
+    console.log('cardType:', options?.cardType || (unit.type === 'QA' ? 'qa' : 'cloze'));
+    
     
     const cardType = options?.cardType || (unit.type === 'QA' ? 'qa' : 'cloze');
   
@@ -182,7 +197,10 @@ await this.plugin.unlockSystem.onCardExtracted();
     await this.persistFlashcards();
     // 🎯 解锁系统检查点
 // await this.plugin.unlockSystem.onCardExtracted();
-    return card;
+console.log('✅ QA卡片已创建并保存:', card.id, 'sourceContentId:', card.sourceContentId);
+console.log('验证: this.flashcards.has(card.id) =', this.flashcards.has(card.id));
+console.log('验证: this.flashcards.size =', this.flashcards.size);    
+return card;
   }
 
   /**
@@ -241,6 +259,7 @@ await this.plugin.unlockSystem.onCardExtracted();
     await this.persistFlashcards();
     // 🎯 解锁系统检查点
 // await this.plugin.unlockSystem.onCardExtracted();
+console.log('✅ Cloze卡片已创建并保存:', card.id, 'sourceContentId:', card.sourceContentId);
     return card;  // ← 必须有这一行!
   } 
   
@@ -270,7 +289,10 @@ await this.plugin.unlockSystem.onCardExtracted();
    * 获取所有闪卡
    */
   getAllFlashcards(): Flashcard[] {
-    return Array.from(this.flashcards.values());
+    const cards = Array.from(this.flashcards.values());
+    console.log('📋 getAllFlashcards 返回:', cards.length, '个闪卡');
+    console.log('闪卡IDs:', cards.map(c => c.id));
+    return cards;
   }
 
   /**
@@ -308,7 +330,7 @@ await this.plugin.unlockSystem.onCardExtracted();
 /**
  * 删除卡片
  */
-async deleteCard(id: string) {
+async deleteCard(id: string, reason: 'user-deleted' | 'note-deleted' | 'file-deleted' = 'user-deleted') {
   const card = this.flashcards.get(id);
   if (!card) return;
 
@@ -321,6 +343,25 @@ async deleteCard(id: string) {
       await this.dataManager.saveContentUnits([contentUnit]);
     }
   }
+  // ⭐ 添加到删除历史
+  await this.addToDeleteHistory({
+    type: 'flashcard',
+    id: card.id,
+    content: {
+      front: card.front,
+      back: typeof card.back === 'string' ? card.back : card.back.join(', '),
+      sourceFile: card.sourceFile,
+      sourceContentId: card.sourceContentId,
+      cardType: card.type,
+      fullCard: { ...card } // 保存完整卡片数据以便恢复
+    },
+    deletedAt: Date.now(),
+    deletedBy: reason,
+    metadata: {
+      deck: card.deck,
+      stats: card.stats
+    }
+  });
 
   // ⭐ 删除该卡片的所有复习日志
   this.reviewLogs = this.reviewLogs.filter(log => log.flashcardId !== id);
@@ -329,6 +370,112 @@ async deleteCard(id: string) {
   // 删除闪卡
   this.flashcards.delete(id);
   await this.persistFlashcards();
+}
+
+private deletedItems: DeletedItem[] = [];
+
+// 新增：添加到删除历史
+private async addToDeleteHistory(item: DeletedItem) {
+  this.deletedItems.push(item);
+  
+  // 只保留最近7天的删除记录
+  const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+  this.deletedItems = this.deletedItems.filter(item => item.deletedAt > sevenDaysAgo);
+  
+  await this.persistDeleteHistory();
+}
+
+// 新增：获取最近删除
+getRecentlyDeleted(days: number = 7): DeletedItem[] {
+  const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
+  return this.deletedItems.filter(item => item.deletedAt > cutoff)
+    .sort((a, b) => b.deletedAt - a.deletedAt); 
+}
+
+
+// 新增：恢复闪卡
+async restoreFlashcard(deletedItem: DeletedItem): Promise<boolean> {
+  try {
+    if (deletedItem.type !== 'flashcard') return false;
+    
+    const card = deletedItem.content.fullCard as Flashcard;
+    
+    // 检查是否已存在
+    if (this.flashcards.has(card.id)) {
+      return false;
+    }
+    
+    // 恢复闪卡
+    this.flashcards.set(card.id, card);
+    
+    // 恢复 ContentUnit 关联
+    const contentUnit = this.dataManager.getContentUnit(card.sourceContentId);
+    if (contentUnit && !contentUnit.flashcardIds.includes(card.id)) {
+      contentUnit.flashcardIds.push(card.id);
+      await this.dataManager.saveContentUnits([contentUnit]);
+    }
+    
+    await this.persistFlashcards();
+    
+    // 从删除历史中移除
+    this.deletedItems = this.deletedItems.filter(item => item.id !== deletedItem.id);
+    await this.persistDeleteHistory();
+    
+    return true;
+  } catch (error) {
+    console.error('Error restoring flashcard:', error);
+    return false;
+  }
+}
+
+// 新增：永久删除闪卡（从历史中移除）
+async permanentlyDeleteFlashcard(deletedItemId: string): Promise<boolean> {
+  try {
+    this.deletedItems = this.deletedItems.filter(item => item.id !== deletedItemId);
+    await this.persistDeleteHistory();
+    return true;
+  } catch (error) {
+    console.error('Error permanently deleting flashcard:', error);
+    return false;
+  }
+}
+
+// 新增：一键清空删除历史
+async clearDeleteHistory(): Promise<number> {
+  const count = this.deletedItems.filter(item => item.type === 'flashcard').length;
+  this.deletedItems = this.deletedItems.filter(item => item.type !== 'flashcard');
+  await this.persistDeleteHistory();
+  return count;
+}
+
+// 新增：持久化删除历史
+private async persistDeleteHistory() {
+  try {
+    const path = `${this.dataFolder}/delete-history.json`;
+    const data = JSON.stringify(this.deletedItems, null, 2);
+    await this.app.vault.adapter.write(path, data);
+  } catch (error) {
+    console.error('Error persisting delete history:', error);
+  }
+}
+
+private async loadDeleteHistory() {
+  try {
+    const path = `${this.dataFolder}/delete-history.json`;
+    const adapter = this.app.vault.adapter;
+
+    if (await adapter.exists(path)) {
+      const data = await adapter.read(path);
+      this.deletedItems = JSON.parse(data);
+      
+      // 清理超过7天的记录
+      const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+      this.deletedItems = this.deletedItems.filter(item => item.deletedAt > sevenDaysAgo);
+      await this.persistDeleteHistory();
+    }
+  } catch (error) {
+    console.error('Error loading delete history:', error);
+  }
 }
 
   // ==================== 复习日志 ====================
@@ -478,10 +625,13 @@ async deleteCard(id: string) {
     try {
       const path = `${this.dataFolder}/flashcards.json`;
       const flashcards = Array.from(this.flashcards.values());
+      console.log(`💾 准备保存 ${flashcards.length} 个闪卡到:`, path);
+      console.log('保存的闪卡IDs:', flashcards.map(c => c.id));
       const data = JSON.stringify(flashcards, null, 2);
       await this.app.vault.adapter.write(path, data);
+      console.log('✅ 闪卡已成功写入文件');
     } catch (error) {
-      console.error('Error persisting flashcards:', error);
+      console.error('❌ Error persisting flashcards:', error);
     }
   }
 

@@ -64,33 +64,40 @@ export class reviewStyle {
         margin-right: auto;
       }
 
-      .progress-bar {
-        margin-bottom: 20px;
-      }
+ .review-container .progress-bar {
+  margin-bottom: 20px;
+  display: block !important;  /* 覆盖 app.css 的 flex */
+  position: static !important;  /* 覆盖 app.css 的 relative */
+  padding: 0 !important;
+  width: 100% !important;
+}
 
-      .progress-stats {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 8px;
-      }
+.review-container .progress-stats {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
 
-      .progress-text {
-        font-weight: 300;
-        font-size: 0.9em;
-      }
+.review-container .progress-text {
+  font-weight: 300;
+  font-size: 0.9em;
+  justify-content: center;
+}
 
-      .bar-container {
-        height: 6px;
-        background: var(--background-secondary);
-        border-radius: 3px;
-        overflow: hidden;
-      }
+.review-container .bar-container {
+  height: 6px;
+  background: var(--background-secondary);
+  border-radius: 3px;
+  overflow: hidden;
+  width: 100%;
+}
 
-      .bar {
-        height: 100%;
-        background: var(--interactive-accent);
-        transition: width 0.3s ease;
-      }
+.review-container .bar {
+  height: 40%;
+  background: var(--interactive-accent);
+  transition: width 0.3s ease;
+  display: block;
+}
 
       .card-area {
         background: var(--background-primary);

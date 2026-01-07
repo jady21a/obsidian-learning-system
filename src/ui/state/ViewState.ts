@@ -157,4 +157,43 @@ export class ViewState {
   updateDueCount(flashcardManager: FlashcardManager): void {
     this.dueFlashcardsCount = flashcardManager.getDueCards().length;
   }
+
+// 获取待删除的统计信息
+getDeleteStats(plugin: any): { notes: number; cards: number } {
+  let totalCards = 0;
+  
+  if (this.viewType === 'cards') {
+    // 删除闪卡模式：只统计选中的闪卡
+    totalCards = this.selectedCardIds.size;
+    return { notes: 0, cards: totalCards };
+  } else {
+    // 删除笔记模式：统计选中笔记及其关联的闪卡
+    const notes = this.selectedUnitIds.size;
+    
+    this.selectedUnitIds.forEach(unitId => {
+      const unit = plugin.dataManager.getContentUnit(unitId);
+      if (unit) {
+        totalCards += unit.flashcardIds.length;
+      }
+    });
+    
+    return { notes, cards: totalCards };
+  }
+}
+
+// 获取文件删除的统计信息
+static getFileDeleteStats(filePath: string, plugin: any): { notes: number; cards: number } {
+  const units = plugin.dataManager.getAllContentUnits()
+    .filter((u: any) => u.source.file === filePath);
+  
+  const notes = units.length;
+  let cards = 0;
+  
+  units.forEach((unit: any) => {
+    cards += unit.flashcardIds.length;
+  });
+  
+  return { notes, cards };
+}
+
 }

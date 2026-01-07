@@ -210,7 +210,41 @@ type TranslationKey =
 | 'service.flashcardNotFound'
 | 'service.sourceFileOpened'
 | 'service.noteNotFound'
+// 最近删除
+| 'confirm.deleteWillRemove'
+| 'confirm.note'
+| 'confirm.notes'
+| 'confirm.flashcards'
+| 'confirm.annotation'
+| 'confirm.cannotUndo'
+| 'notice.fileDeleted'
+| 'notice.autoCleanup'
+| 'recentDelete.title'
+| 'recentDelete.empty'
+| 'recentDelete.restore'
+| 'recentDelete.deletePermanently'
 
+| 'notice.movedToTrash'
+| 'notice.batchMovedToTrash'
+| 'notice.fileDeletedSimple'
+| 'notice.noteRestored'
+| 'notice.cardRestored'
+| 'notice.cardsRestored'
+| 'notice.restoreFailed'
+| 'notice.permanentlyDeleted'
+| 'notice.deleteFailed'
+| 'notice.allDeleted'
+| 'recentDelete.clearAll'
+| 'recentDelete.emptyHint'
+| 'confirm.clearAllDeleted'
+| 'confirm.restoreAssociatedCards'
+| 'deleteReason.user'
+| 'deleteReason.note'
+| 'deleteReason.file'
+| 'time.justNow'
+| 'time.minutesAgo'
+| 'time.hoursAgo'
+| 'time.daysAgo'
 
 
 // 定义翻译字典类型
@@ -452,6 +486,41 @@ export const translations: Record<Language, TranslationDict> = {
 'service.flashcardNotFound': '⚠️ Flashcard not found',
 'service.sourceFileOpened': '✅ Source file opened',
 'service.noteNotFound': '⚠️ Original note not found',
+// 最近删除
+'confirm.deleteWillRemove': 'This will remove:',
+'confirm.note': 'note',
+'confirm.notes': 'notes',
+'confirm.flashcards': 'flashcards',
+'confirm.annotation': 'annotation',
+'confirm.cannotUndo': '⚠️ This action cannot be undone!',
+'notice.fileDeleted': '📄 File "{file}" has been deleted',
+'notice.autoCleanup': 'Auto-cleaning associated content:',
+'recentDelete.title': '🗑️ Recently Deleted (Last 7 Days)',
+'recentDelete.empty': 'No recently deleted items',
+'recentDelete.restore': 'Restore',
+'recentDelete.deletePermanently': 'Delete Permanently',
+
+'notice.movedToTrash': '🗑️ Moved to trash (recoverable within 7 days)',
+'notice.batchMovedToTrash': '✅ Moved {success} items to trash{failed, plural, =0 {} other {, {failed} failed}}',
+'notice.fileDeletedSimple': '📄 File deleted: {notes} notes and {cards} cards moved to trash',
+'notice.noteRestored': '✅ Note restored',
+'notice.cardRestored': '✅ Flashcard restored',
+'notice.cardsRestored': '✅ Restored {count} flashcards',
+'notice.restoreFailed': '❌ Restore failed',
+'notice.permanentlyDeleted': '✅ Permanently deleted',
+'notice.deleteFailed': '❌ Delete failed',
+'notice.allDeleted': '✅ Cleared {notes} notes and {cards} flashcards from trash',
+'recentDelete.clearAll': '🗑️ Clear All',
+'recentDelete.emptyHint': 'Deleted items will be kept for 7 days',
+'confirm.clearAllDeleted': 'Permanently delete all items in trash? This cannot be undone!',
+'confirm.restoreAssociatedCards': 'Restore {count} associated flashcards?',
+'deleteReason.user': 'Manual deletion',
+'deleteReason.note': 'Note deleted',
+'deleteReason.file': 'File deleted',
+'time.justNow': 'Just now',
+'time.minutesAgo': '{minutes}m ago',
+'time.hoursAgo': '{hours}h ago',
+'time.daysAgo': '{days}d ago',
 
 
 },
@@ -690,6 +759,42 @@ export const translations: Record<Language, TranslationDict> = {
 'service.flashcardNotFound': '⚠️ 找不到闪卡',
 'service.sourceFileOpened': '✅ 已打开源文件',
 'service.noteNotFound': '⚠️ 找不到原始笔记',
+// 最近删除
+'confirm.deleteWillRemove': '此操作将删除：',
+'confirm.note': '条笔记',
+'confirm.notes': '条笔记',
+'confirm.flashcards': '张闪卡',
+'confirm.annotation': '条批注',
+'confirm.cannotUndo': '⚠️ 此操作无法撤销！',
+'notice.fileDeleted': '📄 文件 "{file}" 已被删除',
+'notice.autoCleanup': '自动清理关联内容：',
+'recentDelete.title': '🗑️ 最近删除 (最近7天)',
+'recentDelete.empty': '暂无最近删除的项目',
+'recentDelete.restore': '恢复',
+'recentDelete.deletePermanently': '永久删除',
+
+'notice.movedToTrash': '🗑️ 已移至回收站 (7天内可恢复)',
+'notice.batchMovedToTrash': '✅ 已将 {success} 项移至回收站{failed, plural, =0 {} other {，{failed} 项失败}}',
+'notice.fileDeletedSimple': '📄 文件已删除：{notes} 条笔记和 {cards} 张闪卡已移至回收站',
+'notice.noteRestored': '✅ 笔记已恢复',
+'notice.cardRestored': '✅ 闪卡已恢复',
+'notice.cardsRestored': '✅ 已恢复 {count} 张闪卡',
+'notice.restoreFailed': '❌ 恢复失败',
+'notice.permanentlyDeleted': '✅ 已永久删除',
+'notice.deleteFailed': '❌ 删除失败',
+'notice.allDeleted': '✅ 已清空 {notes} 条笔记和 {cards} 张闪卡',
+'recentDelete.clearAll': '🗑️ 一键清空',
+'recentDelete.emptyHint': '删除的内容将保留7天',
+'confirm.clearAllDeleted': '确定要永久删除回收站中的所有项目吗？此操作无法撤销！',
+'confirm.restoreAssociatedCards': '是否恢复 {count} 张关联的闪卡？',
+'deleteReason.user': '手动删除',
+'deleteReason.note': '笔记删除',
+'deleteReason.file': '文件删除',
+'time.justNow': '刚刚',
+'time.minutesAgo': '{minutes}分钟前',
+'time.hoursAgo': '{hours}小时前',
+'time.daysAgo': '{days}天前',
+
 
   }
 } as const;

@@ -55,6 +55,7 @@ export class DataManager {
     
     // 加载现有数据
     await this.loadData();
+    await this.loadDeleteHistory();
   }
 
   private async ensureDataFolder() {
@@ -148,23 +149,170 @@ export class DataManager {
   }
 
 
-  async deleteContentUnit(id: string) {
-    const unit = this.contentUnits.get(id);
-    if (unit) {
-      this.contentUnits.delete(id);
-      
-      // 更新文件索引
-      const fileUnits = this.fileIndex.get(unit.source.file);
-      if (fileUnits) {
-        const index = fileUnits.indexOf(id);
-        if (index > -1) {
-          fileUnits.splice(index, 1);
-        }
-      }
+  
+  // 最近删除
+private deletedUnits: Array<{
+  type: 'note';
+  id: string;
+  unit: ContentUnit;
+  deletedAt: number;
+  deletedBy: string;
+  associatedCardIds: string[];
+}> = [];
 
-      await this.persist();
+async deleteContentUnit(id: string, reason: 'user-deleted' | 'file-deleted' = 'user-deleted') {
+  const unit = this.contentUnits.get(id);
+  if (unit) {
+    // ✅ 强制刷新：确保 flashcardIds 是最新的
+    console.log('🔄 删除前检查 flashcardIds:', unit.flashcardIds);
+    
+    // ✅ 无论 flashcardIds 是否为空，都动态查找一次（防止数据不同步）
+    const allCards = this.plugin.flashcardManager.getAllFlashcards();
+    console.log('当前笔记ID:', id);
+    console.log('系统中的所有闪卡数量:', allCards.length);
+    
+    const associatedCardIds = allCards
+      .filter(card => {
+        const match = card.sourceContentId === id;
+        if (match) {
+          console.log(`✅ 找到匹配闪卡: ${card.id}, sourceContentId=${card.sourceContentId}`);
+        }
+        return match;
+      })
+      .map(card => card.id);
+    
+    console.log(`✅ 最终找到 ${associatedCardIds.length} 个关联闪卡:`, associatedCardIds);
+    
+    // 📝 保存到删除历史
+    this.deletedUnits.push({
+      type: 'note',
+      id: unit.id,
+      unit: { ...unit },
+      deletedAt: Date.now(),
+      deletedBy: reason,
+      associatedCardIds: associatedCardIds
+    });
+    
+    // 只保留7天内的记录
+    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    this.deletedUnits = this.deletedUnits.filter(d => d.deletedAt > sevenDaysAgo);
+    
+    this.contentUnits.delete(id);
+    
+    // 更新文件索引
+    const fileUnits = this.fileIndex.get(unit.source.file);
+    if (fileUnits) {
+      const index = fileUnits.indexOf(id);
+      if (index > -1) {
+        fileUnits.splice(index, 1);
+      }
     }
+
+    
+
+    await this.persist();
+    await this.persistDeleteHistory();
   }
+}
+
+// 新增：获取最近删除的笔记
+getRecentlyDeletedUnits(days: number = 7): Array<{
+  type: 'note';
+  id: string;
+  unit: ContentUnit;
+  deletedAt: number;
+  deletedBy: string;
+  associatedCardIds: string[];
+}> {
+  const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
+  return this.deletedUnits.filter(d => d.deletedAt > cutoff)
+    .sort((a, b) => b.deletedAt - a.deletedAt); // 按时间倒序
+}
+
+// 新增：恢复笔记
+async restoreContentUnit(deletedItem: typeof this.deletedUnits[0]): Promise<boolean> {
+  try {
+    // 检查是否已存在
+    if (this.contentUnits.has(deletedItem.unit.id)) {
+      return false;
+    }
+    
+    // 恢复笔记
+    this.contentUnits.set(deletedItem.unit.id, deletedItem.unit);
+    
+    // 恢复文件索引
+    if (!this.fileIndex.has(deletedItem.unit.source.file)) {
+      this.fileIndex.set(deletedItem.unit.source.file, []);
+    }
+    this.fileIndex.get(deletedItem.unit.source.file)!.push(deletedItem.unit.id);
+    
+    await this.persist();
+    
+    // 从删除历史中移除
+    this.deletedUnits = this.deletedUnits.filter(item => item.id !== deletedItem.id);
+    await this.persistDeleteHistory();
+    
+    return true;
+  } catch (error) {
+    console.error('Error restoring content unit:', error);
+    return false;
+  }
+}
+
+// 新增：永久删除笔记（从历史中移除）
+async permanentlyDeleteContentUnit(deletedItemId: string): Promise<boolean> {
+  try {
+    this.deletedUnits = this.deletedUnits.filter(item => item.id !== deletedItemId);
+    await this.persistDeleteHistory();
+    return true;
+  } catch (error) {
+    console.error('Error permanently deleting content unit:', error);
+    return false;
+  }
+}
+
+// 新增：一键清空笔记删除历史
+async clearDeleteHistory(): Promise<number> {
+  const count = this.deletedUnits.length;
+  this.deletedUnits = [];
+  await this.persistDeleteHistory();
+  return count;
+}
+
+private async persistDeleteHistory() {
+  try {
+    const path = `${this.dataFolder}/deleted-units.json`;
+    const data = JSON.stringify(this.deletedUnits, null, 2);
+    await this.app.vault.adapter.write(path, data);
+  } catch (error) {
+    console.error('Error persisting delete history:', error);
+  }
+}
+
+private async loadDeleteHistory() {
+  try {
+    const path = `${this.dataFolder}/deleted-units.json`;
+    const adapter = this.app.vault.adapter;
+
+    if (await adapter.exists(path)) {
+      const data = await adapter.read(path);
+      this.deletedUnits = JSON.parse(data);
+      
+      // 清理超过7天的记录
+      const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+      this.deletedUnits = this.deletedUnits.filter(d => d.deletedAt > sevenDaysAgo);
+      await this.persistDeleteHistory();
+    }
+  } catch (error) {
+    console.error('Error loading delete history:', error);
+  }
+}
+
+
+  
+
+
+
   /** 对外统一保存入口 */
   async save(): Promise<void> {
     await this.persist();
@@ -201,4 +349,6 @@ export class DataManager {
         throw error;
       }
     }
+
+ 
 }
