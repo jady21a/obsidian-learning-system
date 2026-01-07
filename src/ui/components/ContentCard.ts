@@ -148,6 +148,10 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     }
 
     const header = cardEl.createDiv({ cls: 'grid-card-header' });
+    const cardType = header.createDiv({ cls: 'card-type-badge' });
+    cardType.textContent = card.type === 'qa' ? 'Q&A' : 'Cloze';
+    cardType.addClass(`type-${card.type}`);
+    
     header.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       e.preventDefault();

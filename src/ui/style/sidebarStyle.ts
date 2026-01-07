@@ -1297,6 +1297,37 @@ export class StyleLoader {
   background: var(--interactive-accent-hover);
 }
   
+
+/* 卡片类型标识 */
+.card-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  margin-right: auto;
+  text-transform: uppercase;
+}
+
+.card-type-badge.type-qa {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+.card-type-badge.type-cloze {
+  background: rgba(255, 241, 118, 0.2);
+  color: #FFF176;
+}
+
+/* 确保 header 使用 flex 布局并对齐 */
+.grid-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
       `;
     }
   }
