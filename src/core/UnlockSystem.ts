@@ -48,7 +48,6 @@ export class UnlockSystem {
    * 🎯 卡片提取完成时调用
    */
   async onCardExtracted() {
-    console.trace('[UnlockSystem] onCardExtracted 被调用');
     this.progress.stats.cardsExtracted++;
     await this.checkLevelUp();
     await this.saveProgress();
