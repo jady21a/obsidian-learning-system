@@ -134,17 +134,14 @@ export class UnlockSystem {
    * 尝试使用功能(如果未解锁则提示)
    */
   tryUseFeature(feature: string, featureName: string): boolean {
-    console.log(`[UnlockSystem] 检查功能: ${feature}, 当前等级: ${this.progress.currentLevel}`);
     
     if (this.isFeatureUnlocked(feature)) {
-      console.log(`[UnlockSystem] ✅ ${feature} 已解锁`);
       return true;
     }
   
     const requiredLevel = this.getFeatureRequiredLevel(feature);
     const nextSteps = this.getNextStepsForLevel(this.progress.currentLevel);
     
-    console.log(`[UnlockSystem] ❌ ${feature} 需要 Lv${requiredLevel}, 当前 Lv${this.progress.currentLevel}`);
     
     // 使用 Modal 替代 Notice
     new UnlockNoticeModal(this.app, featureName, requiredLevel, nextSteps).open();

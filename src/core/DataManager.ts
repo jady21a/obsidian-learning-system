@@ -163,25 +163,17 @@ private deletedUnits: Array<{
 async deleteContentUnit(id: string, reason: 'user-deleted' | 'file-deleted' = 'user-deleted') {
   const unit = this.contentUnits.get(id);
   if (unit) {
-    // ✅ 强制刷新：确保 flashcardIds 是最新的
-    console.log('🔄 删除前检查 flashcardIds:', unit.flashcardIds);
     
     // ✅ 无论 flashcardIds 是否为空，都动态查找一次（防止数据不同步）
     const allCards = this.plugin.flashcardManager.getAllFlashcards();
-    console.log('当前笔记ID:', id);
-    console.log('系统中的所有闪卡数量:', allCards.length);
-    
     const associatedCardIds = allCards
       .filter(card => {
         const match = card.sourceContentId === id;
         if (match) {
-          console.log(`✅ 找到匹配闪卡: ${card.id}, sourceContentId=${card.sourceContentId}`);
         }
         return match;
       })
       .map(card => card.id);
-    
-    console.log(`✅ 最终找到 ${associatedCardIds.length} 个关联闪卡:`, associatedCardIds);
     
     // 📝 保存到删除历史
     this.deletedUnits.push({

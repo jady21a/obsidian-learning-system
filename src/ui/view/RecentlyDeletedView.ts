@@ -98,11 +98,6 @@ export class RecentlyDeletedModal extends Modal {
     const list = section.createDiv({ cls: 'deleted-list' });
 
     items.forEach((item) => {
-      console.log('渲染笔记项:', {
-        id: item.id,
-        associatedCardIds: item.associatedCardIds,
-        deletedBy: item.deletedBy
-      });
       const itemEl = list.createDiv({ cls: 'deleted-item' });
       
       // 左侧信息
@@ -247,14 +242,8 @@ export class RecentlyDeletedModal extends Modal {
   }
 
   private async restoreNote(item: any) {
-    console.log('=== 开始恢复笔记 ===');
-    console.log('item 完整数据:', item);
-    console.log('associatedCardIds:', item.associatedCardIds);
-    console.log('associatedCardIds 类型:', typeof item.associatedCardIds);
-    console.log('associatedCardIds 是否为数组:', Array.isArray(item.associatedCardIds));
     
     const success = await this.plugin.dataManager.restoreContentUnit(item);
-    console.log('笔记恢复结果:', success);
     if (success) {
       // ✅ 自动恢复关联的闪卡
       if (item.associatedCardIds && item.associatedCardIds.length > 0) {
@@ -311,32 +300,21 @@ export class RecentlyDeletedModal extends Modal {
   }
 
   private async restoreAssociatedCards(cardIds: string[]): Promise<number> {
-    console.log('=== 开始恢复关联闪卡 ===');
-    console.log('需要恢复的卡片IDs:', cardIds);
     
     const deletedCards = this.plugin.flashcardManager.getRecentlyDeleted();
-    console.log('当前回收站中的所有闪卡:', deletedCards);
-    console.log('回收站闪卡数量:', deletedCards.length);
-    console.log('回收站闪卡IDs:', deletedCards.map(c => c.id));
     
     let restored = 0;
     
     for (const cardId of cardIds) {
-      console.log(`\n尝试恢复闪卡: ${cardId}`);
       const deletedCard = deletedCards.find(item => item.id === cardId);
-      console.log('找到的闪卡数据:', deletedCard);
       
       if (deletedCard) {
-        console.log('调用 restoreFlashcard...');
         const success = await this.plugin.flashcardManager.restoreFlashcard(deletedCard);
-        console.log('恢复结果:', success);
         if (success) restored++;
       } else {
-        console.log(`❌ 未在回收站找到闪卡: ${cardId}`);
       }
     }
     
-    console.log(`\n=== 恢复完成: ${restored}/${cardIds.length} ===`);
     return restored;
   }
 

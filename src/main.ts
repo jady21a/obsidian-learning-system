@@ -47,7 +47,6 @@ export default class LearningSystemPlugin extends Plugin {
     // 🔥 1. 最优先:初始化解锁系统
     this.unlockSystem = new UnlockSystem(this.app, this);
     await this.unlockSystem.initialize();
-    console.log(`[UnlockSystem] 当前等级: Lv${this.unlockSystem.getCurrentLevel()}`);
   
     // 2. 初始化核心模块
     this.dataManager = new DataManager(this.app, this);

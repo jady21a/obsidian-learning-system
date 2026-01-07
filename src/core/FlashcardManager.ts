@@ -116,10 +116,6 @@ export class FlashcardManager {
       cardType?: 'qa' | 'cloze';
     }
   ): Promise<Flashcard> {
-    console.log('=== 开始创建闪卡 ===');
-    console.log('unit.id:', unit.id);
-    console.log('unit.type:', unit.type);
-    console.log('cardType:', options?.cardType || (unit.type === 'QA' ? 'qa' : 'cloze'));
     
     
     const cardType = options?.cardType || (unit.type === 'QA' ? 'qa' : 'cloze');
@@ -197,9 +193,6 @@ await this.plugin.unlockSystem.onCardExtracted();
     await this.persistFlashcards();
     // 🎯 解锁系统检查点
 // await this.plugin.unlockSystem.onCardExtracted();
-console.log('✅ QA卡片已创建并保存:', card.id, 'sourceContentId:', card.sourceContentId);
-console.log('验证: this.flashcards.has(card.id) =', this.flashcards.has(card.id));
-console.log('验证: this.flashcards.size =', this.flashcards.size);    
 return card;
   }
 
@@ -259,7 +252,6 @@ return card;
     await this.persistFlashcards();
     // 🎯 解锁系统检查点
 // await this.plugin.unlockSystem.onCardExtracted();
-console.log('✅ Cloze卡片已创建并保存:', card.id, 'sourceContentId:', card.sourceContentId);
     return card;  // ← 必须有这一行!
   } 
   
@@ -290,8 +282,6 @@ console.log('✅ Cloze卡片已创建并保存:', card.id, 'sourceContentId:', c
    */
   getAllFlashcards(): Flashcard[] {
     const cards = Array.from(this.flashcards.values());
-    console.log('📋 getAllFlashcards 返回:', cards.length, '个闪卡');
-    console.log('闪卡IDs:', cards.map(c => c.id));
     return cards;
   }
 
@@ -625,11 +615,8 @@ private async loadDeleteHistory() {
     try {
       const path = `${this.dataFolder}/flashcards.json`;
       const flashcards = Array.from(this.flashcards.values());
-      console.log(`💾 准备保存 ${flashcards.length} 个闪卡到:`, path);
-      console.log('保存的闪卡IDs:', flashcards.map(c => c.id));
       const data = JSON.stringify(flashcards, null, 2);
       await this.app.vault.adapter.write(path, data);
-      console.log('✅ 闪卡已成功写入文件');
     } catch (error) {
       console.error('❌ Error persisting flashcards:', error);
     }
