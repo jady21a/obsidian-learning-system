@@ -391,7 +391,7 @@ if (shouldShowFullBadge) {
   };
   const levelName = levelNames[progress.currentLevel] || '';
 
-  levelBadge.textContent = `Lv${progress.currentLevel} ${levelName}`;
+  levelBadge.textContent = `Lv${progress.currentLevel}:  ${levelName}`;
   levelBadge.style.fontSize = '1em';
 
   const progressText = container.createDiv({ cls: 'progress-text' });

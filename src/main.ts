@@ -125,7 +125,14 @@ this.registerEvent(
     
     // 🔥 4. 现在才注册命令(确保 unlockSystem 已就绪)
     this.addCommands();
-  
+  // 🆕 4.5 注册右键菜单
+this.registerEvent(
+  this.app.workspace.on('editor-menu', (menu, editor, view) => {
+    if (view instanceof MarkdownView && view.file) {
+      this.extractionEngine.registerContextMenu(menu, editor, view.file);
+    }
+  })
+);
     // 5. Ribbon 图标(带权限检查)
     this.addRibbonIcon('layout-list', 'Open Learning Overview(Sidebar)', () => {
       this.activateSidebarOverview();

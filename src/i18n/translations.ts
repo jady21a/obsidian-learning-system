@@ -597,11 +597,11 @@ export const translations: Record<Language, TranslationDict> = {
   'unlock.level.5': 'Analyst',
   
   // Level Up Messages
-  'unlock.levelUp.1': '🎉 Welcome, Collector!',
-  'unlock.levelUp.2': '🎓 Upgraded to Thinker!\nUnlocked: Annotations, Batch Operations',
-  'unlock.levelUp.3': '🧠 You are now a Memorizer!\nUnlocked: Scan Features, Review System',
-  'unlock.levelUp.4': '💪 Promoted to Trainer!\nUnlocked: Statistics & Analysis',
-  'unlock.levelUp.5': '🏆 Achieved Analyst!\nAll features unlocked',
+  'unlock.levelUp.1': '🎉 level.1 Welcome, Collector!',
+  'unlock.levelUp.2': '🎓 level.2 Upgraded to Thinker!\nUnlocked: Annotations, Batch Operations',
+  'unlock.levelUp.3': '🧠 level.3 You are now a Memorizer!\nUnlocked: Scan Features, Review System',
+  'unlock.levelUp.4': '💪 level.4 Promoted to Trainer!\nUnlocked: Statistics & Analysis',
+  'unlock.levelUp.5': '🏆 level.5 Achieved Analyst!\nAll features unlocked',
   
   // Next Steps
   'unlock.nextSteps.level1': '📦 Extract Cards: {current}/10',
@@ -933,11 +933,11 @@ export const translations: Record<Language, TranslationDict> = {
   'unlock.level.5': '分析师',
   
   // 升级消息
-  'unlock.levelUp.1': '🎉 欢迎成为采集者!',
-  'unlock.levelUp.2': '🎓 升级为思考者!\n解锁: 批注功能、批量操作',
-  'unlock.levelUp.3': '🧠 成为记忆师!\n解锁: 扫描功能、复习系统',
-  'unlock.levelUp.4': '💪 晋升训练者!\n解锁: 统计分析',
-  'unlock.levelUp.5': '🏆 达成分析师!\n所有功能已解锁',
+  'unlock.levelUp.1': '🎉 level.1 欢迎成为采集者!',
+  'unlock.levelUp.2': '🎓 level.2 升级为思考者!\n解锁: 批注功能、批量操作',
+  'unlock.levelUp.3': '🧠 level.3 成为记忆师!\n解锁: 扫描功能、复习系统',
+  'unlock.levelUp.4': '💪 level.4 晋升训练者!\n解锁: 统计分析',
+  'unlock.levelUp.5': '🏆 level.5 达成分析师!\n所有功能已解锁',
   
   // 下一步提示
   'unlock.nextSteps.level1': '📦 提取卡片: {current}/10',
