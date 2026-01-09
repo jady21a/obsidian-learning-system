@@ -23,7 +23,6 @@ export interface UnlockProgress {
   milestones: {
     level: UserLevel;
     unlockedAt: number;
-    message: string;
   }[];
 }
 
@@ -211,7 +210,6 @@ export class UnlockSystem {
     const milestone = {
       level: newLevel,
       unlockedAt: Date.now(),
-      message: message
     };
   
     this.progress.milestones.push(milestone);
@@ -351,7 +349,6 @@ export class UnlockSystem {
       milestones: [{
         level: 1,
         unlockedAt: Date.now(),
-        message: t('unlock.levelUp.1', this.language)
       }]
     };
   }
@@ -502,8 +499,10 @@ export class LevelInfoModal extends Modal {
           const date = new Date(milestone.unlockedAt).toLocaleDateString(
             this.language === 'zh-CN' ? 'zh-CN' : 'en-US'
           );
+          const message = t(`unlock.levelUp.${milestone.level}`, this.language);
+      
           item.innerHTML = `
-            <div class="milestone-message">${date} ${milestone.message}</div>
+            <div class="milestone-message">${date} ${message}</div>
           `;
         });
     }
