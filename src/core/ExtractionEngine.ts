@@ -105,7 +105,7 @@ export class ExtractionEngine {
           await this.dataManager.saveContentUnits([unit]);
           
         } catch (error) {
-          console.error('[extractSelectedText] 创建闪卡失败:', error);
+          console.error('[extractSelectedText] Failed to create flashcard:', error);
         }
       } else if (extractType === 'text') {
         // 🎯 纯文本提取也算作提取任务
@@ -331,7 +331,7 @@ export class ExtractionEngine {
       
       return units.length;
     } catch (error) {
-      console.error('[scanFile] 错误:', error);
+      console.error('[scanFile] Error:', error);
       new Notice(`Error scanning file: ${error.message}`);
       return 0;
     }
@@ -391,13 +391,13 @@ export class ExtractionEngine {
     const newUnits = await this.filterDuplicateUnits(allExtractedUnits, existingUnits);
     
     if (newUnits.length === 0) {
-      new Notice(` ${file.name}: 没有新内容需要提取`);
+      new Notice(` ${file.name}: No new content to extract`);
       return [];
     }
     
     if (newUnits.length < allExtractedUnits.length) {
       const skipped = allExtractedUnits.length - newUnits.length;
-      new Notice(` ${file.name}: 跳过 ${skipped} 个重复项`);
+      new Notice(` ${file.name}:Skipped ${skipped} duplicate items`);
     }
     
     units.push(...newUnits);
@@ -415,7 +415,7 @@ export class ExtractionEngine {
           cardType: cardType
         });
       } catch (error) {
-        console.error('[extractContent] 创建闪卡失败:', error);
+        console.error('[extractContent]  Failed to create flashcard:', error);
       }
     }
     
@@ -562,65 +562,7 @@ export class ExtractionEngine {
     return units;
   }
 
-  /**
-   * ✅ 提取完形填空卡 (格式: ==highlight==)
-   * 新增: 过滤 Excalidraw 高亮
-   */
-  // private extractClozeCards(file: TFile, content: string): ContentUnit[] {
-  //   const units: ContentUnit[] = [];
-  //   const highlightRegex = /==(.+?)==/g;
-  //   let match;
 
-  //   while ((match = highlightRegex.exec(content)) !== null) {
-  //     const extractedText = match[1];
-  //     const fullMatch = match[0];
-  //     const position = this.calculatePosition(content, match.index);
-      
-  //     // 获取当前行内容
-  //     const lineStart = content.lastIndexOf('\n', match.index) + 1;
-  //     const lineEnd = content.indexOf('\n', match.index);
-  //     const currentLine = content.substring(lineStart, lineEnd === -1 ? content.length : lineEnd);
-      
-  //     // ✅ 跳过 Excalidraw 高亮
-  //     if (this.isExcalidrawHighlight(extractedText, currentLine)) {
-  //       continue;
-  //     }
-      
-  //     const fullSentence = this.extractFullSentence(content, match.index, fullMatch.length);
-
-  //     const unit: ContentUnit = {
-  //       id: this.generateId(),
-  //       type: 'cloze',
-  //       content: extractedText.trim(),
-  //       fullContext: fullSentence,
-  //       source: {
-  //         file: file.path,
-  //         position: {
-  //           start: match.index,
-  //           end: match.index + fullMatch.length,
-  //           line: position.line
-  //         },
-  //         heading: this.findHeading(content, match.index),
-  //         anchorLink: `[[${file.basename}#^${this.generateBlockId()}]]`
-  //       },
-  //       extractRule: {
-  //         ruleId: 'cloze',
-  //         ruleName: 'Cloze Deletion',
-  //         extractedBy: 'auto'
-  //       },
-  //       metadata: {
-  //         createdAt: Date.now(),
-  //         updatedAt: Date.now(),
-  //         tags: this.extractTags(content, match.index)
-  //       },
-  //       flashcardIds: []
-  //     };
-
-  //     units.push(unit);
-  //   }
-
-  //   return units;
-  // }
 
   /**
    * 提取包含高亮的完整句子
@@ -895,10 +837,10 @@ private async extractClozeCards(file: TFile, content: string): Promise<ContentUn
         tableHighlights.forEach(pos => processedHighlights.add(pos));
         
         const lines = content.split('\n');
-        const { line: currentLine } = this.calculatePosition(content, match.index);
+        const { line: currentLineIndex } = this.calculatePosition(content, match.index);
         
         // 找到表格起始位置
-        let tableStart = currentLine;
+        let tableStart = currentLineIndex;
         while (tableStart > 0 && lines[tableStart - 1]?.includes('|')) {
           tableStart--;
         }

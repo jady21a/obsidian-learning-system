@@ -3,13 +3,16 @@ import { Notice } from 'obsidian';
 import type LearningSystemPlugin from '../main';
 import { ContentUnit } from '../core/DataManager';
 import { Annotation } from '../core/AnnotationManager';
+import { t } from 'src/i18n/translations';
 
 /**
  * 一键创建闪卡工具类
  */
 export class QuickFlashcardCreator {
   constructor(private plugin: LearningSystemPlugin) {}
-
+  private get language() {
+    return this.plugin.settings.language || 'en';
+  }
   /**
    * 从提取内容一键创建问答卡
    * 如果有批注，使用批注作为答案
@@ -149,30 +152,37 @@ export class QuickFlashcardCreator {
     return { success, failed };
   }
 
-  /**
-   * 判断文本是否是问题
-   */
-  private isQuestion(text: string): boolean {
-    const questionWords = ['what', 'why', 'how', 'when', 'where', 'who', 'which'];
-    const lowerText = text.toLowerCase().trim();
-    
-    // 以问号结尾
-    if (lowerText.endsWith('?')) return true;
-    
-    // 以疑问词开头
-    for (const word of questionWords) {
-      if (lowerText.startsWith(word + ' ')) return true;
-    }
-    
-    // 中文问句特征
-    if (text.includes('什么') || text.includes('为什么') || 
-        text.includes('怎么') || text.includes('如何') ||
-        text.includes('吗？') || text.includes('呢？')) {
-      return true;
-    }
-    
-    return false;
+
+/**
+ * 判断文本是否是问题
+ */
+private isQuestion(text: string): boolean {
+  const lowerText = text.toLowerCase().trim();
+  
+  // 以问号结尾
+  if (lowerText.endsWith('?') || text.endsWith('?') || text.endsWith('？')) {
+    return true;
   }
+  
+  // 英文疑问词
+  const enQuestionWords = ['what', 'why', 'how', 'when', 'where', 'who', 'which'];
+  for (const word of enQuestionWords) {
+    if (lowerText.startsWith(word + ' ')) return true;
+  }
+  
+  // 中文疑问词
+  const cnQuestionWords = ['什么', '为什么', '怎么', '如何', '哪', '谁', '何时', '为何'];
+  for (const word of cnQuestionWords) {
+    if (text.includes(word)) return true;
+  }
+  
+  // 中文问句结尾
+  if (text.endsWith('吗？') || text.endsWith('呢？') || text.endsWith('吗') || text.endsWith('呢')) {
+    return true;
+  }
+  
+  return false;
+}
 
   /**
    * 生成默认问题
@@ -181,17 +191,21 @@ export class QuickFlashcardCreator {
     // 如果有标题，使用标题生成问题
     if (contentUnit.source.heading) {
       const heading = contentUnit.source.heading.replace(/^#+\s*/, '');
-      return `What is the key point about "${heading}"?`;
+      return t('quickCard.question.default.heading', this.language, { heading });
     }
-
+  
     // 根据内容长度生成不同的问题
     if (contentUnit.content.length < 50) {
-      return `What does "${contentUnit.content}" mean?`;
+      return t('quickCard.question.default.short', this.language, { 
+        content: contentUnit.content 
+      });
     } else if (contentUnit.content.length < 150) {
       const firstWords = contentUnit.content.substring(0, 30) + '...';
-      return `Explain: "${firstWords}"`;
+      return t('quickCard.question.default.medium', this.language, { 
+        content: firstWords 
+      });
     } else {
-      return `What are the key points in this content?`;
+      return t('quickCard.question.default.long', this.language);
     }
   }
 

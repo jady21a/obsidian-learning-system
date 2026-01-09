@@ -249,7 +249,53 @@ type TranslationKey =
 | 'confirm.deleteItems'
 | 'confirm.notesCount'
 | 'confirm.cardsCount'
-
+// quick flashcard  creator
+| 'quickCard.created.qa'
+| 'quickCard.created.cloze'
+| 'quickCard.createFailed'
+| 'quickCard.noKeywords'
+| 'quickCard.noDeletions'
+| 'quickCard.question.default.heading'
+| 'quickCard.question.default.short'
+| 'quickCard.question.default.medium'
+| 'quickCard.question.default.long'
+// UnlockSystem
+| 'unlock.level.1'
+| 'unlock.level.2'
+| 'unlock.level.3'
+| 'unlock.level.4'
+| 'unlock.level.5'
+| 'unlock.levelUp.1'
+| 'unlock.levelUp.2'
+| 'unlock.levelUp.3'
+| 'unlock.levelUp.4'
+| 'unlock.levelUp.5'
+| 'unlock.progress.cardsExtracted'
+| 'unlock.progress.annotationsCompleted'
+| 'unlock.progress.cardsReviewed'
+| 'unlock.progress.tablesScanned'
+| 'unlock.progress.consecutiveDays'
+| 'unlock.progress.totalDays'
+| 'unlock.progress.statsPageVisited'
+| 'unlock.nextSteps.level1'
+| 'unlock.nextSteps.level2'
+| 'unlock.nextSteps.level3'
+| 'unlock.nextSteps.level4'
+| 'unlock.nextSteps.level5'
+| 'unlock.modal.title'
+| 'unlock.modal.requireLevel'
+| 'unlock.modal.currentProgress'
+| 'unlock.levelInfo.title'
+| 'unlock.levelInfo.cumulativeStats'
+| 'unlock.levelInfo.milestones'
+| 'unlock.stat.cardsExtracted'
+| 'unlock.stat.annotationsCompleted'
+| 'unlock.stat.cardsReviewed'
+| 'unlock.stat.tablesScanned'
+| 'unlock.stat.consecutiveDays'
+| 'unlock.stat.totalDays'
+| 'unlock.community.locked'
+| 'unlock.community.link'
 
 
 
@@ -353,7 +399,7 @@ export const translations: Record<Language, TranslationDict> = {
 'confirm.batchDeleteNotes': 'Delete {count} selected notes?',
 'confirm.batchDeleteFlashcards': 'Delete {count} selected flashcards?',
  
-'toolbar.checkReview.tooltip': '检查是否有需要复习的卡片',
+'toolbar.checkReview.tooltip': 'Check if there are cards to review',
 
 'batch.deselectAll': 'Deselect All',
 'batch.deselectAll.tooltip': 'Deselect all items on current page',
@@ -378,6 +424,8 @@ export const translations: Record<Language, TranslationDict> = {
 'review.todayProgress': 'Today\'s Review: {reviewed} / {total}',
 'review.delayedHoursShort': '⚠️ Review delayed {hours} hours, good time to handle',
 'group.uncategorized': 'Uncategorized',
+
+
 // component/modal/batch
 
 'batchCreate.title': '⚡ Batch Create Flashcards',
@@ -531,7 +579,65 @@ export const translations: Record<Language, TranslationDict> = {
 'confirm.deleteItems': 'Confirm deletion?',
 'confirm.notesCount': '{count} notes',
 'confirm.cardsCount': '{count} flashcards',
-
+// quick flashcard  creator
+'quickCard.created.qa': '✅ Flashcard created! (Q&A)',
+'quickCard.created.cloze': '✅ Flashcard created! (Cloze with {count} blanks)',
+'quickCard.createFailed': '❌ Failed to create flashcard',
+'quickCard.noKeywords': '⚠️ No keywords found for cloze deletion',
+'quickCard.noDeletions': '⚠️ Could not create cloze deletions',
+'quickCard.question.default.heading': 'What is the key point about "{heading}"?',
+'quickCard.question.default.short': 'What does "{content}" mean?',
+'quickCard.question.default.medium': 'Explain: "{content}"',
+'quickCard.question.default.long': 'What are the key points in this content?',
+  // UnlockSystem - Level Names
+  'unlock.level.1': 'Collector',
+  'unlock.level.2': 'Thinker',
+  'unlock.level.3': 'Memorizer',
+  'unlock.level.4': 'Trainer',
+  'unlock.level.5': 'Analyst',
+  
+  // Level Up Messages
+  'unlock.levelUp.1': '🎉 Welcome, Collector!',
+  'unlock.levelUp.2': '🎓 Upgraded to Thinker!\nUnlocked: Annotations, Batch Operations',
+  'unlock.levelUp.3': '🧠 You are now a Memorizer!\nUnlocked: Scan Features, Review System',
+  'unlock.levelUp.4': '💪 Promoted to Trainer!\nUnlocked: Statistics & Analysis',
+  'unlock.levelUp.5': '🏆 Achieved Analyst!\nAll features unlocked',
+  
+  // Next Steps
+  'unlock.nextSteps.level1': '📦 Extract Cards: {current}/10',
+  'unlock.nextSteps.level2': '📝 Complete Annotations: {current}/5',
+  'unlock.nextSteps.level3': '🔄 Review Cards: {current}/10\n📋 Scan Tables: {tables}/2',
+  'unlock.nextSteps.level4': '🔄 Review Cards: {current}/70\n🔥 Consecutive Days: {days}/7\n📊 Visit Stats Page: {visited}\n📈 Total Days: {total}/21',
+  'unlock.nextSteps.level5': '🎉 Congratulations! All features unlocked!\n\n🔮 Community feature coming soon\nWill be enabled when conditions are met\n🔗 <a href="https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%8A%E5%9B%A2" target="_blank">Learn More (Click to View)</a>',
+  
+  // Modal
+  'unlock.modal.title': '🔒 Feature Locked',
+  'unlock.modal.requireLevel': '"{feature}" requires Lv{level} to unlock',
+  'unlock.modal.currentProgress': 'Current Progress:',
+  
+  // Level Info Modal
+  'unlock.levelInfo.title': '🏆 Lv{level} {name}',
+  'unlock.levelInfo.cumulativeStats': 'Cumulative Statistics',
+  'unlock.levelInfo.milestones': '🎯 Achievement Milestones',
+  
+  // Stats Labels
+  'unlock.stat.cardsExtracted': 'Cards Extracted',
+  'unlock.stat.annotationsCompleted': 'Annotations Completed',
+  'unlock.stat.cardsReviewed': 'Cards Reviewed',
+  'unlock.stat.tablesScanned': 'Tables Scanned',
+  'unlock.stat.consecutiveDays': 'Consecutive Days',
+  'unlock.stat.totalDays': 'Total Days',
+  
+  // Progress Indicators
+  'unlock.progress.cardsExtracted': '📦 Extract Cards',
+  'unlock.progress.annotationsCompleted': '📝 Complete Annotations',
+  'unlock.progress.cardsReviewed': '🔄 Review Cards',
+  'unlock.progress.tablesScanned': '📋 Scan Tables',
+  'unlock.progress.consecutiveDays': '🔥 Consecutive Days',
+  'unlock.progress.totalDays': '📈 Total Days',
+  'unlock.progress.statsPageVisited': '📊 Visit Stats Page',
+  'unlock.community.locked': 'Community feature locked',
+'unlock.community.link': 'Learn about Community',
 
 },
 
@@ -667,7 +773,7 @@ export const translations: Record<Language, TranslationDict> = {
   'batchCreate.clozeType.desc': '挖空填空',
   'batchCreate.cancel': '取消',
   'batchCreate.createButton': '创建 {count} 张卡片',
-  'batchCreate.successNotice': '✅ 已创建 {success} 张闪卡！',
+  'batchCreate.successNotice': '✅ 已创建 {success} 张闪卡！{failed, plural, =0 {} other { ({failed} 项失败)}}',
 // component/modal/EditFlashcardModal
 'editCard.title': '✏️ 编辑闪卡',
 'editCard.description.qa': '编辑 Q&A 卡片内容',
@@ -808,7 +914,66 @@ export const translations: Record<Language, TranslationDict> = {
 'confirm.deleteItems': '确认删除？',
 'confirm.notesCount': '{count} 条笔记',
 'confirm.cardsCount': '{count} 张闪卡',
+// quick flashcard  creator
+'quickCard.created.qa': '✅ 闪卡已创建！(问答卡)',
+'quickCard.created.cloze': '✅ 闪卡已创建！(填空卡，{count} 个空)',
+'quickCard.createFailed': '❌ 创建闪卡失败',
+'quickCard.noKeywords': '⚠️ 未找到可用于挖空的关键词',
+'quickCard.noDeletions': '⚠️ 无法创建挖空',
+'quickCard.question.default.heading': '关于"{heading}"的要点是什么？',
+'quickCard.question.default.short': '"{content}"是什么意思？',
+'quickCard.question.default.medium': '解释："{content}"',
+'quickCard.question.default.long': '这段内容的要点是什么？',
 
+  // UnlockSystem - 等级名称
+  'unlock.level.1': '采集者',
+  'unlock.level.2': '思考者',
+  'unlock.level.3': '记忆师',
+  'unlock.level.4': '训练者',
+  'unlock.level.5': '分析师',
+  
+  // 升级消息
+  'unlock.levelUp.1': '🎉 欢迎成为采集者!',
+  'unlock.levelUp.2': '🎓 升级为思考者!\n解锁: 批注功能、批量操作',
+  'unlock.levelUp.3': '🧠 成为记忆师!\n解锁: 扫描功能、复习系统',
+  'unlock.levelUp.4': '💪 晋升训练者!\n解锁: 统计分析',
+  'unlock.levelUp.5': '🏆 达成分析师!\n所有功能已解锁',
+  
+  // 下一步提示
+  'unlock.nextSteps.level1': '📦 提取卡片: {current}/10',
+  'unlock.nextSteps.level2': '📝 完成批注: {current}/5',
+  'unlock.nextSteps.level3': '🔄 复习卡片: {current}/10\n📋 扫描表格: {tables}/2',
+  'unlock.nextSteps.level4': '🔄 复习卡片: {current}/70\n🔥 连续使用天数: {days}/7\n📊 访问统计页: {visited}\n📈 总使用天数: {total}/21',
+  'unlock.nextSteps.level5': '🎉 恭喜解锁所有功能!\n\n🔮 智囊团功能尚未开放\n达到人数与段位条件后开启\n🔗 <a href="https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%8A%E5%9B%A2" target="_blank">了解智囊团（点击查看）</a>',
+  
+  // 弹窗
+  'unlock.modal.title': '🔒 功能未解锁',
+  'unlock.modal.requireLevel': '"{feature}" 需要 Lv{level} 解锁',
+  'unlock.modal.currentProgress': '当前进度:',
+  
+  // 等级信息弹窗
+  'unlock.levelInfo.title': '🏆 Lv{level} {name}',
+  'unlock.levelInfo.cumulativeStats': '累计统计',
+  'unlock.levelInfo.milestones': '🎯 成就里程碑',
+  
+  // 统计标签
+  'unlock.stat.cardsExtracted': '提取卡片',
+  'unlock.stat.annotationsCompleted': '完成批注',
+  'unlock.stat.cardsReviewed': '复习卡片',
+  'unlock.stat.tablesScanned': '扫描表格',
+  'unlock.stat.consecutiveDays': '连续天数',
+  'unlock.stat.totalDays': '总使用天数',
+  
+  // 进度指标
+  'unlock.progress.cardsExtracted': '📦 提取卡片',
+  'unlock.progress.annotationsCompleted': '📝 完成批注',
+  'unlock.progress.cardsReviewed': '🔄 复习卡片',
+  'unlock.progress.tablesScanned': '📋 扫描表格',
+  'unlock.progress.consecutiveDays': '🔥 连续使用天数',
+  'unlock.progress.totalDays': '📈 总使用天数',
+  'unlock.progress.statsPageVisited': '📊 访问统计页',
+'unlock.community.locked': '智囊团功能已锁定',
+'unlock.community.link': '了解智囊团',
 
   }
 } as const;

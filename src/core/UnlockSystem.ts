@@ -2,6 +2,7 @@
 import { App, Notice,Modal } from 'obsidian';
 import type LearningSystemPlugin from '../main';
 import { StyleLoader } from 'src/ui/style/sidebarStyle';
+import { t ,Language} from '../i18n/translations';
 
 export type UserLevel = 1 | 2 | 3 | 4 | 5;
 
@@ -35,6 +36,9 @@ export class UnlockSystem {
     private plugin: LearningSystemPlugin
   ) {
     this.dataPath = `${this.app.vault.configDir}/plugins/learning-system/data/unlock-progress.json`;
+  }
+  private get language() {
+    return this.plugin.settings.language || 'en';
   }
 
   async initialize() {
@@ -133,7 +137,6 @@ export class UnlockSystem {
    * 尝试使用功能(如果未解锁则提示)
    */
   tryUseFeature(feature: string, featureName: string): boolean {
-    
     if (this.isFeatureUnlocked(feature)) {
       return true;
     }
@@ -141,9 +144,14 @@ export class UnlockSystem {
     const requiredLevel = this.getFeatureRequiredLevel(feature);
     const nextSteps = this.getNextStepsForLevel(this.progress.currentLevel);
     
-    
-    // 使用 Modal 替代 Notice
-    new UnlockNoticeModal(this.app, featureName, requiredLevel, nextSteps).open();
+    // 传递语言参数
+    new UnlockNoticeModal(
+      this.app, 
+      featureName, 
+      requiredLevel, 
+      nextSteps,
+      this.language
+    ).open();
     
     return false;
   }
@@ -197,25 +205,19 @@ export class UnlockSystem {
   private async levelUp(newLevel: UserLevel) {
     this.progress.currentLevel = newLevel;
     this.progress.levelUnlockedAt[newLevel] = Date.now();
-
-    const messages: Record<UserLevel, string> = {
-      1: '🎉 欢迎成为采集者!',
-      2: '🎓 升级为思考者!\n解锁: 批注功能、批量操作',
-      3: '🧠 成为记忆师!\n解锁: 扫描功能、复习系统',
-      4: '💪 晋升训练者!\n解锁: 统计分析',
-      5: '🏆 达成分析师!\n所有功能已解锁'
-    };
-
+  
+    const message = t(`unlock.levelUp.${newLevel}`, this.language);
+  
     const milestone = {
       level: newLevel,
       unlockedAt: Date.now(),
-      message: messages[newLevel]
+      message: message
     };
-
+  
     this.progress.milestones.push(milestone);
-
+  
     // 显示升级通知
-    new Notice(messages[newLevel], 10000);
+    new Notice(message, 10000);
     
     await this.saveProgress();
   }
@@ -256,26 +258,33 @@ export class UnlockSystem {
   getProgress(): UnlockProgress {
     return this.progress;
   }
-
   getNextStepsForLevel(level: UserLevel): string {
     const stats = this.progress.stats;
-  
+    const lang = this.language;
+    
     switch (level) {
       case 1:
-        return `📦 提取卡片: ${stats.cardsExtracted}/10`;
+        return t('unlock.nextSteps.level1', lang, { current: stats.cardsExtracted });
       case 2:
-        return `📝 完成批注: ${stats.annotationsCompleted}/5`;
+        return t('unlock.nextSteps.level2', lang, { current: stats.annotationsCompleted });
       case 3:
-        return `🔄 复习卡片: ${stats.cardsReviewed}/30\n🔥 连续使用天数: ${stats.consecutiveDays}/7`;
+        return t('unlock.nextSteps.level3', lang, { 
+          current: stats.cardsReviewed,
+          tables: stats.tablesScanned
+        });
       case 4:
-        return `📋 扫描添加表格: ${stats.tablesScanned}/2\n📊 访问统计页: ${stats.statsPageVisited ? '✓' : '✗'}\n 📈 总使用天数: ${stats.totalDays}/21`;
+        return t('unlock.nextSteps.level4', lang, {
+          current: stats.cardsReviewed,
+          days: stats.consecutiveDays,
+          visited: stats.statsPageVisited ? '✓' : '✗',
+          total: stats.totalDays
+        });
       case 5:
-        return `🎉 恭喜解锁所有功能!\n\n🔮 智囊团功能尚未开放\n达到人数与段位条件后开启\n🔗 <a href="https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%8A%E5%9B%A2" target="_blank">了解智囊团（点击查看）</a>`;
-            default:
+        return t('unlock.nextSteps.level5', lang);
+      default:
         return '';
     }
   }
-
   private getFeatureRequiredLevel(feature: string): UserLevel {
     if (['extract-single', 'sidebar-basic'].includes(feature)) return 1;
     if (['extract-batch', 'annotation', 'filter-by-type'].includes(feature)) return 2;
@@ -342,142 +351,166 @@ export class UnlockSystem {
       milestones: [{
         level: 1,
         unlockedAt: Date.now(),
-        message: '🎉 欢迎成为采集者!'
+        message: t('unlock.levelUp.1', this.language)
       }]
     };
   }
 }
 
 class UnlockNoticeModal extends Modal {
-    constructor(
-      app: App,
-      private featureName: string,
-      private requiredLevel: number,
-      private nextSteps: string
-    ) {
-      super(app);
-    }
-    onOpen() {
-        const { contentEl } = this;
-        contentEl.empty();
-        
-        contentEl.createEl('h2', { text: '🔒 功能未解锁' });
-        contentEl.createEl('p', { 
-          text: `"${this.featureName}" 需要 Lv${this.requiredLevel} 解锁` 
-        });
-        
-        contentEl.createEl('h3', { text: '当前进度:' });
-        
-        // 创建容器并设置样式
-        const container = contentEl.createDiv();
-        container.style.padding = '10px';
-        container.style.backgroundColor = 'var(--background-secondary)';
-        container.style.borderRadius = '5px';
-        container.style.lineHeight = '1.8';
-        
+  constructor(
+    app: App,
+    private featureName: string,
+    private requiredLevel: number,
+    private nextSteps: string,
+    private language: Language = 'en'
+  ) {
+    super(app);
+  }
+  
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    
+    contentEl.createEl('h2', { text: t('unlock.modal.title', this.language) });
+    contentEl.createEl('p', { 
+      text: t('unlock.modal.requireLevel', this.language, {
+        feature: this.featureName,
+        level: this.requiredLevel
+      })
+    });
+    
+    contentEl.createEl('h3', { text: t('unlock.modal.currentProgress', this.language) });
+    
+    // 创建容器并设置样式
+    const container = contentEl.createDiv();
+    container.style.padding = '10px';
+    container.style.backgroundColor = 'var(--background-secondary)';
+    container.style.borderRadius = '5px';
+    container.style.lineHeight = '1.8';
+    
     // 使用 innerHTML 直接插入带 <br> 的 HTML
     container.innerHTML = this.nextSteps.replace(/\n/g, '<br>');
 
-    // 添加分隔线 - 直接在 container 后面
+    // 添加分隔线
     const divider = contentEl.createEl('div');
     divider.style.width = '100%';
     divider.style.height = '2px';
     divider.style.backgroundColor = '#666';
     divider.style.margin = '20px 0';
-      
-    }
-    onClose() {
-      const { contentEl } = this;
-      contentEl.empty();
-    }
-    
   }
-  export class LevelInfoModal extends Modal {
-    constructor(
-      app: App,
-      private progress: UnlockProgress,
-      private unlockSystem: UnlockSystem
-    ) {
-      super(app);
-    }
+  
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
+export class LevelInfoModal extends Modal {
+  constructor(
+    app: App,
+    private progress: UnlockProgress,
+    private unlockSystem: UnlockSystem,
+    private language: Language = 'en' 
+  ) {
+    super(app);
+  }
+  
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass('level-info-modal');
     
-    onOpen() {
-      const { contentEl } = this;
-      contentEl.empty();
-      contentEl.addClass('level-info-modal');
-      
-      // 标题
-      const levelNames: Record<number, string> = {
-        1: '采集者',
-        2: '思考者',
-        3: '记忆师', 
-        4: '训练者',
-        5: '分析师'
-      };
-      
-      contentEl.createEl('h2', { 
-        text: `🏆 Lv${this.progress.currentLevel} ${levelNames[this.progress.currentLevel]}`
-      });
-      
-      // 进度信息
-      const progressSection = contentEl.createDiv({ cls: 'progress-section' });
-      
-      const progressBox = progressSection.createDiv({ cls: 'progress-box' });
-      const progressText = this.unlockSystem.getNextStepsForLevel(this.progress.currentLevel);
-      progressBox.innerHTML = progressText.replace(/\n/g, '<br>');
-      
-      // 统计信息
-      const statsSection = contentEl.createDiv({ cls: 'stats-section' });
-      statsSection.createEl('h4', { text: '累计统计' });
-      
-      const statsGrid = statsSection.createDiv({ cls: 'stats-grid' });
-      
-      const stats = [
-        { icon: '📦', label: '提取卡片', value: this.progress.stats.cardsExtracted },
-        { icon: '📝', label: '完成批注', value: this.progress.stats.annotationsCompleted },
-        { icon: '🔄', label: '复习卡片', value: this.progress.stats.cardsReviewed },
-        { icon: '📋', label: '扫描表格', value: this.progress.stats.tablesScanned },
-        { icon: '🔥', label: '连续天数', value: this.progress.stats.consecutiveDays },
-        { icon: '📅', label: '总使用天数', value: this.progress.stats.totalDays }
-      ];
-      
-      stats.forEach(stat => {
-        const item = statsGrid.createDiv({ cls: 'stat-item' });
-        item.innerHTML = `
-          <span class="stat-icon">${stat.icon}</span>
-          <span class="stat-label">${stat.label}</span>
-          <span class="stat-value">${stat.value}</span>
-        `;
-      });
-      
-      // 里程碑
-      if (this.progress.milestones.length > 0) {
-        const milestonesSection = contentEl.createDiv({ cls: 'milestones-section' });
-        milestonesSection.createEl('h4', { text: '🎯 成就里程碑' 
-          });
-        
-        const milestonesList = milestonesSection.createDiv({ cls: 'milestones-list' });
-        
-        this.progress.milestones
-          .slice()
-          .reverse()
-          .forEach((milestone) => {
-            const item = milestonesList.createDiv({ cls: 'milestone-item' });
-            const date = new Date(milestone.unlockedAt).toLocaleDateString('zh-CN');
-            item.innerHTML = `
-              <div class="milestone-message">${date} ${milestone.message} </div>
-            `;
-          });
+    const level = this.progress.currentLevel;
+    const levelName = t(`unlock.level.${level}`, this.language);
+    
+    contentEl.createEl('h2', { 
+      text: t('unlock.levelInfo.title', this.language, {
+        level: level,
+        name: levelName
+      })
+    });
+    
+    // 进度信息
+    const progressSection = contentEl.createDiv({ cls: 'progress-section' });
+    
+    const progressBox = progressSection.createDiv({ cls: 'progress-box' });
+    const progressText = this.unlockSystem.getNextStepsForLevel(this.progress.currentLevel);
+    progressBox.innerHTML = progressText.replace(/\n/g, '<br>');
+    
+    // 统计信息
+    const statsSection = contentEl.createDiv({ cls: 'stats-section' });
+    statsSection.createEl('h4', { text: t('unlock.levelInfo.cumulativeStats', this.language) });
+    
+    const statsGrid = statsSection.createDiv({ cls: 'stats-grid' });
+    
+    const stats = [
+      { 
+        icon: '📦', 
+        label: t('unlock.stat.cardsExtracted', this.language), 
+        value: this.progress.stats.cardsExtracted 
+      },
+      { 
+        icon: '📝', 
+        label: t('unlock.stat.annotationsCompleted', this.language), 
+        value: this.progress.stats.annotationsCompleted 
+      },
+      { 
+        icon: '🔄', 
+        label: t('unlock.stat.cardsReviewed', this.language), 
+        value: this.progress.stats.cardsReviewed 
+      },
+      { 
+        icon: '📋', 
+        label: t('unlock.stat.tablesScanned', this.language), 
+        value: this.progress.stats.tablesScanned 
+      },
+      { 
+        icon: '🔥', 
+        label: t('unlock.stat.consecutiveDays', this.language), 
+        value: this.progress.stats.consecutiveDays 
+      },
+      { 
+        icon: '📅', 
+        label: t('unlock.stat.totalDays', this.language), 
+        value: this.progress.stats.totalDays 
       }
-      
-    //   // 关闭按钮
-    //   const footer = contentEl.createDiv({ cls: 'modal-footer' });
-    //   const closeBtn = footer.createEl('button', { text: '关闭' });
-    //   closeBtn.addEventListener('click', () => this.close());
-    }
+    ];
     
-    onClose() {
-      const { contentEl } = this;
-      contentEl.empty();
+    stats.forEach(stat => {
+      const item = statsGrid.createDiv({ cls: 'stat-item' });
+      item.innerHTML = `
+        <span class="stat-icon">${stat.icon}</span>
+        <span class="stat-label">${stat.label}</span>
+        <span class="stat-value">${stat.value}</span>
+      `;
+    });
+    
+    // 里程碑
+    if (this.progress.milestones.length > 0) {
+      const milestonesSection = contentEl.createDiv({ cls: 'milestones-section' });
+      milestonesSection.createEl('h4', { 
+        text: t('unlock.levelInfo.milestones', this.language)
+      });
+      
+      const milestonesList = milestonesSection.createDiv({ cls: 'milestones-list' });
+      
+      this.progress.milestones
+        .slice()
+        .reverse()
+        .forEach((milestone) => {
+          const item = milestonesList.createDiv({ cls: 'milestone-item' });
+          const date = new Date(milestone.unlockedAt).toLocaleDateString(
+            this.language === 'zh-CN' ? 'zh-CN' : 'en-US'
+          );
+          item.innerHTML = `
+            <div class="milestone-message">${date} ${milestone.message}</div>
+          `;
+        });
     }
   }
+  
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
