@@ -27,6 +27,7 @@ export class ReviewView extends ItemView {
   private currentCardIndex: number = 0;
   private currentCard: Flashcard | null = null;
   private stateManager: ReviewStateManager = new ReviewStateManager();
+  private reviewedCardIds: Set<string> = new Set(); // 跟踪已复习的卡片
 
   constructor(leaf: WorkspaceLeaf, plugin: LearningSystemPlugin) {
     super(leaf);
@@ -84,6 +85,7 @@ export class ReviewView extends ItemView {
     this.currentCardIndex = 0;
     this.resetReviewState();
     this.stateManager.reset();
+    this.reviewedCardIds.clear(); 
     this.updateCurrentCard('next');
   }
 
@@ -129,7 +131,8 @@ export class ReviewView extends ItemView {
       cls: 'mod-cta'
     });
     
-    closeBtn.onclick = () => {
+    closeBtn.onclick = async () => {
+      await this.cleanupReviewedCards();
       this.leaf?.detach();
     };
   }
@@ -138,14 +141,17 @@ export class ReviewView extends ItemView {
     const progressBar = container.createDiv({ cls: 'progress-bar' });
     
     const stats = progressBar.createDiv({ cls: 'progress-stats' });
+    const reviewed = this.reviewedCardIds.size;
+    const total = this.dueCards.length;
+    
     stats.createSpan({ 
-      text: `${this.currentCardIndex + 1} / ${this.dueCards.length}`,
+      text: `${reviewed} / ${total} reviewed`,
       cls: 'progress-text'
     });
-
+  
     const barContainer = progressBar.createDiv({ cls: 'bar-container' });
     const bar = barContainer.createDiv({ cls: 'bar' });
-    const progress = ((this.currentCardIndex + 1) / this.dueCards.length) * 100;
+    const progress = (reviewed / total) * 100;
     bar.style.width = `${progress}%`;
   }
 
@@ -482,33 +488,42 @@ export class ReviewView extends ItemView {
       id: `log-${Date.now()}`,
       ...reviewLog
     });
-  // 🎯 解锁系统检查点
-await this.plugin.unlockSystem.onCardReviewed();
-
-    // ✅ 提交后清除该卡片的答案缓存
+    
+    await this.plugin.unlockSystem.onCardReviewed();
+  
+    // ✅ 标记为已复习,但不从列表中删除
+    this.reviewedCardIds.add(this.currentCard.id);
+    
+    // ✅ 清除该卡片的答案缓存
     this.stateManager.clearCache(this.currentCard.id);
     
-    // ⚠️ 从当前列表中移除已复习的卡片
-    this.dueCards.splice(this.currentCardIndex, 1);
-  
-    // ⚠️ 不要增加索引,因为删除元素后,下一张卡自动移到当前位置
+    // ✅ 重置状态
     this.resetReviewState();
   
-    if (this.dueCards.length === 0) {
-      // ⭐ 关键修改：复习完成后，清空当前卡片并直接渲染
-      this.currentCard = null;
+    // ✅ 移动到下一张未复习的卡片
+    const nextUnreviewedIndex = this.findNextUnreviewedCard(this.currentCardIndex + 1);
+    
+    if (nextUnreviewedIndex === -1) {
+      // ⭐ 所有卡片都已复习 - 不设置 currentCard 为 null
       new Notice(`✅ Review session complete!`);
-      this.render(); // ⭐ 直接渲染，会触发 renderNoDueCards
+      // ⭐ 设置一个标志让 render 知道复习已完成
+      this.currentCard = null;
+      this.dueCards = []; // ⭐ 清空列表,触发 renderNoDueCards
+      this.render();
     } else {
-      // 确保索引不越界
-      if (this.currentCardIndex >= this.dueCards.length) {
-        this.currentCardIndex = this.dueCards.length - 1;
-      }
+      this.currentCardIndex = nextUnreviewedIndex;
       this.updateCurrentCard('next');
       this.render();
     }
   }
-
+  private findNextUnreviewedCard(startIndex: number): number {
+    for (let i = startIndex; i < this.dueCards.length; i++) {
+      if (!this.reviewedCardIds.has(this.dueCards[i].id)) {
+        return i;
+      }
+    }
+    return -1; // 没有找到未复习的卡片
+  }
   private async jumpToSource() {
     if (!this.currentCard) return;
 
@@ -681,7 +696,9 @@ await this.plugin.unlockSystem.onCardReviewed();
   private registerKeyboardHandlers() {
     document.addEventListener('keydown', this.keyboardHandler);
   }
-
+  private async cleanupReviewedCards() {
+    this.reviewedCardIds.clear();
+  }
   // ============================================================================
   // 样式
   // ============================================================================

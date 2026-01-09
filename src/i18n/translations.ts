@@ -245,6 +245,12 @@ type TranslationKey =
 | 'time.minutesAgo'
 | 'time.hoursAgo'
 | 'time.daysAgo'
+// delete confirm
+| 'confirm.deleteItems'
+| 'confirm.notesCount'
+| 'confirm.cardsCount'
+
+
 
 
 // 定义翻译字典类型
@@ -341,7 +347,7 @@ export const translations: Record<Language, TranslationDict> = {
 'notice.jumpFailed': '❌ Jump failed',
 'notice.flashcardNotFound': '⚠️ Flashcard not found',
 'notice.alreadyHasFlashcards': '⚠️ Selected notes already have flashcards',
-'notice.batchDeleted': '✅ Deleted {success} items{failed, plural, =0 {} other {, {failed} failed}}',
+'notice.batchDeleted': '✅ Deleted {success} items',
 'confirm.deleteNote': 'Delete this note?',
 'confirm.deleteFlashcard': 'Delete this flashcard?',
 'confirm.batchDeleteNotes': 'Delete {count} selected notes?',
@@ -521,6 +527,10 @@ export const translations: Record<Language, TranslationDict> = {
 'time.minutesAgo': '{minutes}m ago',
 'time.hoursAgo': '{hours}h ago',
 'time.daysAgo': '{days}d ago',
+// delete confirm
+'confirm.deleteItems': 'Confirm deletion?',
+'confirm.notesCount': '{count} notes',
+'confirm.cardsCount': '{count} flashcards',
 
 
 },
@@ -657,7 +667,7 @@ export const translations: Record<Language, TranslationDict> = {
   'batchCreate.clozeType.desc': '挖空填空',
   'batchCreate.cancel': '取消',
   'batchCreate.createButton': '创建 {count} 张卡片',
-  'batchCreate.successNotice': '✅ 已创建 {success} 张闪卡！{failed, plural, =0 {} other {（{failed} 张失败）}}',
+  'batchCreate.successNotice': '✅ 已创建 {success} 张闪卡！',
 // component/modal/EditFlashcardModal
 'editCard.title': '✏️ 编辑闪卡',
 'editCard.description.qa': '编辑 Q&A 卡片内容',
@@ -774,7 +784,7 @@ export const translations: Record<Language, TranslationDict> = {
 'recentDelete.deletePermanently': '永久删除',
 
 'notice.movedToTrash': '🗑️ 已移至回收站 (7天内可恢复)',
-'notice.batchMovedToTrash': '✅ 已将 {success} 项移至回收站{failed, plural, =0 {} other {，{failed} 项失败}}',
+'notice.batchMovedToTrash': '✅ 已将 {success} 项移至回收站',
 'notice.fileDeletedSimple': '📄 文件已删除：{notes} 条笔记和 {cards} 张闪卡已移至回收站',
 'notice.noteRestored': '✅ 笔记已恢复',
 'notice.cardRestored': '✅ 闪卡已恢复',
@@ -794,6 +804,10 @@ export const translations: Record<Language, TranslationDict> = {
 'time.minutesAgo': '{minutes}分钟前',
 'time.hoursAgo': '{hours}小时前',
 'time.daysAgo': '{days}天前',
+// delete confirm
+'confirm.deleteItems': '确认删除？',
+'confirm.notesCount': '{count} 条笔记',
+'confirm.cardsCount': '{count} 张闪卡',
 
 
   }
