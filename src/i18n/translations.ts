@@ -298,6 +298,8 @@ type TranslationKey =
 | 'unlock.community.link'
 
 
+| 'filter.unannotated'
+
 
 // 定义翻译字典类型
 type TranslationDict = Record<TranslationKey, string> & {
@@ -639,6 +641,7 @@ export const translations: Record<Language, TranslationDict> = {
   'unlock.community.locked': 'Community feature locked',
 'unlock.community.link': 'Learn about Community',
 
+'filter.unannotated': 'No Annotation',
 },
 
   
@@ -974,6 +977,9 @@ export const translations: Record<Language, TranslationDict> = {
   'unlock.progress.statsPageVisited': '📊 访问统计页',
 'unlock.community.locked': '智囊团功能已锁定',
 'unlock.community.link': '了解智囊团',
+
+'filter.unannotated': '无批注',
+
 
   }
 } as const;

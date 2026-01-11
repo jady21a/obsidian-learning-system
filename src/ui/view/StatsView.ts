@@ -1213,11 +1213,6 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
         margin-bottom: 5px;
       }
 
-      .progress-bar-fill {
-        height: 100%;
-        background: var(--interactive-accent);
-        transition: width 0.3s;
-      }
 
       .progress-label {
         font-size: 0.85em;

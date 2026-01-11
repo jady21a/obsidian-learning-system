@@ -564,21 +564,106 @@ this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
     
     if (this.state.viewType === 'cards') {
       const flashcards = this.plugin.flashcardManager.getAllFlashcards();
-      const cardGroups = this.contentList.groupFlashcards(
-        flashcards,
-        (id) => this.plugin.dataManager.getContentUnit(id)
-      );
-      grouped = cardGroups.map(g => ({ 
-        groupKey: g.groupKey, 
-        count: g.cards.length 
-      }));
+      
+      // ⭐ 按批注分组时的特殊处理
+      if (this.state.groupMode === 'annotation') {
+        const annotatedCards: Flashcard[] = [];
+        const unannotatedCards: Flashcard[] = [];
+        
+        // 分类闪卡：有批注 vs 无批注
+        flashcards.forEach(card => {
+          const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+          if (unit && unit.annotationId) {
+            annotatedCards.push(card);
+          } else {
+            unannotatedCards.push(card);
+          }
+        });
+        
+        // 按文件分组有批注的闪卡
+        const fileGroups = new Map<string, Flashcard[]>();
+        annotatedCards.forEach(card => {
+          const fileName = card.sourceFile;
+          if (!fileGroups.has(fileName)) {
+            fileGroups.set(fileName, []);
+          }
+          fileGroups.get(fileName)!.push(card);
+        });
+        
+        // 构建分组列表
+        grouped = [];
+        
+        // 添加各个文件的有批注闪卡
+        fileGroups.forEach((cards, fileName) => {
+          grouped.push({
+            groupKey: fileName,
+            count: cards.length
+          });
+        });
+        
+        // 添加"无批注"分组（如果有无批注的闪卡）
+        if (unannotatedCards.length > 0) {
+          grouped.push({
+            groupKey: 'filter.unannotated',
+            count: unannotatedCards.length
+          });
+        }
+      } else {
+        // 其他分组模式
+        const cardGroups = this.contentList.groupFlashcards(
+          flashcards,
+          (id) => this.plugin.dataManager.getContentUnit(id)
+        );
+        grouped = cardGroups.map(g => ({ 
+          groupKey: g.groupKey, 
+          count: g.cards.length 
+        }));
+      }
     } else {
+      // Notes 视图
       const units = this.getFilteredUnits();
-      const unitGroups = this.contentList.groupUnits(units);
-      grouped = unitGroups.map(g => ({ 
-        groupKey: g.groupKey, 
-        count: g.units.length 
-      }));
+      
+      // ⭐ 按批注分组时的特殊处理
+      if (this.state.groupMode === 'annotation') {
+        const annotatedUnits = units.filter(u => u.annotationId);
+        const unannotatedUnits = units.filter(u => !u.annotationId);
+        
+        // 按文件分组有批注的笔记
+        const fileGroups = new Map<string, ContentUnit[]>();
+        annotatedUnits.forEach(unit => {
+          const fileName = unit.source.file;
+          if (!fileGroups.has(fileName)) {
+            fileGroups.set(fileName, []);
+          }
+          fileGroups.get(fileName)!.push(unit);
+        });
+        
+        // 构建分组列表
+        grouped = [];
+        
+        // 添加各个文件的有批注笔记
+        fileGroups.forEach((units, fileName) => {
+          grouped.push({
+            groupKey: fileName,
+            count: units.length
+          });
+        });
+        
+        // 添加"无批注"分组（如果有无批注的笔记）
+        if (unannotatedUnits.length > 0) {
+          grouped.push({
+            groupKey: 'filter.unannotated',
+            count: unannotatedUnits.length
+          });
+        }
+      } else {
+        // 其他分组模式
+        const unitGroups = this.contentList.groupUnits(units);
+        grouped = unitGroups.map(g => ({ 
+          groupKey: g.groupKey, 
+          count: g.units.length 
+        }));
+      }
     }
     
     if (grouped.length === 0) {
@@ -595,9 +680,14 @@ this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
         cls: `file-item ${this.state.selectedFile === groupKey ? 'selected' : ''}`
       });
       
+      // ⭐ 特殊显示"无批注"分组
+      const displayName = groupKey === 'filter.unannotated' 
+        ? this.t('filter.unannotated')
+        : groupKey;
+      
       fileItem.innerHTML = `
         <span class="file-icon">${this.getGroupIcon()}</span>
-        <span class="file-name">${groupKey}</span>
+        <span class="file-name">${displayName}</span>
         <span class="file-count">${count}</span>
       `;
       
@@ -617,7 +707,7 @@ this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
       });
     });
   }
-
+  
   private renderEmptyRightPanel(container: HTMLElement): void {
     const empty = container.createDiv({ cls: 'empty-right-panel' });
     empty.innerHTML = `
@@ -833,8 +923,14 @@ private refreshContentOnly(): void {
         return unit.source.file === selected;
   
       } else if (this.state.groupMode === 'annotation') {
-        const hasAnnotation = selected === 'filter.annotated';
-        return hasAnnotation ? !!unit.annotationId : !unit.annotationId;
+        // ⭐ 修改：按批注分组时的过滤逻辑
+        if (selected === 'filter.unannotated') {
+          // 显示所有无批注的笔记
+          return !unit.annotationId;
+        } else {
+          // 显示特定文件的有批注笔记
+          return unit.source.file === selected && !!unit.annotationId;
+        }
   
       } else if (this.state.groupMode === 'tag') {
         return unit.metadata.tags.includes(selected);
@@ -858,9 +954,16 @@ private refreshContentOnly(): void {
       if (this.state.groupMode === 'file') {
         return card.sourceFile === this.state.selectedFile;
       } else if (this.state.groupMode === 'annotation') {
-        const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
-        const hasAnnotation = this.state.selectedFile === 'filter.annotated';
-        return hasAnnotation ? (unit && !!unit.annotationId) : (!unit || !unit.annotationId);
+  // ⭐ 修改：按批注分组时的过滤逻辑
+  const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+  
+  if (selected === 'filter.unannotated') {
+    // 显示所有无批注的闪卡
+    return !unit || !unit.annotationId;
+  } else {
+    // 显示特定文件的有批注闪卡
+    return card.sourceFile === selected && unit && !!unit.annotationId;
+  }
       } else if (this.state.groupMode === 'tag') {
         const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
         return (unit && unit.metadata.tags.includes(selected)) ||
