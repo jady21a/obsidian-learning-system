@@ -57,6 +57,7 @@ export interface ReviewLog {
   id: string;
   flashcardId: string;
   timestamp: number;
+  cycle?: number;
   response: {
     userAnswer?: string | string[];
     timeSpent: number;
@@ -470,18 +471,24 @@ private async loadDeleteHistory() {
 
   // ==================== 复习日志 ====================
 
-  /**
-   * 记录复习日志
-   */
-  async logReview(log: ReviewLog) {
-    this.reviewLogs.push(log);
-    
-    if (this.reviewLogs.length > 1000) {
-      this.reviewLogs = this.reviewLogs.slice(-1000);
-    }
-    
-    await this.persistReviewLogs();
+/**
+ * 记录复习日志
+ */
+async logReview(log: ReviewLog) {
+  // 👇 确保周期字段存在且正确
+  if (!log.cycle) {
+    log.cycle = this.plugin.analyticsEngine?.getCurrentCycleNumber() || 1;
   }
+  
+  this.reviewLogs.push(log);
+  
+  // 保持日志数量在合理范围
+  if (this.reviewLogs.length > 1000) {
+    this.reviewLogs = this.reviewLogs.slice(-1000);
+  }
+  
+  await this.persistReviewLogs();
+}
 
   /**
    * 获取卡片的复习历史

@@ -10,7 +10,7 @@ export class StatsView extends ItemView {
   plugin: LearningSystemPlugin;
   private language: Language;
   private analytics: AnalyticsEngine;
-  private currentTab: 'overview' | 'trends' | 'decks' | 'difficult' = 'overview';
+  private currentTab: 'overview' | 'trends' | 'decks' | 'difficult'| 'history' = 'overview';
 
   constructor(leaf: WorkspaceLeaf, plugin: LearningSystemPlugin) {
     super(leaf);
@@ -48,7 +48,7 @@ export class StatsView extends ItemView {
 
     // 标题栏
     const header = container.createDiv({ cls: 'stats-header' });
-    header.createEl('h2', { text: '📊 Learning Statistics' });
+    header.createEl('h2', { text: 'Learning Statistics' });
 
     // 刷新按钮
     const refreshBtn = header.createEl('button', {
@@ -76,6 +76,9 @@ export class StatsView extends ItemView {
       case 'difficult':
         this.renderDifficult(content);
         break;
+        case 'history':
+          this.renderCycleHistory(content);
+          break;    
     }
   }
 
@@ -86,7 +89,8 @@ export class StatsView extends ItemView {
       { id: 'overview', label: '📊 Overview' },
       { id: 'trends', label: '📈 Trends' },
       { id: 'decks', label: '📚 Decks' },
-      { id: 'difficult', label: '⚠️ Difficult' }
+      { id: 'difficult', label: '⚠️ Difficult' },
+      { id: 'history', label: '📜 Cycle History' }
     ];
 
     tabConfigs.forEach(config => {
@@ -105,6 +109,8 @@ export class StatsView extends ItemView {
     const stats = this.plugin.flashcardManager.getStats();
     const { thisWeek, lastWeek } = this.analytics.getWeeklyStats();
     const dailyStats = this.analytics.getDailyStats(7);
+
+    this.renderCycleBanner(container);
 
     // 关键指标卡片
     const metricsGrid = container.createDiv({ cls: 'metrics-grid' });
@@ -720,6 +726,216 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
       console.error('Error generating report:', error);
       new Notice('❌ Failed to generate report');
     }
+
+  }
+  private renderCycleBanner(container: HTMLElement) {
+    const cycleInfo = this.analytics.getCurrentCycleInfo();
+    
+    const banner = container.createDiv({ cls: 'cycle-info-banner' });
+    
+    const badge = banner.createDiv({ cls: 'cycle-badge' });
+    badge.textContent = `Cycle ${cycleInfo.currentCycle}`;
+    
+    const stats = banner.createDiv({ cls: 'cycle-stats' });
+    const daysSince = Math.floor(
+      (Date.now() - new Date(cycleInfo.startDate).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    stats.textContent = `Day ${daysSince} · ${cycleInfo.reviewsThisCycle} reviews`;
+    
+    const btn = banner.createEl('button', {
+      text: 'Start New Cycle',
+      cls: 'start-new-cycle-btn'
+    });
+    
+    btn.addEventListener('click', () => this.confirmStartNewCycle());
+  }
+
+  private confirmStartNewCycle() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-container';
+    modal.innerHTML = `
+      <div class="modal-bg"></div>
+      <div class="modal">
+        <div class="modal-title">🔄 Start New Learning Cycle</div>
+        <div class="modal-content">
+          <p>This will:</p>
+          <ul>
+            <li>✅ Archive current cycle data (read-only)</li>
+            <li>✅ Reset current stats to zero</li>
+            <li>✅ Keep all flashcard progress</li>
+            <li>⚠️ Cannot be undone</li>
+          </ul>
+          <p>Start fresh with Cycle ${this.analytics.getCurrentCycleNumber() + 1}?</p>
+        </div>
+        <div class="modal-button-container">
+          <button class="mod-warning cancel-btn">Cancel</button>
+          <button class="mod-cta confirm-btn">Start New Cycle</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.querySelector('.cancel-btn')?.addEventListener('click', () => modal.remove());
+    modal.querySelector('.confirm-btn')?.addEventListener('click', async () => {
+      await this.analytics.startNewCycle();
+      new Notice('✨ New learning cycle started!');
+      modal.remove();
+      this.render();
+    });
+    
+    modal.querySelector('.modal-bg')?.addEventListener('click', () => modal.remove());
+  }
+
+  private renderCycleHistory(container: HTMLElement) {
+    container.createEl('h3', { text: '📜 Learning Cycle History' });
+  
+    const cycles = this.analytics.getArchivedCycles();
+    
+    if (cycles.length === 0) {
+      container.createDiv({
+        text: '📝 No archived cycles yet. Complete your first cycle to see history!',
+        cls: 'empty-message'
+      });
+      return;
+    }
+  
+    const cyclesList = container.createDiv({ cls: 'cycles-list' });
+  
+    cycles.forEach(cycle => {
+      const cycleCard = cyclesList.createDiv({ cls: 'cycle-card' });
+  
+      // 卡片头部
+      const header = cycleCard.createDiv({ cls: 'cycle-card-header' });
+      header.createEl('h4', { text: `Cycle ${cycle.cycleNumber}` });
+      
+      const duration = this.formatDateRange(cycle.startDate, cycle.endDate);
+      const badge = header.createSpan({ cls: 'cycle-duration' });
+      badge.textContent = duration;
+  
+      // 关键指标
+      const stats = cycleCard.createDiv({ cls: 'cycle-card-stats' });
+      
+      this.createStatRow(stats, 'Reviews', cycle.totalReviews.toString(), '📝');
+      this.createStatRow(stats, 'Cards', cycle.totalCards.toString(), '🃏');
+      this.createStatRow(
+        stats, 
+        'Correct Rate',
+        `${(cycle.correctRate * 100).toFixed(1)}%`,
+        '✅'
+      );
+  
+      // 查看详情按钮
+      const actions = cycleCard.createDiv({ cls: 'cycle-card-actions' });
+      const detailBtn = actions.createEl('button', {
+        text: '📊 View Details',
+        cls: 'mod-cta'
+      });
+      detailBtn.addEventListener('click', () => this.showCycleDetails(cycle.cycleNumber));
+    });
+  }
+  
+  private formatDateRange(start: string, end: string): string {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const days = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    const formatOpts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+    return `${startDate.toLocaleDateString('en-US', formatOpts)} - ${endDate.toLocaleDateString('en-US', formatOpts)} (${days}d)`;
+  }
+  
+  private showCycleDetails(cycleNumber: number) {
+    const details = this.analytics.getCycleDetails(cycleNumber);
+    if (!details) {
+      new Notice('Cycle data not found');
+      return;
+    }
+  
+    const { cycle, dailyStats, deckStats } = details;
+  
+    const modal = document.createElement('div');
+    modal.className = 'modal-container cycle-details-modal';
+    
+    const avgCorrectRate = dailyStats.length > 0
+      ? dailyStats.reduce((sum, d) => sum + d.correctRate, 0) / dailyStats.length
+      : 0;
+  
+    modal.innerHTML = `
+      <div class="modal-bg"></div>
+      <div class="modal modal-large">
+        <div class="modal-title">📊 Cycle ${cycleNumber} Details</div>
+        <div class="modal-content">
+          
+          <div class="cycle-detail-section">
+            <h4>📅 Duration</h4>
+            <p>${this.formatDateRange(cycle.startDate, cycle.endDate)}</p>
+          </div>
+  
+          <div class="cycle-detail-section">
+            <h4>📈 Key Metrics</h4>
+            <div class="metrics-grid-small">
+              <div class="metric-small">
+                <span class="metric-label">Total Reviews</span>
+                <span class="metric-value">${cycle.totalReviews}</span>
+              </div>
+              <div class="metric-small">
+                <span class="metric-label">Avg Correct Rate</span>
+                <span class="metric-value">${(avgCorrectRate * 100).toFixed(1)}%</span>
+              </div>
+              <div class="metric-small">
+                <span class="metric-label">Total Cards</span>
+                <span class="metric-value">${cycle.totalCards}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="cycle-detail-section">
+            <h4>📊 Daily Activity</h4>
+            <div id="cycle-daily-chart"></div>
+          </div>
+          
+          <div class="cycle-detail-section">
+            <h4>📚 Deck Breakdown</h4>
+            <div id="cycle-deck-stats"></div>
+          </div>
+  
+        </div>
+        <div class="modal-button-container">
+          <button class="mod-cta close-btn">Close</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 渲染图表
+    const dailyChart = modal.querySelector('#cycle-daily-chart');
+    if (dailyChart) {
+      this.renderSimpleBarChart(dailyChart as HTMLElement, dailyStats.slice(-14)); // 最后14天
+    }
+    
+    // 渲染卡组统计
+    const deckStatsEl = modal.querySelector('#cycle-deck-stats');
+    if (deckStatsEl) {
+      if (deckStats.length === 0) {
+        (deckStatsEl as HTMLElement).textContent = 'No deck data available';
+      } else {
+        deckStats.forEach(deck => {
+          const row = (deckStatsEl as HTMLElement).createDiv({ cls: 'deck-stat-row' });
+          row.createSpan({ text: deck.deckName, cls: 'deck-name' });
+          
+          const info = row.createDiv({ cls: 'deck-info' });
+          info.createSpan({ text: `${deck.totalCards} cards`, cls: 'deck-detail' });
+          info.createSpan({ 
+            text: `${(deck.correctRate * 100).toFixed(1)}% correct`,
+            cls: 'deck-detail'
+          });
+        });
+      }
+    }
+    
+    modal.querySelector('.close-btn')?.addEventListener('click', () => modal.remove());
+    modal.querySelector('.modal-bg')?.addEventListener('click', () => modal.remove());
   }
   private addStyles() {
     const styleEl = document.createElement('style');
@@ -1216,7 +1432,6 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
   text-align: left;
   transition: all 0.2s;
   display: flex;
-  flex-direction: column;
   gap: 5px;
 }
 
@@ -1234,6 +1449,162 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+
+/* 重置复习周期 */           
+.cycle-info-banner {
+  display: flex;
+  flex-direction: row;  /* 👈 明确指定横向排列 */
+  align-items: center;
+  justify-content: space-between; /* 👈 两端对齐 */
+  gap: 15px;
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  color: white;
+  flex-wrap: nowrap; /* 👈 禁止换行 */
+}
+
+.cycle-badge {
+  font-size: 1.2em;
+  font-weight: 600;
+  padding: 5px 15px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+}
+
+.cycle-stats {
+  flex: 1;
+  font-size: 0.95em;
+  opacity: 0.9;
+}
+
+.start-new-cycle-btn {
+  padding: 8px 16px;
+  background: white;
+  color: var(--interactive-accent);
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.start-new-cycle-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+  /* 周期历史卡片 */
+.cycles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.cycle-card {
+  padding: 20px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.cycle-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.cycle-card-header h4 {
+  margin: 0;
+  font-size: 1.2em;
+}
+
+.cycle-duration {
+  font-size: 0.85em;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  background: var(--background-primary);
+  border-radius: 12px;
+}
+
+.cycle-card-actions {
+  margin-top: 15px;
+  text-align: right;
+}
+
+/* 周期详情弹窗 */
+.cycle-details-modal .modal-large {
+  max-width: 800px;
+}
+
+.cycle-detail-section {
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.cycle-detail-section:last-child {
+  border-bottom: none;
+}
+
+.cycle-detail-section h4 {
+  margin: 0 0 15px 0;
+  font-size: 1.1em;
+}
+
+.metrics-grid-small {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+}
+
+.metric-small {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 15px;
+  background: var(--background-primary);
+  border-radius: 6px;
+}
+
+.metric-small .metric-label {
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+.metric-small .metric-value {
+  font-size: 1.5em;
+  font-weight: 600;
+}
+
+.deck-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.deck-stat-row:last-child {
+  border-bottom: none;
+}
+
+.deck-name {
+  font-weight: 500;
+}
+
+.deck-info {
+  display: flex;
+  gap: 15px;
+}
+
+.deck-detail {
+  font-size: 0.9em;
+  color: var(--text-muted);
 }
 `;
 

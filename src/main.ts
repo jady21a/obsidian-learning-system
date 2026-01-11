@@ -8,7 +8,7 @@ import { DataManager } from './core/DataManager';
 import { ExtractionEngine } from './core/ExtractionEngine';
 import { AnnotationManager } from './core/AnnotationManager';
 import { FlashcardManager } from './core/FlashcardManager';
-import { AnalyticsEngine } from './core/AnalyticsEngine';
+import { AnalyticsEngine,CycleInfo } from './core/AnalyticsEngine';
 import { UnlockSystem } from './core/UnlockSystem';
 import { ViewState } from './ui/state/ViewState';
 import { t } from './i18n/translations'
@@ -19,6 +19,7 @@ interface LearningSystemSettings {
   extractionEnabled: boolean;
   autoScan: boolean;
   defaultDeck: string;
+  cycleData?: CycleInfo;
   language: 'en' | 'zh-CN'; 
 }
 
@@ -26,6 +27,7 @@ const DEFAULT_SETTINGS: LearningSystemSettings = {
   extractionEnabled: true,
   autoScan: false,
   defaultDeck: 'Default',
+  cycleData: undefined,
     language: 'en'
 };
 

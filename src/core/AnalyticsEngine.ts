@@ -36,121 +36,437 @@ export interface DifficultCard {
   averageTime: number;
   pattern: 'concept' | 'memory' | 'calculation' | 'unknown';
 }
-
+export interface CycleInfo {
+  currentCycle: number;
+  cycleStartDate: string; // ISO 格式
+  cycles: Array<{
+    cycleNumber: number;
+    startDate: string;
+    endDate?: string;
+    totalReviews: number;
+    totalCards: number;
+    correctRate: number;
+  }>;
+}
 export class AnalyticsEngine {
   constructor(private plugin: LearningSystemPlugin) {}
-
   /**
-   * 获取每日统计
+   * 获取或初始化周期信息
    */
-  getDailyStats(days: number = 30): DailyStats[] {
-    const logs = this.plugin.flashcardManager['reviewLogs'] || [];
-    const stats: Map<string, DailyStats> = new Map();
-
-    // 初始化最近N天的数据
-    for (let i = 0; i < days; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateKey = date.toISOString().split('T')[0];
-      
-      stats.set(dateKey, {
-        date: dateKey,
-        reviewed: 0,
-        correctCount: 0,
-        correctRate: 0,
-        timeSpent: 0,
-        newCards: 0
-      });
+  private getCycleData(): CycleInfo {
+    const data = this.plugin.settings.cycleData;
+    if (!data) {
+      // 首次初始化
+      const initData: CycleInfo = {
+        currentCycle: 1,
+        cycleStartDate: new Date().toISOString(),
+        cycles: [{
+          cycleNumber: 1,
+          startDate: new Date().toISOString(),
+          totalReviews: 0,
+          totalCards: 0,
+          correctRate: 0
+        }]
+      };
+      this.plugin.settings.cycleData = initData;
+      this.plugin.saveSettings();
+      return initData;
     }
-
-    // 统计复习记录
-    logs.forEach(log => {
-      const date = new Date(log.timestamp).toISOString().split('T')[0];
-      const stat = stats.get(date);
-      if (!stat) return;
-
-      stat.reviewed++;
-      stat.timeSpent += log.response.timeSpent;
-
-      // 判断是否正确
-      if (log.response.ease === 'good' || log.response.ease === 'easy') {
-        stat.correctCount++;
-      } else if (log.response.ease === 'hard') {
-        stat.correctCount += 0.5;
-      }
-
-      // 检查是否是新卡片（第一次复习）
-      const card = this.plugin.flashcardManager.getFlashcard(log.flashcardId);
-      if (card && card.stats.totalReviews === 1) {
-        stat.newCards++;
-      }
-    });
-
-    // 计算正确率
-    stats.forEach(stat => {
-      if (stat.reviewed > 0) {
-        stat.correctRate = stat.correctCount / stat.reviewed;
-      }
-    });
-
-    return Array.from(stats.values()).sort((a, b) => 
-      a.date.localeCompare(b.date)
-    );
+    return data;
   }
 
   /**
-   * 获取周统计
+   * 获取当前周期信息（供 UI 使用）
    */
-  getWeeklyStats(): { thisWeek: WeeklyStats; lastWeek: WeeklyStats } {
-    const now = new Date();
+  getCurrentCycleInfo(): {
+    currentCycle: number;
+    startDate: string;
+    reviewsThisCycle: number;
+  } {
+    const data = this.getCycleData();
+    const logs = this.plugin.flashcardManager['reviewLogs'] || [];
     
-    // 本周
-    const thisWeekStart = new Date(now);
-    thisWeekStart.setDate(now.getDate() - now.getDay());
-    thisWeekStart.setHours(0, 0, 0, 0);
-
-    // 上周
-    const lastWeekStart = new Date(thisWeekStart);
-    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-
-    const thisWeek = this.calculateWeekStats(thisWeekStart);
-    const lastWeek = this.calculateWeekStats(lastWeekStart);
-
-    return { thisWeek, lastWeek };
-  }
-
-  private calculateWeekStats(startDate: Date): WeeklyStats {
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 7);
-
-    const logs = (this.plugin.flashcardManager['reviewLogs'] || []).filter(
-      log => log.timestamp >= startDate.getTime() && log.timestamp < endDate.getTime()
-    );
-
-    let totalCorrect = 0;
-    let totalTimeSpent = 0;
-
-    logs.forEach(log => {
-      totalTimeSpent += log.response.timeSpent;
-      if (log.response.ease === 'good' || log.response.ease === 'easy') {
-        totalCorrect++;
-      } else if (log.response.ease === 'hard') {
-        totalCorrect += 0.5;
-      }
-    });
-
-    const averageCorrectRate = logs.length > 0 ? totalCorrect / logs.length : 0;
-    const streak = this.calculateStreak();
+    // 统计当前周期的复习数
+    const cycleReviews = logs.filter(
+      log => (log.cycle || 1) === data.currentCycle
+    ).length;
 
     return {
-      startDate: startDate.toISOString().split('T')[0],
-      endDate: endDate.toISOString().split('T')[0],
-      totalReviews: logs.length,
-      averageCorrectRate,
-      totalTimeSpent,
-      streak
+      currentCycle: data.currentCycle,
+      startDate: data.cycleStartDate,
+      reviewsThisCycle: cycleReviews
     };
   }
+
+  /**
+   * 获取当前周期号
+   */
+  getCurrentCycleNumber(): number {
+    return this.getCycleData().currentCycle;
+  }
+
+  /**
+   * 开启新周期
+   */
+  async startNewCycle(): Promise<void> {
+    const data = this.getCycleData();
+    const logs = this.plugin.flashcardManager['reviewLogs'] || [];
+    const cards = this.plugin.flashcardManager.getAllFlashcards();
+
+    // 1. 计算当前周期的最终统计
+    const cycleReviews = logs.filter(
+      log => (log.cycle || 1) === data.currentCycle
+    );
+    
+    const totalCorrect = cycleReviews.filter(
+      log => log.response.ease === 'good' || log.response.ease === 'easy'
+    ).length;
+    
+    const correctRate = cycleReviews.length > 0 
+      ? totalCorrect / cycleReviews.length 
+      : 0;
+
+    // 2. 结束当前周期（记录到历史）
+    const currentCycleIndex = data.cycles.findIndex(
+      c => c.cycleNumber === data.currentCycle
+    );
+    
+    if (currentCycleIndex !== -1) {
+      data.cycles[currentCycleIndex].endDate = new Date().toISOString();
+      data.cycles[currentCycleIndex].totalReviews = cycleReviews.length;
+      data.cycles[currentCycleIndex].totalCards = cards.length;
+      data.cycles[currentCycleIndex].correctRate = correctRate;
+    }
+
+    // 3. 创建新周期
+    const newCycleNumber = data.currentCycle + 1;
+    const newStartDate = new Date().toISOString();
+
+    data.cycles.push({
+      cycleNumber: newCycleNumber,
+      startDate: newStartDate,
+      totalReviews: 0,
+      totalCards: cards.length,
+      correctRate: 0
+    });
+
+    data.currentCycle = newCycleNumber;
+    data.cycleStartDate = newStartDate;
+
+    // 4. 更新所有新日志的周期标记（通过拦截器实现）
+    // 这里不需要修改旧日志，新日志会自动标记为新周期
+
+    // 5. 保存设置
+    await this.plugin.saveSettings();
+  }
+
+
+/**
+ * 获取所有历史周期(用于UI显示)
+ */
+getArchivedCycles(): Array<{
+  cycleNumber: number;
+  startDate: string;
+  endDate: string;
+  totalReviews: number;
+  totalCards: number;
+  correctRate: number;
+  dailyStats?: DailyStats[];
+  deckStats?: DeckStats[];
+}> {
+  const data = this.getCycleData();
+  return data.cycles
+    .filter((c): c is typeof c & { endDate: string } => !!c.endDate) 
+    .sort((a, b) => b.cycleNumber - a.cycleNumber);
+}
+
+/**
+ * 获取指定周期的详细统计
+ */
+getCycleDetails(cycleNumber: number): {
+  cycle: any;
+  dailyStats: DailyStats[];
+  deckStats: DeckStats[];
+  weeklyStats: { thisWeek: WeeklyStats; lastWeek: WeeklyStats };
+} | null {
+  const data = this.getCycleData();
+  const cycle = data.cycles.find(c => c.cycleNumber === cycleNumber);
+  
+  if (!cycle) return null;
+
+  // 计算该周期的统计数据
+  const logs = this.plugin.flashcardManager['reviewLogs'] || [];
+  const cycleLogs = logs.filter(log => (log.cycle || 1) === cycleNumber);
+  
+  // 构建该周期的每日统计
+  const dailyStats = this.buildCycleDailyStats(cycleNumber, cycle.startDate, cycle.endDate);
+  const deckStats = this.buildCycleDeckStats(cycleNumber);
+  
+  return {
+    cycle,
+    dailyStats,
+    deckStats,
+    weeklyStats: this.getWeeklyStats(true) // 这里可以改进,获取指定周期的周统计
+  };
+}
+
+/**
+ * 构建指定周期的每日统计
+ */
+private buildCycleDailyStats(
+  cycleNumber: number, 
+  startDate: string, 
+  endDate?: string
+): DailyStats[] {
+  const logs = (this.plugin.flashcardManager['reviewLogs'] || [])
+    .filter(log => (log.cycle || 1) === cycleNumber);
+
+  const start = new Date(startDate);
+  const end = endDate ? new Date(endDate) : new Date();
+  const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+  const stats: Map<string, DailyStats> = new Map();
+
+  // 初始化所有日期
+  for (let i = 0; i < days; i++) {
+    const date = new Date(start);
+    date.setDate(date.getDate() + i);
+    const dateKey = date.toISOString().split('T')[0];
+    
+    stats.set(dateKey, {
+      date: dateKey,
+      reviewed: 0,
+      correctCount: 0,
+      correctRate: 0,
+      timeSpent: 0,
+      newCards: 0
+    });
+  }
+
+  // 填充数据
+  logs.forEach(log => {
+    const date = new Date(log.timestamp).toISOString().split('T')[0];
+    const stat = stats.get(date);
+    if (!stat) return;
+
+    stat.reviewed++;
+    stat.timeSpent += log.response.timeSpent;
+
+    if (log.response.ease === 'good' || log.response.ease === 'easy') {
+      stat.correctCount++;
+    } else if (log.response.ease === 'hard') {
+      stat.correctCount += 0.5;
+    }
+
+    const card = this.plugin.flashcardManager.getFlashcard(log.flashcardId);
+    if (card && card.stats.totalReviews === 1) {
+      stat.newCards++;
+    }
+  });
+
+  stats.forEach(stat => {
+    if (stat.reviewed > 0) {
+      stat.correctRate = stat.correctCount / stat.reviewed;
+    }
+  });
+
+  return Array.from(stats.values()).sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/**
+ * 构建指定周期的卡组统计
+ */
+private buildCycleDeckStats(cycleNumber: number): DeckStats[] {
+  const logs = (this.plugin.flashcardManager['reviewLogs'] || [])
+    .filter(log => (log.cycle || 1) === cycleNumber);
+  
+  const cards = this.plugin.flashcardManager.getAllFlashcards();
+  const deckMap = new Map<string, {
+    cards: Flashcard[];
+    logs: ReviewLog[];
+  }>();
+
+  // 按卡组分组
+  cards.forEach(card => {
+    if (!deckMap.has(card.deck)) {
+      deckMap.set(card.deck, { cards: [], logs: [] });
+    }
+    deckMap.get(card.deck)!.cards.push(card);
+  });
+
+  logs.forEach(log => {
+    const card = cards.find(c => c.id === log.flashcardId);
+    if (card && deckMap.has(card.deck)) {
+      deckMap.get(card.deck)!.logs.push(log);
+    }
+  });
+
+  // 计算统计
+  const stats: DeckStats[] = [];
+  deckMap.forEach((data, deckName) => {
+    const deckLogs = data.logs;
+    const correctLogs = deckLogs.filter(
+      log => log.response.ease === 'good' || log.response.ease === 'easy'
+    );
+
+    stats.push({
+      deckName,
+      totalCards: data.cards.length,
+      dueCards: data.cards.filter(c => c.scheduling.due <= Date.now()).length,
+      newCards: data.cards.filter(c => c.scheduling.state === 'new').length,
+      correctRate: deckLogs.length > 0 ? correctLogs.length / deckLogs.length : 0,
+      averageInterval: data.cards.reduce((sum, c) => sum + c.scheduling.interval, 0) / 
+        (data.cards.length || 1)
+    });
+  });
+
+  return stats.sort((a, b) => b.totalCards - a.totalCards);
+}
+
+/**
+ * 清除统计但保留卡片进度
+ */
+private async clearStatsOnly(): Promise<void> {
+  // 只清空 reviewLogs,不修改卡片的 FSRS 数据
+  this.plugin.flashcardManager['reviewLogs'] = [];
+  
+  // 重置卡片的统计字段(但保留 scheduling 中的学习进度)
+  const cards = this.plugin.flashcardManager.getAllFlashcards();
+  for (const card of cards) {
+    card.stats = {
+      totalReviews: 0,
+      correctCount: 0,
+      averageTime: 0,
+      lastReview: 0,
+      difficulty: card.stats.difficulty // 保留难度
+    };
+    // 注意:不修改 card.scheduling
+    await this.plugin.flashcardManager.updateCard(card);
+  }
+  
+  await this.plugin.dataManager.save();
+}
+/**
+ * 获取每日统计
+ */
+getDailyStats(days: number = 30, currentCycleOnly: boolean = false): DailyStats[] {
+  const logs = this.plugin.flashcardManager['reviewLogs'] || [];
+  const stats: Map<string, DailyStats> = new Map();
+
+  // 获取当前周期（如果需要过滤）
+  const currentCycle = currentCycleOnly ? this.getCurrentCycleNumber() : null;
+
+  // 初始化最近N天的数据
+  for (let i = 0; i < days; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dateKey = date.toISOString().split('T')[0];
+    
+    stats.set(dateKey, {
+      date: dateKey,
+      reviewed: 0,
+      correctCount: 0,
+      correctRate: 0,
+      timeSpent: 0,
+      newCards: 0
+    });
+  }
+
+  // 统计复习记录（支持周期过滤）
+  logs.forEach(log => {
+    const logCycle = log.cycle || 1;
+    // 如果需要只统计当前周期
+    if (currentCycle !== null && logCycle !== currentCycle) {
+      return;
+    }
+
+    const date = new Date(log.timestamp).toISOString().split('T')[0];
+    const stat = stats.get(date);
+    if (!stat) return;
+
+    stat.reviewed++;
+    stat.timeSpent += log.response.timeSpent;
+
+    if (log.response.ease === 'good' || log.response.ease === 'easy') {
+      stat.correctCount++;
+    } else if (log.response.ease === 'hard') {
+      stat.correctCount += 0.5;
+    }
+
+    const card = this.plugin.flashcardManager.getFlashcard(log.flashcardId);
+    if (card && card.stats.totalReviews === 1) {
+      stat.newCards++;
+    }
+  });
+
+  stats.forEach(stat => {
+    if (stat.reviewed > 0) {
+      stat.correctRate = stat.correctCount / stat.reviewed;
+    }
+  });
+
+  return Array.from(stats.values()).sort((a, b) => 
+    a.date.localeCompare(b.date)
+  );
+}
+
+/**
+ * 获取周统计
+ */
+getWeeklyStats(currentCycleOnly: boolean = false): { thisWeek: WeeklyStats; lastWeek: WeeklyStats } {
+  const now = new Date();
+  const currentCycle = currentCycleOnly ? this.getCurrentCycleNumber() : null;
+  
+  const thisWeekStart = new Date(now);
+  thisWeekStart.setDate(now.getDate() - now.getDay());
+  thisWeekStart.setHours(0, 0, 0, 0);
+
+  const lastWeekStart = new Date(thisWeekStart);
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+  const thisWeek = this.calculateWeekStats(thisWeekStart, currentCycle);
+  const lastWeek = this.calculateWeekStats(lastWeekStart, currentCycle);
+
+  return { thisWeek, lastWeek };
+}
+
+private calculateWeekStats(startDate: Date, cycleFilter: number | null = null): WeeklyStats {
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + 7);
+
+  let logs = (this.plugin.flashcardManager['reviewLogs'] || []).filter(
+    log => log.timestamp >= startDate.getTime() && log.timestamp < endDate.getTime()
+  );
+
+  // 应用周期过滤
+  if (cycleFilter !== null) {
+    logs = logs.filter(log => (log.cycle || 1) === cycleFilter);
+  }
+
+  let totalCorrect = 0;
+  let totalTimeSpent = 0;
+
+  logs.forEach(log => {
+    totalTimeSpent += log.response.timeSpent;
+    if (log.response.ease === 'good' || log.response.ease === 'easy') {
+      totalCorrect++;
+    } else if (log.response.ease === 'hard') {
+      totalCorrect += 0.5;
+    }
+  });
+
+  const averageCorrectRate = logs.length > 0 ? totalCorrect / logs.length : 0;
+  const streak = this.calculateStreak();
+
+  return {
+    startDate: startDate.toISOString().split('T')[0],
+    endDate: endDate.toISOString().split('T')[0],
+    totalReviews: logs.length,
+    averageCorrectRate,
+    totalTimeSpent,
+    streak
+  };
+}
 
   /**
    * 计算连续学习天数
