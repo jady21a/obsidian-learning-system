@@ -100,7 +100,15 @@ export class ExtractionEngine {
           const flashcard = await this.flashcardManager.createFlashcardFromUnit(unit, {
             cardType: cardType
           });
-          
+              // 🎯 添加解锁系统调用
+    if (this.plugin?.unlockSystem) {
+      if (extractType === 'QA') {
+        await this.plugin.unlockSystem.onNoteExtractedAsQA();
+      } else {
+        await this.plugin.unlockSystem.onNoteExtractedAsCloze();
+      }
+    }
+
           // 3. 再次保存 unit（更新 flashcardIds）
           await this.dataManager.saveContentUnits([unit]);
           
@@ -110,7 +118,7 @@ export class ExtractionEngine {
       } else if (extractType === 'text') {
         // 🎯 纯文本提取也算作提取任务
         if (this.plugin?.unlockSystem) {
-          await this.plugin.unlockSystem.onCardExtracted();
+          await this.plugin.unlockSystem.onNoteExtractedAsText(); 
         }
       }
       
@@ -418,7 +426,12 @@ export class ExtractionEngine {
         console.error('[extractContent]  Failed to create flashcard:', error);
       }
     }
-    
+    // 🎯 添加 - 统计扫描提取的笔记数
+if (this.plugin?.unlockSystem && units.length > 0) {
+  for (let i = 0; i < units.length; i++) {
+    await this.plugin.unlockSystem.onNoteScanned();
+  }
+}
     return units;
   }
 

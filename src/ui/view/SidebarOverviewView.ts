@@ -10,7 +10,7 @@ import { ContentUnit } from '../../core/DataManager';
 import { Flashcard } from '../../core/FlashcardManager';
 
 // 导入新的组件和状态管理
-import { FilterMode, GroupMode, ViewState } from '../state/ViewState';
+import { FilterMode, GroupMode, ViewState } from '../stats/ViewState';
 import { Toolbar }  from '../components/Toolbar';
 import { BatchActions, BatchActionCallbacks } from '../components/BatchActions';
 import { ContentList } from '../components/ContentList';

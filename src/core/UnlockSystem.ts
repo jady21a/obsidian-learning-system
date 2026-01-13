@@ -10,7 +10,11 @@ export interface UnlockProgress {
   currentLevel: UserLevel;
   stats: {
     cardsExtracted: number;      // Lv1→2: 需要 ≥10
-    annotationsCompleted: number; // Lv2→3: 需要 ≥5
+     notesExtractedAsText: number;    // 新增:提取为text
+  notesExtractedAsQA: number;      // 新增:提取为QA
+  notesExtractedAsCloze: number;   // 新增:提取为cloze
+  annotationsCompleted: number;
+  notesScanned: number; // Lv2→3: 需要 ≥5
     cardsReviewed: number;        // Lv3→4: ≥30, Lv4→5: ≥70
     tablesScanned: number;        // Lv3→4: 需要 ≥2
     consecutiveDays: number;      // Lv4→5: 需要 ≥7
@@ -55,7 +59,41 @@ export class UnlockSystem {
     await this.checkLevelUp();
     await this.saveProgress();
   }
+/**
+ * 🎯 提取为text时调用
+ */
+async onNoteExtractedAsText() {
+  this.progress.stats.notesExtractedAsText++;
+  await this.checkLevelUp();
+  await this.saveProgress();
+}
 
+/**
+ * 🎯 提取为QA时调用
+ */
+async onNoteExtractedAsQA() {
+  this.progress.stats.notesExtractedAsQA++;
+  await this.checkLevelUp();
+  await this.saveProgress();
+}
+
+/**
+ * 🎯 提取为cloze时调用
+ */
+async onNoteExtractedAsCloze() {
+  this.progress.stats.notesExtractedAsCloze++;
+  await this.checkLevelUp();
+  await this.saveProgress();
+}
+
+/**
+ * 🎯 scan提取笔记时调用
+ */
+async onNoteScanned() {
+  this.progress.stats.notesScanned++;
+  await this.checkLevelUp();
+  await this.saveProgress();
+}
   /**
    * 🎯 批注完成时调用
    */
@@ -178,27 +216,27 @@ export class UnlockSystem {
   }
 
   private canUpgradeToLevel2(): boolean {
-    return this.progress.stats.cardsExtracted >= 10;
+    const { notesExtractedAsText, notesExtractedAsQA, notesExtractedAsCloze } = this.progress.stats;
+    // 每种类型至少提取3个笔记
+    return notesExtractedAsText >= 3 && 
+           notesExtractedAsQA >= 3 && 
+           notesExtractedAsCloze >= 3;
   }
-
+  
   private canUpgradeToLevel3(): boolean {
-    return this.progress.stats.annotationsCompleted >= 5;
+    return this.progress.stats.annotationsCompleted >= 3 &&
+           this.progress.stats.notesScanned >= 5;
   }
-
+  
   private canUpgradeToLevel4(): boolean {
-    return (
-      this.progress.stats.cardsReviewed >= 10 &&
-      this.progress.stats.tablesScanned >= 2
-    );
+    return this.progress.stats.cardsReviewed >= 30 &&
+           this.progress.stats.tablesScanned >= 2;
   }
-
+  
   private canUpgradeToLevel5(): boolean {
-    return (
-      this.progress.stats.cardsReviewed >= 70 &&
-      this.progress.stats.consecutiveDays >= 7 &&
-      this.progress.stats.totalDays >= 21 &&
-      this.progress.stats.statsPageVisited
-    );
+    return this.progress.stats.cardsReviewed >= 70 &&
+           this.progress.stats.totalDays >= 21 &&
+           this.progress.stats.statsPageVisited;
   }
 
   private async levelUp(newLevel: UserLevel) {
@@ -262,20 +300,26 @@ export class UnlockSystem {
     
     switch (level) {
       case 1:
-        return t('unlock.nextSteps.level1', lang, { current: stats.cardsExtracted });
+        return t('unlock.nextSteps.level1', lang, { 
+          text: stats.notesExtractedAsText,
+          qa: stats.notesExtractedAsQA,
+          cloze: stats.notesExtractedAsCloze
+        });
       case 2:
-        return t('unlock.nextSteps.level2', lang, { current: stats.annotationsCompleted });
+        return t('unlock.nextSteps.level2', lang, { 
+          annotations: stats.annotationsCompleted,
+          scanned: stats.notesScanned
+        });
       case 3:
         return t('unlock.nextSteps.level3', lang, { 
-          current: stats.cardsReviewed,
+          reviewed: stats.cardsReviewed,
           tables: stats.tablesScanned
         });
       case 4:
         return t('unlock.nextSteps.level4', lang, {
-          current: stats.cardsReviewed,
-          days: stats.consecutiveDays,
-          visited: stats.statsPageVisited ? '✓' : '✗',
-          total: stats.totalDays
+          reviewed: stats.cardsReviewed,
+          total: stats.totalDays,
+          visited: stats.statsPageVisited ? '✓' : '✗'
         });
       case 5:
         return t('unlock.nextSteps.level5', lang);
@@ -336,7 +380,11 @@ export class UnlockSystem {
       currentLevel: 1,
       stats: {
         cardsExtracted: 0,
+        notesExtractedAsText: 0,
+        notesExtractedAsQA: 0,
+        notesExtractedAsCloze: 0,
         annotationsCompleted: 0,
+        notesScanned: 0,
         cardsReviewed: 0,
         tablesScanned: 0,
         consecutiveDays: 0,

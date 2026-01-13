@@ -4,7 +4,7 @@ import type LearningSystemPlugin from '../../main';
 import { Flashcard } from '../../core/FlashcardManager';
 import { CardScheduler, ReviewEase } from '../../core/CardScheduler';
 import { FlashcardEditModal } from '../components/modals/FlashcardEditModal';
-import { ReviewStateManager,ReviewState } from '../state/reviewStateManager';
+import { ReviewStateManager,ReviewState } from '../stats/reviewStateManager';
 // import { ReviewKeyboardHandler } from './ReviewKeyboardHandler';
 import { TableRenderer } from '../components/TableRenderer';
 import { CardRendererFactory } from '../components/reviewCardRender';

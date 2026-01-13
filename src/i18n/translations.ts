@@ -299,7 +299,11 @@ type TranslationKey =
 
 
 | 'filter.unannotated'
-
+// unlock refactor
+| 'unlock.stat.notesExtractedAsText'
+| 'unlock.stat.notesExtractedAsQA'
+| 'unlock.stat.notesExtractedAsCloze'
+| 'unlock.stat.notesScanned'
 
 // 定义翻译字典类型
 type TranslationDict = Record<TranslationKey, string> & {
@@ -605,14 +609,14 @@ export const translations: Record<Language, TranslationDict> = {
   'unlock.levelUp.4': '💪 level.4 Promoted to Trainer!\nUnlocked: Statistics & Analysis',
   'unlock.levelUp.5': '🏆 level.5 Achieved Analyst!\nAll features unlocked',
   
-  // Next Steps
-  'unlock.nextSteps.level1': '📦 Extract Cards: {current}/10',
-  'unlock.nextSteps.level2': '📝 Complete Annotations: {current}/5',
-  'unlock.nextSteps.level3': '🔄 Review Cards: {current}/10\n📋 Scan Tables: {tables}/2',
-  'unlock.nextSteps.level4': '🔄 Review Cards: {current}/70\n🔥 Consecutive Days: {days}/7\n📊 Visit Stats Page: {visited}\n📈 Total Days: {total}/21',
-  'unlock.nextSteps.level5': '🎉 Congratulations! All features unlocked!\n\n🔮 Community feature coming soon\nWill be enabled when conditions are met\n🔗 <a href="https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%8A%E5%9B%A2" target="_blank">Learn More (Click to View)</a>',
-  
-  // Modal
+// Next Steps
+'unlock.nextSteps.level1': '📦 Extract Notes:\n  • As Text: {text}/3\n  • As Q&A: {qa}/3\n  • As Cloze: {cloze}/3',
+'unlock.nextSteps.level2': '📝 Complete Annotations: {annotations}/3\n📋 Scan Notes: {scanned}/5',
+'unlock.nextSteps.level3': '🔄 Review Cards: {reviewed}/30\n📋 Scan Tables: {tables}/2',
+'unlock.nextSteps.level4': '🔄 Review Cards: {reviewed}/70\n📅 Total Days: {total}/21\n📊 Visit Stats Page: {visited}',
+'unlock.nextSteps.level5': '🎉 Congratulations! All features unlocked!\n\n🔮 Community feature coming soon\nWill be enabled when conditions are met\n🔗 <a href="https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%8A%E5%9B%A2" target="_blank">Learn More (Click to View)</a>',
+ 
+// Modal
   'unlock.modal.title': '🔒 Feature Locked',
   'unlock.modal.requireLevel': '"{feature}" requires Lv{level} to unlock',
   'unlock.modal.currentProgress': 'Current Progress:',
@@ -624,7 +628,7 @@ export const translations: Record<Language, TranslationDict> = {
   
   // Stats Labels
   'unlock.stat.cardsExtracted': 'Cards Extracted',
-  'unlock.stat.annotationsCompleted': 'Annotations Completed',
+  'unlock.stat.annotationsCompleted': 'Annotations Added',
   'unlock.stat.cardsReviewed': 'Cards Reviewed',
   'unlock.stat.tablesScanned': 'Tables Scanned',
   'unlock.stat.consecutiveDays': 'Consecutive Days',
@@ -642,6 +646,12 @@ export const translations: Record<Language, TranslationDict> = {
 'unlock.community.link': 'Learn about Community',
 
 'filter.unannotated': 'No Annotation',
+
+// unlock refactor
+'unlock.stat.notesExtractedAsText': 'Notes as Text',
+'unlock.stat.notesExtractedAsQA': 'Notes as Q&A',
+'unlock.stat.notesExtractedAsCloze': 'Notes as Cloze',
+'unlock.stat.notesScanned': 'Notes Scanned',
 },
 
   
@@ -942,13 +952,12 @@ export const translations: Record<Language, TranslationDict> = {
   'unlock.levelUp.4': '💪 level.4 晋升训练者!\n解锁: 统计分析',
   'unlock.levelUp.5': '🏆 level.5 达成分析师!\n所有功能已解锁',
   
-  // 下一步提示
-  'unlock.nextSteps.level1': '📦 提取卡片: {current}/10',
-  'unlock.nextSteps.level2': '📝 完成批注: {current}/5',
-  'unlock.nextSteps.level3': '🔄 复习卡片: {current}/10\n📋 扫描表格: {tables}/2',
-  'unlock.nextSteps.level4': '🔄 复习卡片: {current}/70\n🔥 连续使用天数: {days}/7\n📊 访问统计页: {visited}\n📈 总使用天数: {total}/21',
-  'unlock.nextSteps.level5': '🎉 恭喜解锁所有功能!\n\n🔮 智囊团功能尚未开放\n达到人数与段位条件后开启\n🔗 <a href="https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%8A%E5%9B%A2" target="_blank">了解智囊团（点击查看）</a>',
-  
+// 下一步提示
+'unlock.nextSteps.level1': '📦 右键提取笔记:\n  • 提取为文本: {text}/3\n  • 提取为问答: {qa}/3\n  • 提取为填空: {cloze}/3',
+'unlock.nextSteps.level2': '📝 完成批注: {annotations}/3\n📋 扫描提取笔记: {scanned}/5',
+'unlock.nextSteps.level3': '🔄 复习卡片: {reviewed}/30\n📋 扫描表格: {tables}/2',
+'unlock.nextSteps.level4': '🔄 复习卡片: {reviewed}/70\n📅 总使用天数: {total}/21\n📊 访问统计页: {visited}',
+'unlock.nextSteps.level5': '🎉 恭喜解锁所有功能!\n\n🔮 智囊团功能尚未开放\n达到人数与段位条件后开启\n🔗 <a href="https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%8A%E5%9B%A2" target="_blank">了解智囊团(点击查看)</a>',
   // 弹窗
   'unlock.modal.title': '🔒 功能未解锁',
   'unlock.modal.requireLevel': '"{feature}" 需要 Lv{level} 解锁',
@@ -980,6 +989,11 @@ export const translations: Record<Language, TranslationDict> = {
 
 'filter.unannotated': '无批注',
 
+// unlock refactor
+'unlock.stat.notesExtractedAsText': '提取为文本',
+'unlock.stat.notesExtractedAsQA': '提取为问答',
+'unlock.stat.notesExtractedAsCloze': '提取为填空',
+'unlock.stat.notesScanned': '扫描笔记',
 
   }
 } as const;

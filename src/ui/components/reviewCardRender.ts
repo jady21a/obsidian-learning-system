@@ -2,7 +2,7 @@
 import { Flashcard } from '../../core/FlashcardManager';
 import { CardScheduler } from '../../core/CardScheduler';
 import { TableRenderer } from './TableRenderer';
-import type { ReviewState } from '../state/reviewStateManager';
+import type { ReviewState } from '../stats/reviewStateManager';
 
 // ============================================================================
 // 卡片渲染策略接口

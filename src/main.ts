@@ -10,7 +10,7 @@ import { AnnotationManager } from './core/AnnotationManager';
 import { FlashcardManager } from './core/FlashcardManager';
 import { AnalyticsEngine,CycleInfo } from './core/AnalyticsEngine';
 import { UnlockSystem } from './core/UnlockSystem';
-import { ViewState } from './ui/state/ViewState';
+import { ViewState } from './ui/stats/ViewState';
 import { t } from './i18n/translations'
 import { RecentlyDeletedModal } from './ui/view/RecentlyDeletedView';
 

@@ -1,6 +1,6 @@
 // src/ui/components/BatchActions.ts  批量操作
 
-import { ViewState } from '../state/ViewState';
+import { ViewState } from '../stats/ViewState';
 import { ContentUnit } from '../../core/DataManager';
 import { Flashcard } from '../../core/FlashcardManager';
 import { Toolbar } from './Toolbar';

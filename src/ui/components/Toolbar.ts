@@ -1,5 +1,5 @@
 // src/ui/components/Toolbar.ts  工具栏组件
-import { ViewState, FilterMode, GroupMode } from '../state/ViewState';
+import { ViewState, FilterMode, GroupMode } from '../stats/ViewState';
 import { t, Language } from '../../i18n/translations';
 
 export class Toolbar {

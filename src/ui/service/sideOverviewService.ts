@@ -4,7 +4,7 @@ import { App, ItemView, TFile, Notice } from 'obsidian';
 import type LearningSystemPlugin from '../../main';
 import { ContentUnit } from '../../core/DataManager';
 import { QuickFlashcardCreator } from '../../core/QuickFlashcardCreator';
-import { ViewState } from '../state/ViewState';
+import { ViewState } from '../stats/ViewState';
 import { t } from '../../i18n/translations';
 
 export class sideOverviewService {

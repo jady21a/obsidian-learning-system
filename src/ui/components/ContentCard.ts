@@ -2,7 +2,7 @@
 // import { StyleLoader } from '../style/sidebarStyle'
 import { ContentUnit } from '../../core/DataManager';
 import { Flashcard } from '../../core/FlashcardManager';
-import { ViewState } from '../state/ViewState';
+import { ViewState } from '../stats/ViewState';
 import { MarkdownRenderer } from 'obsidian'; // 
 
 export interface CardCallbacks {
