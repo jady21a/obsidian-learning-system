@@ -495,6 +495,19 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
       text: this.formatDate(new Date(card.metadata.createdAt)),
       cls: 'flashcard-date'
     });
+    const reviewInfo = meta.createDiv({ cls: 'flashcard-review-info' });
+  
+    const dueDate = new Date(card.scheduling.due);
+    const now = new Date();
+    const isOverdue = dueDate < now;
+    
+    const timeText = this.formatReviewTime(dueDate, now, isOverdue);
+    
+    reviewInfo.innerHTML = `
+      <span class="review-time ${isOverdue ? 'overdue' : 'upcoming'}">
+        <span class="review-text">${timeText}</span>
+      </span>
+    `;
   }
 
   private formatDate(date: Date): string {
@@ -504,7 +517,30 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
       day: '2-digit'
     });
   }
-
+  private formatReviewTime(dueDate: Date, now: Date, isOverdue: boolean): string {
+    const diff = Math.abs(dueDate.getTime() - now.getTime());
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(hours / 24);
+    
+    if (isOverdue) {
+      if (hours < 1) {
+        return minutes < 1 ? '刚刚到期' : `延后 ${minutes} 分钟`;
+      } else if (hours < 24) {
+        return `延后 ${hours} 小时`;
+      } else {
+        return `延后 ${days} 天`;
+      }
+    } else {
+      if (hours < 1) {
+        return `${minutes} 分钟后`;
+      } else if (hours < 24) {
+        return `${hours} 小时后`;
+      } else {
+        return `${days} 天后`;
+      }
+    }
+  }
 
   // 🆕 添加表格检测方法
   private isTableContent(content: string | undefined): boolean {

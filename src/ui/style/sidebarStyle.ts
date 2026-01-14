@@ -1327,6 +1327,42 @@ export class StyleLoader {
   gap: 8px;
 }
 
+/* 闪卡复习时间样式 */
+.flashcard-review-info {
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+}
+
+.review-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+  background: var(--background-secondary);
+  color: var(--text-muted);
+}
+
+.review-time.overdue {
+  background: var(--background-modifier-error-hover);
+  color: var(--text-error);
+}
+
+.review-time.upcoming {
+  color: var(--text-on-accent);
+}
+
+.review-icon {
+  font-size: 1em;
+  line-height: 1;
+}
+
+.review-text {
+  white-space: nowrap;
+}
 
       `;
     }
