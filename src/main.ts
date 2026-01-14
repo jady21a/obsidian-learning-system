@@ -20,15 +20,15 @@ interface LearningSystemSettings {
   autoScan: boolean;
   defaultDeck: string;
   cycleData?: CycleInfo;
-  language: 'en' | 'zh-CN'; 
+  language?: 'en' | 'zh-CN'; 
 }
 
 const DEFAULT_SETTINGS: LearningSystemSettings = {
   extractionEnabled: true,
   autoScan: false,
   defaultDeck: 'Default',
-  cycleData: undefined,
-    language: 'en'
+  cycleData: undefined
+    // language: 'en'
 };
 
 export default class LearningSystemPlugin extends Plugin {
@@ -45,6 +45,7 @@ export default class LearningSystemPlugin extends Plugin {
     console.log('Loading Learning System Plugin');
   
     await this.loadSettings();
+    this.detectAndSetLanguage();
   
     // 🔥 1. 最优先:初始化解锁系统
     this.unlockSystem = new UnlockSystem(this.app, this);
@@ -169,7 +170,10 @@ this.registerEvent(
   }
 
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    const data = await this.loadData();
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+    
+    this.detectAndSetLanguage();
   }
 
   async saveSettings() {
@@ -452,5 +456,20 @@ this.registerEvent(
 
   public isMainOverviewActive(): boolean {
     return this.app.workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW).length > 0;
+  }
+  private detectAndSetLanguage() {
+    // 如果已经有语言设置,先检查是否需要更新
+    const obsidianLang = (this.app as any).vault.getConfig('language') || 
+                         localStorage.getItem('language') ||
+                         'en';
+    
+    // 映射到支持的语言
+    const detectedLang: 'en' | 'zh-CN' = obsidianLang.startsWith('zh') ? 'zh-CN' : 'en';
+    
+    // 设置语言(如果未设置或需要更新)
+    if (!this.settings.language || this.settings.language !== detectedLang) {
+      this.settings.language = detectedLang;
+      this.saveSettings();
+    }
   }
 }
