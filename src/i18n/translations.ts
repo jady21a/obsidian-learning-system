@@ -304,6 +304,16 @@ type TranslationKey =
 | 'unlock.stat.notesExtractedAsQA'
 | 'unlock.stat.notesExtractedAsCloze'
 | 'unlock.stat.notesScanned'
+// content card
+| 'card.question'
+| 'card.answer'
+| 'card.justDue'
+| 'card.delayedMinutes'
+| 'card.delayedHours'
+| 'card.delayedDays'
+| 'card.dueInMinutes'
+| 'card.dueInHours'
+| 'card.dueInDays'
 
 // 定义翻译字典类型
 type TranslationDict = Record<TranslationKey, string> & {
@@ -610,7 +620,7 @@ export const translations: Record<Language, TranslationDict> = {
   'unlock.levelUp.5': '🏆 level.5 Achieved Analyst!\nAll features unlocked',
   
 // Next Steps
-'unlock.nextSteps.level1': '📦 Extract Notes:\n  • As Text: {text}/3\n  • As Q&A: {qa}/3\n  • As Cloze: {cloze}/3',
+'unlock.nextSteps.level1': '📦 Extract Notes:\n  • As Text: {text}/2\n  • As Q&A: {qa}/2\n  • As Cloze: {cloze}/2',
 'unlock.nextSteps.level2': '📝 Complete Annotations: {annotations}/3\n📋 Scan Notes: {scanned}/5',
 'unlock.nextSteps.level3': '🔄 Review Cards: {reviewed}/30\n📋 Scan Tables: {tables}/2',
 'unlock.nextSteps.level4': '🔄 Review Cards: {reviewed}/70\n📅 Total Days: {total}/21\n📊 Visit Stats Page: {visited}',
@@ -652,6 +662,18 @@ export const translations: Record<Language, TranslationDict> = {
 'unlock.stat.notesExtractedAsQA': 'Notes as Q&A',
 'unlock.stat.notesExtractedAsCloze': 'Notes as Cloze',
 'unlock.stat.notesScanned': 'Notes Scanned',
+// content card
+'card.question': 'Question',
+'card.answer': 'Answer',
+'card.justDue': 'Just due',
+'card.delayedMinutes': 'Delayed {minutes} minutes',
+'card.delayedHours': 'Delayed {hours} hours',
+'card.delayedDays': 'Delayed {days} days',
+'card.dueInMinutes': 'Due in {minutes} minutes',
+'card.dueInHours': 'Due in {hours} hours',
+'card.dueInDays': 'Due in {days} days',
+
+
 },
 
   
@@ -953,7 +975,7 @@ export const translations: Record<Language, TranslationDict> = {
   'unlock.levelUp.5': '🏆 level.5 达成分析师!\n所有功能已解锁',
   
 // 下一步提示
-'unlock.nextSteps.level1': '📦 右键提取笔记:\n  • 提取为文本: {text}/3\n  • 提取为问答: {qa}/3\n  • 提取为填空: {cloze}/3',
+'unlock.nextSteps.level1': '📦 右键提取笔记:\n  • 提取为文本: {text}/2\n  • 提取为问答: {qa}/2\n  • 提取为填空: {cloze}/2',
 'unlock.nextSteps.level2': '📝 完成批注: {annotations}/3\n📋 扫描提取笔记: {scanned}/5',
 'unlock.nextSteps.level3': '🔄 复习卡片: {reviewed}/30\n📋 扫描表格: {tables}/2',
 'unlock.nextSteps.level4': '🔄 复习卡片: {reviewed}/70\n📅 总使用天数: {total}/21\n📊 访问统计页: {visited}',
@@ -994,6 +1016,17 @@ export const translations: Record<Language, TranslationDict> = {
 'unlock.stat.notesExtractedAsQA': '提取为问答',
 'unlock.stat.notesExtractedAsCloze': '提取为填空',
 'unlock.stat.notesScanned': '扫描笔记',
+// content card
+'card.question': '问题',
+'card.answer': '答案',
+'card.justDue': '刚刚到期',
+'card.delayedMinutes': '延后 {minutes} 分钟',
+'card.delayedHours': '延后 {hours} 小时',
+'card.delayedDays': '延后 {days} 天',
+'card.dueInMinutes': '{minutes} 分钟后',
+'card.dueInHours': '{hours} 小时后',
+'card.dueInDays': '{days} 天后',
+
 
   }
 } as const;

@@ -3,7 +3,8 @@
 import { ContentUnit } from '../../core/DataManager';
 import { Flashcard } from '../../core/FlashcardManager';
 import { ViewState } from '../stats/ViewState';
-import { MarkdownRenderer } from 'obsidian'; // 
+import { t, Language } from '../../i18n/translations';
+
 
 export interface CardCallbacks {
   onJumpToSource: (unit: ContentUnit) => void;
@@ -24,7 +25,11 @@ export class ContentCard {
     this.state = state;
     this.callbacks = callbacks;
   }
-
+  private getLanguage(): Language {
+    // 从 Obsidian 设置中获取语言，如果是中文则返回 'zh-CN'，否则返回 'en'
+    const lang = (window as any).moment?.locale() || 'en';
+    return lang.startsWith('zh') ? 'zh-CN' : 'en';
+  }
   /**
    * 渲染紧凑卡片（侧边栏模式）
    */
@@ -482,12 +487,13 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
   }
 
   private renderFlashcardContent(content: HTMLElement, card: Flashcard): void {
+    const lang = this.getLanguage();
     const question = content.createDiv({ cls: 'flashcard-question' });
-    question.innerHTML = `<strong>问题：</strong>${card.front}`;
+    question.innerHTML = `<strong>${t('card.question', lang)}：</strong>${card.front}`;
     
     const answer = content.createDiv({ cls: 'flashcard-answer' });
     const answerText = Array.isArray(card.back) ? card.back.join(', ') : card.back;
-    answer.innerHTML = `<strong>答案：</strong>${answerText}`;
+    answer.innerHTML = `<strong>${t('card.answer', lang)}：</strong>${answerText}`;
   }
 
   private renderFlashcardMeta(meta: HTMLElement, card: Flashcard): void {
@@ -518,6 +524,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     });
   }
   private formatReviewTime(dueDate: Date, now: Date, isOverdue: boolean): string {
+    const lang = this.getLanguage();
     const diff = Math.abs(dueDate.getTime() - now.getTime());
     const minutes = Math.floor(diff / (1000 * 60));
     const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -525,19 +532,19 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     
     if (isOverdue) {
       if (hours < 1) {
-        return minutes < 1 ? '刚刚到期' : `延后 ${minutes} 分钟`;
+        return minutes < 1 ? t('card.justDue', lang) : t('card.delayedMinutes', lang, { minutes: String(minutes) });
       } else if (hours < 24) {
-        return `延后 ${hours} 小时`;
+        return t('card.delayedHours', lang, { hours: String(hours) });
       } else {
-        return `延后 ${days} 天`;
+        return t('card.delayedDays', lang, { days: String(days) });
       }
     } else {
       if (hours < 1) {
-        return `${minutes} 分钟后`;
+        return t('card.dueInMinutes', lang, { minutes: String(minutes) });
       } else if (hours < 24) {
-        return `${hours} 小时后`;
+        return t('card.dueInHours', lang, { hours: String(hours) });
       } else {
-        return `${days} 天后`;
+        return t('card.dueInDays', lang, { days: String(days) });
       }
     }
   }

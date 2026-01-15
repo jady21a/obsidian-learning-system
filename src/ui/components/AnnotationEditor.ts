@@ -5,6 +5,7 @@ export interface AnnotationEditorCallbacks {
   onSave: (unitId: string, content: string) => Promise<void>;
   onCancel: (unitId: string) => void;
   getAnnotationContent: (unitId: string) => string | undefined;
+  onAnnotationCompleted?: () => Promise<void>;
 }
 
 export class AnnotationEditor {
@@ -215,35 +216,80 @@ private createEditor(unitId: string, defaultValue: string): HTMLElement {
  * 绑定编辑器事件
  */
 private bindEditorEvents(textarea: HTMLTextAreaElement, unitId: string): void {
-  
-  textarea.addEventListener('blur', async (e) => {
+  // ⭐ 保存 blur 处理器的引用，以便在 Tab 时移除
+  const blurHandler = async (e: FocusEvent) => {
     
     const relatedTarget = e.relatedTarget as HTMLElement;
     const editor = textarea.closest('.inline-annotation-editor') as HTMLElement;
     const card = editor?.closest('.compact-card, .grid-card') as HTMLElement;
     
-    // ⭐ 检查焦点是否移到编辑器外部
+    // 检查焦点是否移到编辑器外部
     if (!relatedTarget || !editor?.contains(relatedTarget)) {
-      // ⭐ 延迟处理,防止误触
       setTimeout(async () => {
-        // 再次检查编辑器是否还在 DOM 中
         if (editor?.parentElement && card) {
+          const trimmedText = textarea.value.trim();
+          const originalContent = this.callbacks.getAnnotationContent(unitId) || '';
           
-          await this.callbacks.onSave(unitId, textarea.value.trim());
+          // 只有内容发生变化时才保存
+          if (trimmedText !== originalContent) {
+            await this.callbacks.onSave(unitId, trimmedText);
+          }
           
           const unit = { id: unitId } as ContentUnit;
           this.close(card, unit);
         }
       }, 150);
     }
-  });
+  };
+  
+  textarea.addEventListener('blur', blurHandler);
 
   // Tab 键保存
   textarea.addEventListener('keydown', async (e) => {
     if (e.key === 'Tab') {
       e.preventDefault();
+      e.stopPropagation();
+
+      (textarea as any)._tabPressed = true;
       const editor = textarea.closest('.inline-annotation-editor') as HTMLElement;
-      await this.save(editor, unitId, textarea.value);
+      const card = editor?.closest('.compact-card, .grid-card') as HTMLElement;
+      
+      if (editor && card) {
+        // ⭐ 关键：在 remove 前移除 blur 监听器，彻底阻止重复触发
+        textarea.removeEventListener('blur', blurHandler);
+        
+        const trimmedText = textarea.value.trim();
+        const originalContent = this.callbacks.getAnnotationContent(unitId) || '';
+        editor.remove();
+        this.activeEditors.delete(unitId);
+        card.removeAttribute('data-editing');
+        
+        // 只有内容改变时才保存
+        if (trimmedText !== originalContent) {
+          await this.callbacks.onSave(unitId, trimmedText);
+        }
+        
+        // 更新预览和指示器
+        if (trimmedText) {
+          const content = card.querySelector('.card-content, .grid-card-content') as HTMLElement;
+          if (content) {
+            const latestContent = this.callbacks.getAnnotationContent(unitId);
+            if (latestContent) {
+              this.recreatePreview(content, card, { id: unitId } as ContentUnit, latestContent);
+            }
+            
+            const indicator = card.querySelector('.card-indicator') as HTMLElement;
+            if (indicator && !indicator.classList.contains('has-annotation')) {
+              indicator.classList.add('has-annotation');
+            }
+          }
+        } else {
+          const indicator = card.querySelector('.card-indicator') as HTMLElement;
+          if (indicator && indicator.classList.contains('has-annotation')) {
+            indicator.classList.remove('has-annotation');
+          }
+        }
+      }
     }
   });
   
@@ -259,42 +305,47 @@ private bindEditorEvents(textarea: HTMLTextAreaElement, unitId: string): void {
   /**
    * 保存批注
    */
-  private async save(editorEl: HTMLElement, unitId: string, text: string): Promise<void> {
+  // private async save(editorEl: HTMLElement, unitId: string, text: string): Promise<void> {
     
-    const trimmedText = text.trim();
+  //   const trimmedText = text.trim();
+  //   const originalContent = this.callbacks.getAnnotationContent(unitId) || '';
+
+  //   const hasChanged = trimmedText !== originalContent;
+  
+  //   if (hasChanged) {
+  //     await this.callbacks.onSave(unitId, trimmedText);
+      
+  //   }
     
-    await this.callbacks.onSave(unitId, trimmedText);
-    
-    
-    const card = editorEl.closest('.compact-card, .grid-card') as HTMLElement;
-    editorEl.remove();
-    this.activeEditors.delete(unitId);
+  //   const card = editorEl.closest('.compact-card, .grid-card') as HTMLElement;
+  //   editorEl.remove();
+  //   this.activeEditors.delete(unitId);
     
 
     
-    if (trimmedText && card) {
-      const content = card.querySelector('.card-content, .grid-card-content') as HTMLElement;
-      if (content) {
-        // 通过回调获取最新的批注内容
-        const latestContent = this.callbacks.getAnnotationContent(unitId);
-        if (latestContent) {
-          // 需要传入完整的 ContentUnit，这里简化处理
-          this.recreatePreview(content, card, { id: unitId } as ContentUnit, latestContent);
-        }
+  //   if (trimmedText && card) {
+  //     const content = card.querySelector('.card-content, .grid-card-content') as HTMLElement;
+  //     if (content) {
+  //       // 通过回调获取最新的批注内容
+  //       const latestContent = this.callbacks.getAnnotationContent(unitId);
+  //       if (latestContent) {
+  //         // 需要传入完整的 ContentUnit，这里简化处理
+  //         this.recreatePreview(content, card, { id: unitId } as ContentUnit, latestContent);
+  //       }
         
-        // 更新 indicator
-        const indicator = card.querySelector('.card-indicator') as HTMLElement;
-        if (indicator && !indicator.classList.contains('has-annotation')) {
-          indicator.classList.add('has-annotation');
-        }
-      }
-    } else if (!trimmedText && card) {
-      const indicator = card.querySelector('.card-indicator') as HTMLElement;
-      if (indicator && indicator.classList.contains('has-annotation')) {
-        indicator.classList.remove('has-annotation');
-      }
-    }
-  }
+  //       // 更新 indicator
+  //       const indicator = card.querySelector('.card-indicator') as HTMLElement;
+  //       if (indicator && !indicator.classList.contains('has-annotation')) {
+  //         indicator.classList.add('has-annotation');
+  //       }
+  //     }
+  //   } else if (!trimmedText && card) {
+  //     const indicator = card.querySelector('.card-indicator') as HTMLElement;
+  //     if (indicator && indicator.classList.contains('has-annotation')) {
+  //       indicator.classList.remove('has-annotation');
+  //     }
+  //   }
+  // }
 
   /**
    * 重新创建批注预览

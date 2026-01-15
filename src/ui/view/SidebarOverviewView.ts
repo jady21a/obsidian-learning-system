@@ -47,6 +47,8 @@ export class SidebarOverviewView extends ItemView {
   private _forceMainMode: boolean;
 
   private isOpeningEditor: boolean = false;
+  private savingAnnotations: Set<string> = new Set();
+
   constructor(leaf: WorkspaceLeaf, plugin: LearningSystemPlugin, forceMainMode = false) {
     super(leaf);
     this.plugin = plugin;
@@ -217,19 +219,42 @@ export class SidebarOverviewView extends ItemView {
     
     this.contentList = new ContentList(this.state, cardCallbacks);
     
-    // 批注编辑器回调
-    const annotationCallbacks: AnnotationEditorCallbacks = {
-      onSave: async (unitId, content) => {
-        await this.saveAnnotation(unitId, content);
-      },
-      onCancel: (unitId) => {
-        // 取消编辑，不做任何操作
-      },
-      getAnnotationContent: (unitId) => {
-        const ann = this.plugin.annotationManager.getContentAnnotation(unitId);
-        return ann?.content;
-      }
-    };
+// 批注编辑器回调
+const annotationCallbacks: AnnotationEditorCallbacks = {
+  onSave: async (unitId, content) => {
+   
+    // ⭐ 防重复：如果正在保存，直接返回
+    if (this.savingAnnotations.has(unitId)) {
+      return;
+    }
+    
+    // ⭐ 标记为正在保存
+    this.savingAnnotations.add(unitId);
+    
+    try {
+     
+      
+      await this.saveAnnotation(unitId, content);
+      requestAnimationFrame(() => {
+        this.refresh();
+      });
+    } finally {
+      setTimeout(() => {
+        this.savingAnnotations.delete(unitId);
+      }, 100);
+    }
+    
+  },
+  
+  onCancel: (unitId) => {
+    this.savingAnnotations.delete(unitId);
+  },
+  
+  getAnnotationContent: (unitId) => {
+    const ann = this.plugin.annotationManager.getContentAnnotation(unitId);
+    return ann?.content;
+  }
+};
     this.annotationEditor = new AnnotationEditor(annotationCallbacks);
   }
 

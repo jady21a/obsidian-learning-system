@@ -98,9 +98,15 @@ async onNoteScanned() {
    * 🎯 批注完成时调用
    */
   async onAnnotationCompleted() {
+    const before = this.progress.stats.annotationsCompleted;
+    
+    
     this.progress.stats.annotationsCompleted++;
+    
+    
     await this.checkLevelUp();
     await this.saveProgress();
+    
   }
 
   /**
@@ -150,10 +156,10 @@ async onNoteScanned() {
       'extract-batch': 2,
       'annotation': 2,
       'filter-by-type': 2,
+      'scan-file': 2,
       
       // Lv3
       'scan-vault': 3,
-      'scan-file': 3,
       'review-page': 3,
       'review-reminder': 3,
       'extract-table': 3,
@@ -217,10 +223,11 @@ async onNoteScanned() {
 
   private canUpgradeToLevel2(): boolean {
     const { notesExtractedAsText, notesExtractedAsQA, notesExtractedAsCloze } = this.progress.stats;
-    // 每种类型至少提取3个笔记
-    return notesExtractedAsText >= 3 && 
-           notesExtractedAsQA >= 3 && 
-           notesExtractedAsCloze >= 3;
+  // 每种类型至少提取2个笔记
+  return notesExtractedAsText >= 2 && 
+         notesExtractedAsQA >= 2 && 
+         notesExtractedAsCloze >= 2;
+
   }
   
   private canUpgradeToLevel3(): boolean {
