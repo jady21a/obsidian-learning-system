@@ -684,9 +684,10 @@ if (this.plugin?.unlockSystem && units.length > 0) {
 private isInTable(content: string, position: number): boolean {
   const lines = content.split('\n');
   const { line } = this.calculatePosition(content, position);
-  
+  const lineIndex = line - 1;
+
   // 检查当前行是否为表格行（包含 | 分隔符）
-  if (!lines[line]?.includes('|')) {
+  if (!lines[lineIndex]?.includes('|')) {
     return false;
   }
   
@@ -694,6 +695,8 @@ private isInTable(content: string, position: number): boolean {
   const hasPrevTableLine = line > 0 && lines[line - 1]?.includes('|');
   const hasNextTableLine = line < lines.length - 1 && lines[line + 1]?.includes('|');
   
+  
+
   return hasPrevTableLine || hasNextTableLine;
 }
 
@@ -711,12 +714,10 @@ private extractTableWithHighlights(
   let tableStart = currentLine;
   let tableEnd = currentLine;
   
-  // 向上查找表格开始
   while (tableStart > 0 && lines[tableStart - 1]?.includes('|')) {
     tableStart--;
   }
   
-  // 向下查找表格结束
   while (tableEnd < lines.length - 1 && lines[tableEnd + 1]?.includes('|')) {
     tableEnd++;
   }
@@ -725,6 +726,13 @@ private extractTableWithHighlights(
   const tableLines = lines.slice(tableStart, tableEnd + 1);
   const tableContent = tableLines.join('\n');
   
+  // 🔧 先找到分隔符行的位置
+  const separatorIndex = tableLines.findIndex((line, idx) => {
+    if (idx === 0) return false;
+    const cells = line.split('|').map(c => c.trim()).filter(c => c);
+    return cells.length > 0 && cells.every(cell => /^[-:\s]+$/.test(cell));
+  });
+  
   // 统计表格中所有高亮
   const highlightRegex = /==(.+?)==/g;
   const highlightRows = new Set<number>();
@@ -732,16 +740,16 @@ private extractTableWithHighlights(
   let highlightCount = 0;
   
   tableLines.forEach((line, rowIndex) => {
-    const cells = line.split('|').map(c => c.trim()).filter(c => c);
-    
-    // 🔧 改进分隔符行检测
-    if (cells.length > 0 && cells.every(cell => /^[-:\s]+$/.test(cell))) {
-      return; // 跳过分隔符行
+    // 🔧 跳过分隔符行
+    if (rowIndex === separatorIndex) {
+      return;
     }
+    
+    const cells = line.split('|').map(c => c.trim()).filter(c => c);
     
     cells.forEach((cell, colIndex) => {
       if (highlightRegex.test(cell)) {
-        highlightRows.add(rowIndex);
+        highlightRows.add(rowIndex);  // ✅ 现在 rowIndex 是正确的
         highlightColumns.add(colIndex);
         highlightCount++;
       }
@@ -766,45 +774,49 @@ private extractTablePortion(
   highlightCount: number
 ): string {
   const totalRows = tableLines.length;
- // 🔧 改进分隔符行检测
- const separatorIndex = tableLines.findIndex((line, idx) => {
-  if (idx === 0) return false; // 第一行不可能是分隔符
-  const cells = line.split('|').map(c => c.trim()).filter(c => c);
-  // 检查是否所有单元格都只包含 -、: 和空格
-  return cells.length > 0 && cells.every(cell => /^[-:\s]+$/.test(cell));
-});
-
-// 如果没找到分隔符，假设第二行是分隔符
-const actualSeparatorIndex = separatorIndex !== -1 ? separatorIndex : 1;
   
-  // 情况1: 整列高亮 - 提取整个表格
-  const firstDataRow = tableLines[separatorIndex + 1] || tableLines[1];
-  const columnCount = firstDataRow.split('|').filter(c => c.trim()).length;
+  // 🔧 找到分隔符行
+  const separatorIndex = tableLines.findIndex((line, idx) => {
+    if (idx === 0) return false;
+    const cells = line.split('|').map(c => c.trim()).filter(c => c);
+    return cells.length > 0 && cells.every(cell => /^[-:\s]+$/.test(cell));
+  });
   
-  if (highlightColumns.size === columnCount || highlightCount >= totalRows - 1) {
-    return tableLines.join('\n');
+  // 如果没找到,默认第二行
+  const actualSeparatorIndex = separatorIndex !== -1 ? separatorIndex : 1;
+  
+  // 情况1: 整列高亮
+  const firstDataRowIndex = actualSeparatorIndex + 1;
+  if (firstDataRowIndex < tableLines.length) {
+    const firstDataRow = tableLines[firstDataRowIndex];
+    const columnCount = firstDataRow.split('|').filter(c => c.trim()).length;
+    
+    if (highlightColumns.size === columnCount || highlightCount >= totalRows - 2) {
+      return tableLines.join('\n');
+    }
   }
   
-  // 情况2: 单行高亮 - 提取该行（包含表头和分隔符）
+  // 情况2: 单行高亮
   if (highlightRows.size === 1) {
     const highlightRow = Array.from(highlightRows)[0];
     const result = [
-      tableLines[0], // 表头
-      tableLines[separatorIndex], // 分隔符
-      tableLines[highlightRow] // 高亮行
+      tableLines[0],
+      tableLines[actualSeparatorIndex],
+      tableLines[highlightRow]
     ];
     return result.join('\n');
   }
   
-  // 情况3: 多行高亮 - 提取这些行
-  const result = [tableLines[0], tableLines[separatorIndex]];
+  // 情况3: 多行高亮
+  const result = [tableLines[0], tableLines[actualSeparatorIndex]];
   highlightRows.forEach(rowIndex => {
-    if (rowIndex !== 0 && rowIndex !== separatorIndex) {
+    if (rowIndex !== 0 && rowIndex !== actualSeparatorIndex) {
       result.push(tableLines[rowIndex]);
     }
   });
   return result.join('\n');
 }
+
 private async extractClozeCards(file: TFile, content: string): Promise<ContentUnit[]> {
   const units: ContentUnit[] = [];
   const highlightRegex = /==(.+?)==/g;
@@ -816,7 +828,7 @@ private async extractClozeCards(file: TFile, content: string): Promise<ContentUn
     const extractedText = match[1];
     const fullMatch = match[0];
     const position = this.calculatePosition(content, match.index);
-    
+
     // 🆕 跳过已处理的高亮
     if (processedHighlights.has(match.index)) {
       continue;
@@ -833,10 +845,17 @@ private async extractClozeCards(file: TFile, content: string): Promise<ContentUn
     }
     
     // 🆕 检查是否在表格中
+    // 🆕 检查是否在表格中
+    const inTable = this.isInTable(content, match.index);
+    
+    if (inTable) {
+      const tableInfo = this.extractTableWithHighlights(content, match.index);
+    }
     if (this.isInTable(content, match.index)) {
       const tableInfo = this.extractTableWithHighlights(content, match.index);
       
       if (tableInfo) {
+
         const tableKey = `${file.path}-${tableInfo.tableContent.substring(0, 50)}`;
         
         // 避免重复处理同一个表格
@@ -865,6 +884,8 @@ private async extractClozeCards(file: TFile, content: string): Promise<ContentUn
           tableInfo.highlightColumns,
           tableInfo.highlightCount
         );
+
+
         // 🔧 验证提取的表格是否包含分隔符行
 const extractedLines = extractedTable.split('\n');
 const hasSeparator = extractedLines.some(line => {

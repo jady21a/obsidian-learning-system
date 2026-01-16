@@ -407,14 +407,7 @@ const shouldShowFullBadge = this.shouldShowFullLevelBadge(progress);
 if (shouldShowFullBadge) {
   const levelBadge = container.createDiv({ cls: 'level-badge' });
 
-  const levelNames: Record<number, string> = {
-    1: 'Collector',
-    2: 'Thinker',
-    3: 'Memorizer',
-    4: 'Trainer',
-    5: 'Analyst'
-  };
-  const levelName = levelNames[progress.currentLevel] || '';
+  const levelName = this.t(`level.${progress.currentLevel}`);
 
   levelBadge.textContent = `Lv${progress.currentLevel}:  ${levelName}`;
   levelBadge.style.fontSize = '1em';
@@ -1145,7 +1138,7 @@ onDelete: async (unit) => {
 }
   };
   
-  const menu = ContextMenuBuilder.buildContentUnitMenu(unit, callbacks);
+  const menu = ContextMenuBuilder.buildContentUnitMenu(unit, callbacks,this.plugin.settings.language);
   menu.showAtMouseEvent(event);
 }
   
@@ -1178,7 +1171,7 @@ onDelete: async (unit) => {
       }
     };
     
-    const menu = ContextMenuBuilder.buildFlashcardMenu(card, callbacks);
+    const menu = ContextMenuBuilder.buildFlashcardMenu(card, callbacks,this.plugin.settings.language);
     menu.showAtMouseEvent(event);
   }
   

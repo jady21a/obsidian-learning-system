@@ -455,7 +455,7 @@ export const translations: Record<Language, TranslationDict> = {
   'batchCreate.clozeType.desc': 'Fill in the blank',
   'batchCreate.cancel': 'Cancel',
   'batchCreate.createButton': 'Create {count} cards',
-  'batchCreate.successNotice': '✅ Created {success} flashcards!{failed, plural, =0 {} other { ({failed} failed)}}',
+  'batchCreate.successNotice': '✅ Created {success} flashcards! {failed} failed',
 // component/modal/EditFlashcardModal
 'editCard.title': '✏️ Edit Flashcard',
 'editCard.description.qa': 'Edit Q&A card content',
@@ -571,7 +571,7 @@ export const translations: Record<Language, TranslationDict> = {
 'recentDelete.deletePermanently': 'Delete Permanently',
 
 'notice.movedToTrash': '🗑️ Moved to trash (recoverable within 7 days)',
-'notice.batchMovedToTrash': '✅ Moved {success} items to trash{failed, plural, =0 {} other {, {failed} failed}}',
+'notice.batchMovedToTrash': '✅ Moved {success} items to trash,{failed} failed',
 'notice.fileDeletedSimple': '📄 File deleted: {notes} notes and {cards} cards moved to trash',
 'notice.noteRestored': '✅ Note restored',
 'notice.cardRestored': '✅ Flashcard restored',
@@ -622,7 +622,7 @@ export const translations: Record<Language, TranslationDict> = {
 // Next Steps
 'unlock.nextSteps.level1': '📦 Extract Notes:\n  • As Text: {text}/2\n  • As Q&A: {qa}/2\n  • As Cloze: {cloze}/2',
 'unlock.nextSteps.level2': '📝 Complete Annotations: {annotations}/3\n📋 Scan Notes: {scanned}/5',
-'unlock.nextSteps.level3': '🔄 Review Cards: {reviewed}/30\n📋 Scan Tables: {tables}/2',
+'unlock.nextSteps.level3': '🔄 Review Cards: {reviewed}/30\n📋 Scan Highlighted Tables: {tables}/2',
 'unlock.nextSteps.level4': '🔄 Review Cards: {reviewed}/70\n📅 Total Days: {total}/21\n📊 Visit Stats Page: {visited}',
 'unlock.nextSteps.level5': '🎉 Congratulations! All features unlocked!\n\n🔮 Community feature coming soon\nWill be enabled when conditions are met\n🔗 <a href="https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%8A%E5%9B%A2" target="_blank">Learn More (Click to View)</a>',
  
@@ -648,7 +648,7 @@ export const translations: Record<Language, TranslationDict> = {
   'unlock.progress.cardsExtracted': '📦 Extract Cards',
   'unlock.progress.annotationsCompleted': '📝 Complete Annotations',
   'unlock.progress.cardsReviewed': '🔄 Review Cards',
-  'unlock.progress.tablesScanned': '📋 Scan Tables',
+  'unlock.progress.tablesScanned': '📋 Scan Highlighted Tables',
   'unlock.progress.consecutiveDays': '🔥 Consecutive Days',
   'unlock.progress.totalDays': '📈 Total Days',
   'unlock.progress.statsPageVisited': '📊 Visit Stats Page',
@@ -765,7 +765,7 @@ export const translations: Record<Language, TranslationDict> = {
 'notice.jumpFailed': '❌ 跳转失败',
 'notice.flashcardNotFound': '⚠️ 找不到对应的闪卡',
 'notice.alreadyHasFlashcards': '⚠️ 选中的笔记都已创建过闪卡',
-'notice.batchDeleted': '✅ 已删除 {success} 项{failed, plural, =0 {} other {，{failed} 项失败}}',
+'notice.batchDeleted': '✅ 已删除 {success} 项，{failed} 项失败',
 'confirm.deleteNote': '确定要删除这条笔记吗？',
 'confirm.deleteFlashcard': '确定要删除这张闪卡吗？',
 'confirm.batchDeleteNotes': '确定要删除选中的 {count} 条笔记吗？',
@@ -808,7 +808,7 @@ export const translations: Record<Language, TranslationDict> = {
   'batchCreate.clozeType.desc': '挖空填空',
   'batchCreate.cancel': '取消',
   'batchCreate.createButton': '创建 {count} 张卡片',
-  'batchCreate.successNotice': '✅ 已创建 {success} 张闪卡！{failed, plural, =0 {} other { ({failed} 项失败)}}',
+  'batchCreate.successNotice': '✅ 已创建 {success} 张闪卡！{failed} 项失败',
 // component/modal/EditFlashcardModal
 'editCard.title': '✏️ 编辑闪卡',
 'editCard.description.qa': '编辑 Q&A 卡片内容',
@@ -977,7 +977,7 @@ export const translations: Record<Language, TranslationDict> = {
 // 下一步提示
 'unlock.nextSteps.level1': '📦 右键提取笔记:\n  • 提取为文本: {text}/2\n  • 提取为问答: {qa}/2\n  • 提取为填空: {cloze}/2',
 'unlock.nextSteps.level2': '📝 完成批注: {annotations}/3\n📋 扫描提取笔记: {scanned}/5',
-'unlock.nextSteps.level3': '🔄 复习卡片: {reviewed}/30\n📋 扫描表格: {tables}/2',
+'unlock.nextSteps.level3': '🔄 复习卡片: {reviewed}/30\n📋 扫描带高亮的表格: {tables}/2',
 'unlock.nextSteps.level4': '🔄 复习卡片: {reviewed}/70\n📅 总使用天数: {total}/21\n📊 访问统计页: {visited}',
 'unlock.nextSteps.level5': '🎉 恭喜解锁所有功能!\n\n🔮 智囊团功能尚未开放\n达到人数与段位条件后开启\n🔗 <a href="https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%8A%E5%9B%A2" target="_blank">了解智囊团(点击查看)</a>',
   // 弹窗
@@ -1002,7 +1002,7 @@ export const translations: Record<Language, TranslationDict> = {
   'unlock.progress.cardsExtracted': '📦 提取卡片',
   'unlock.progress.annotationsCompleted': '📝 完成批注',
   'unlock.progress.cardsReviewed': '🔄 复习卡片',
-  'unlock.progress.tablesScanned': '📋 扫描表格',
+  'unlock.progress.tablesScanned': '📋 扫描带高亮的表格',
   'unlock.progress.consecutiveDays': '🔥 连续使用天数',
   'unlock.progress.totalDays': '📈 总使用天数',
   'unlock.progress.statsPageVisited': '📊 访问统计页',
