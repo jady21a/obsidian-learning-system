@@ -611,7 +611,7 @@ if (this.plugin?.unlockSystem && units.length > 0) {
   private calculatePosition(content: string, offset: number): { line: number; column: number } {
     const lines = content.substring(0, offset).split('\n');
     return {
-      line: lines.length - 1,
+      line: lines.length,
       column: lines[lines.length - 1].length
     };
   }

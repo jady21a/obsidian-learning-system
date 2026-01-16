@@ -60,7 +60,7 @@ new Setting(containerEl)
 .addDropdown(dropdown => dropdown
   .addOption('en', 'English')
   .addOption('zh-CN', '简体中文')
-  .setValue(this.plugin.settings.language)
+  .setValue(this.plugin.settings.language || 'en')
   .onChange(async (value) => {
     this.plugin.settings.language = value as 'en' | 'zh-CN';
     await this.plugin.saveSettings();
