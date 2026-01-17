@@ -170,10 +170,33 @@ async deleteContentUnit(id: string, reason: 'user-deleted' | 'file-deleted' = 'u
       .filter(card => {
         const match = card.sourceContentId === id;
         if (match) {
+          console.log(`Found associated flashcard: ${card.id} for unit ${id}`);
         }
         return match;
       })
       .map(card => card.id);
+    
+    console.log(`Deleting unit ${id} with ${associatedCardIds.length} associated flashcards`);
+    
+    // ⭐⭐⭐ 关键修改：实际删除所有关联的闪卡
+    for (const cardId of associatedCardIds) {
+      try {
+        await this.plugin.flashcardManager.deleteCard(cardId, reason);
+        console.log(`Successfully deleted flashcard ${cardId}`);
+      } catch (error) {
+        console.error(`Failed to delete flashcard ${cardId}:`, error);
+      }
+    }
+    
+    // ⭐⭐⭐ 删除批注（如果有）
+    if (unit.annotationId) {
+      try {
+        await this.plugin.annotationManager.deleteAnnotation(unit.annotationId);
+        console.log(`Deleted annotation ${unit.annotationId}`);
+      } catch (error) {
+        console.error(`Failed to delete annotation ${unit.annotationId}:`, error);
+      }
+    }
     
     // 📝 保存到删除历史
     this.deletedUnits.push({
@@ -200,10 +223,10 @@ async deleteContentUnit(id: string, reason: 'user-deleted' | 'file-deleted' = 'u
       }
     }
 
-    
-
     await this.persist();
     await this.persistDeleteHistory();
+    
+    console.log(`Unit ${id} and all dependencies deleted successfully`);
   }
 }
 
