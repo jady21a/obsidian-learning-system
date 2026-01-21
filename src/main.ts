@@ -172,13 +172,31 @@ this.registerEvent(
   async loadSettings() {
     const data = await this.loadData();
     this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
-    
+    const cycleFilePath = `${this.manifest.dir}/cycle-data.json`;
+    try {
+      const cycleContent = await this.app.vault.adapter.read(cycleFilePath);
+      const cycleData = JSON.parse(cycleContent);
+      if (cycleData?.cycleData) {
+        this.settings.cycleData = cycleData.cycleData;
+      }
+    } catch (error) {
+      // 文件不存在或读取失败，使用默认值
+    }
     this.detectAndSetLanguage();
   }
 
   async saveSettings() {
-    await this.saveData(this.settings);
-  }
+  const { cycleData, ...settingsToSave } = this.settings;
+  await this.saveData(settingsToSave);
+}
+
+async saveCycleData() {
+  const cycleFilePath = `${this.manifest.dir}/cycle-data.json`;
+  await this.app.vault.adapter.write(
+    cycleFilePath, 
+    JSON.stringify({ cycleData: this.settings.cycleData }, null, 2)
+  );
+}
 
   private addCommands() {
     this.addCommand({
