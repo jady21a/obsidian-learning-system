@@ -1,0 +1,10 @@
+{
+    "id": "learning-system",
+    "name": "Learning System",
+    "version": "1.0.0",
+    "minAppVersion": "0.15.0",
+    "description": "A comprehensive learning system with extraction, annotation, and flashcard features",
+    "author": "Your Name",
+    "authorUrl": "https://your-website.com",
+    "isDesktopOnly": false
+  }
