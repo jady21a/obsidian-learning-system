@@ -1,0 +1,54 @@
+name: Release to main branch
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'main.js'
+      - 'manifest.json'
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout dev branch
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Build (if needed)
+        run: |
+          if [ -f "package.json" ]; then
+            npm install
+            npm run build || true
+          fi
+
+      - name: Update main branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # 切换到main分支
+          git checkout main
+          
+          # 复制必要文件
+          git checkout dev -- main.js manifest.json
+          
+          # 提交更改
+          git add main.js manifest.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Auto-update from dev branch ($(git rev-parse --short dev))"
+            git push origin main
+          fi
