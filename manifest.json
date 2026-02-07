@@ -3,7 +3,7 @@
     "name": "Learning System",
     "version": "0.1.0",
     "minAppVersion": "1.5.0",
-    "description": "Turn Obsidian notes into flashcards",
+    "description": "Turn notes into flashcards with spaced repetition",
     "author": "jz",
     "authorUrl": "https://github.com/jady21a",
     "isDesktopOnly": false
