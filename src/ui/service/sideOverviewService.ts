@@ -193,6 +193,6 @@ export class sideOverviewService {
    * 激活统计视图
    */
   activateStatsView(): void {
-    this.plugin.activateStats();
+   void this.plugin.activateStats();
   }
 }

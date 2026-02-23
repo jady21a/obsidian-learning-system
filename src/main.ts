@@ -138,14 +138,14 @@ this.registerEvent(
 );
     // 5. Ribbon 图标(带权限检查)
     this.addRibbonIcon('layout-list', 'Open Learning Overview(Sidebar)', () => {
-      this.activateSidebarOverview();
+     void this.activateSidebarOverview();
     });
   
     this.addRibbonIcon('layers', 'Start Review', () => {
       if (!this.unlockSystem.tryUseFeature('review-page', 'Start Review')) {
         return;
       }
-      this.activateReview();
+     void this.activateReview();
     });
   
     // 6. 状态栏
@@ -231,7 +231,7 @@ async saveCycleData() {
       id: 'open-overview',
       name: 'Open Learning Overview(Sidebar)',
       callback: () => {
-        this.activateSidebarOverview();
+       void this.activateSidebarOverview();
       }
     });
 
@@ -277,7 +277,7 @@ async saveCycleData() {
     if (!this.unlockSystem.tryUseFeature('review-page', 'Flashcard Review')) {
       return;
     }
-        this.activateReview();
+       void this.activateReview();
       }
     });
 
@@ -290,14 +290,14 @@ async saveCycleData() {
       return;
     }
 
-        this.activateStats();
+       void this.activateStats();
       }
     });
     this.addCommand({
       id: 'show-recently-deleted',
       name: 'Show recently deleted items',
       callback: async () => { 
-        this.openRecentlyDeletedModal();  
+       void this.openRecentlyDeletedModal();  
       }
     
     });
@@ -323,7 +323,7 @@ async saveCycleData() {
       });
     }
 
-    workspace.revealLeaf(leaf);
+    void workspace.revealLeaf(leaf);
   }
 
   async toggleMainView() {
@@ -342,7 +342,7 @@ async saveCycleData() {
       });
     } else if (existingLeaves.length > 0 && !isMainOverviewActive) {
       // 如果主界面模式存在但不是当前激活页面，则激活它
-      workspace.revealLeaf(existingLeaves[0]);
+      void workspace.revealLeaf(existingLeaves[0]);
     } else {
       // 如果主界面模式不存在，则创建并显示
       const leaf = workspace.getLeaf('tab');
@@ -350,7 +350,7 @@ async saveCycleData() {
         type: VIEW_TYPE_MAIN_OVERVIEW,
         active: true,
       });
-      workspace.revealLeaf(leaf);
+     void workspace.revealLeaf(leaf);
     }
   }
 
@@ -372,7 +372,7 @@ async saveCycleData() {
     }
 
     if (leaf) {
-      workspace.revealLeaf(leaf);
+     void workspace.revealLeaf(leaf);
     }
   }
 
@@ -399,7 +399,7 @@ async saveCycleData() {
     }
 
     if (leaf) {
-      workspace.revealLeaf(leaf);
+     void workspace.revealLeaf(leaf);
     }
   }
 
@@ -419,7 +419,7 @@ async saveCycleData() {
     }
 
     if (leaf) {
-      workspace.revealLeaf(leaf);
+     void workspace.revealLeaf(leaf);
     }
   }
 
@@ -463,7 +463,7 @@ async saveCycleData() {
 
     // 点击打开复习
     statusBarItem.addEventListener('click', () => {
-      this.activateReview();
+     void this.activateReview();
     });
   }
 
@@ -487,7 +487,7 @@ async saveCycleData() {
     // 设置语言(如果未设置或需要更新)
     if (!this.settings.language || this.settings.language !== detectedLang) {
       this.settings.language = detectedLang;
-      this.saveSettings();
+      void this.saveSettings();
     }
   }
 }

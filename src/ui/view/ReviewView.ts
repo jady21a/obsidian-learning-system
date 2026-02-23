@@ -226,7 +226,7 @@ export class ReviewView extends ItemView {
       });
       menuItem.innerHTML = item.label;
       menuItem.addEventListener('click', () => {
-        item.onClick();
+        void item.onClick();
         dropdown.style.display = 'none';
       });
     });
@@ -691,7 +691,7 @@ export class ReviewView extends ItemView {
       
       if (ratingMap[e.key]) {
         e.preventDefault();
-        this.submitReview(ratingMap[e.key]);
+        void this.submitReview(ratingMap[e.key]);
       }
     }
   };

@@ -69,7 +69,7 @@ export class AnalyticsEngine {
         }]
       };
       this.plugin.settings.cycleData = initData;
-      this.plugin.saveSettings();
+      void this.plugin.saveSettings();
       return initData;
     }
     return data;
