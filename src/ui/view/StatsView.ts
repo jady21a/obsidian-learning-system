@@ -345,7 +345,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
         cls: 'action-btn-small'
       });
       reviewBtn.addEventListener('click', () => {
-        this.plugin.activateReview();
+       void this.plugin.activateReview();
       });
 
       const deleteBtn = actions.createEl('button', {
