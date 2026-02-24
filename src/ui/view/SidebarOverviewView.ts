@@ -1125,7 +1125,7 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
     },
     
     onViewStats: () => {
-      this.plugin.activateStats();
+     void this.plugin.activateStats();
     },
     
 onDelete: async (unit) => {
