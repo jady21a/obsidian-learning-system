@@ -877,7 +877,7 @@ private refreshContentOnly(): void {
     }
     
     // 调用批量创建逻辑
-    this.batchCreateFlashcards();
+   void this.batchCreateFlashcards();
   }
 
   private handleBatchDelete(): void {
