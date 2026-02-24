@@ -487,7 +487,7 @@ export class ReviewView extends ItemView {
     
     // 👇 修改这里,确保包含周期信息
     await this.plugin.flashcardManager.logReview({
-      id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // 更唯一的ID
+      id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, // 更唯一的ID
       cycle: this.plugin.analyticsEngine.getCurrentCycleNumber(), // 👈 添加周期号
       ...reviewLog
     });
@@ -644,7 +644,7 @@ export class ReviewView extends ItemView {
       await this.plugin.flashcardManager.updateCard(card);
       
       await this.plugin.flashcardManager.clearCardReviewLogs(cardId);
-      
+
       await this.plugin.dataManager.save();
       
       new Notice(t('notice.cardStatsReset', this.language));

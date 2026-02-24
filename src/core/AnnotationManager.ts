@@ -209,6 +209,6 @@ await this.plugin.unlockSystem.onAnnotationCompleted();
    * 生成唯一 ID
    */
   private generateId(): string {
-    return `ann-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `ann-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   }
 }

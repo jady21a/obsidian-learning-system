@@ -666,14 +666,14 @@ if (this.plugin?.unlockSystem && units.length > 0) {
    * 生成唯一 ID
    */
   private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   }
 
   /**
    * 生成 Block ID
    */
   private generateBlockId(): string {
-    return `extract-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    return `extract-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
   }
 
 
