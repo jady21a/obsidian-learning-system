@@ -1415,7 +1415,7 @@ public checkReviewReminder(): void {
 
 private startReview() {
   // 激活复习视图
-  this.plugin.activateReview();
+ void this.plugin.activateReview();
 }
 
 private markReminderDismissed() {
