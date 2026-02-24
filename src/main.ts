@@ -44,7 +44,6 @@ export default class LearningSystemPlugin extends Plugin {
 
 
   async onload() {
-    console.log('Loading Learning System Plugin');
   
     await this.loadSettings();
     this.detectAndSetLanguage();
@@ -155,11 +154,9 @@ this.registerEvent(
     
     this.analyticsEngine = new AnalyticsEngine(this);
   
-    console.log('Learning System Plugin loaded');
   }
 
   onunload() {
-    console.log('Unloading Learning System Plugin');
     
     // 只在插件完全卸载时才清理所有视图
     // 注意：这里不要删除特定视图类型，让 Obsidian 自己管理

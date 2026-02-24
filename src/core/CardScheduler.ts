@@ -254,7 +254,7 @@ private evaluateSingleAnswer(
   // 🆕 检查是否包含 "/" - 表示多个可接受答案
   if (correctAnswer.includes('/') || correctAnswer.includes('|')) {
     const alternatives = correctAnswer
-      .split(/[\/|]/)  // 支持 / 或 |
+      .split(/[/|]/)  // 支持 / 或 |
       .map(alt => this.normalize(alt.trim()))
       .filter(alt => alt.length > 0);
 
@@ -321,7 +321,7 @@ if (lengthRatio < 0.3 && user.length < 6) {
       .trim()
       .replace(/\s+/g, ' ')    // 合并多个空格为一个
       .replace(/\n+/g, ' ')    // 换行替换为空格
-      .replace(/[，。！？、；：""''（）《》【】\.,!?;:"'()\[\]{}]/g, '');  // 移除标点符号
+      .replace(/[，。！？、；：""''（）《》【】.,!?;:"'()[\]{}]/g, '');
   }
 
   /**
