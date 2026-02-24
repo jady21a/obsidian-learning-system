@@ -29,12 +29,19 @@ export interface ContentUnit {
     updatedAt: number;
     tags: string[];
     color?: string;
-    customData?: Record<string, any>;
+    customData?: Record<string, unknown>;
   };
   annotationId?: string;
   flashcardIds: string[];
 }
-
+export interface DeletedContentUnit {
+  type: 'note';
+  id: string;
+  unit: ContentUnit;
+  deletedAt: number;
+  deletedBy: string;
+  associatedCardIds: string[];
+}
 export class DataManager {
   private dataFolder: string;
   private contentUnits: Map<string, ContentUnit> = new Map();
@@ -151,14 +158,7 @@ export class DataManager {
 
   
   // 最近删除
-private deletedUnits: Array<{
-  type: 'note';
-  id: string;
-  unit: ContentUnit;
-  deletedAt: number;
-  deletedBy: string;
-  associatedCardIds: string[];
-}> = [];
+  private deletedUnits: DeletedContentUnit[] = [];
 
 async deleteContentUnit(id: string, reason: 'user-deleted' | 'file-deleted' = 'user-deleted') {
   const unit = this.contentUnits.get(id);

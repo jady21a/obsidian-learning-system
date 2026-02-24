@@ -4,6 +4,18 @@ import type LearningSystemPlugin from '../../main';
 import { AnalyticsEngine } from '../../core/AnalyticsEngine';
 import { t ,Language} from '../../i18n/translations';
 
+
+interface DailyStat {
+  date: string;
+  reviewed: number;
+  correctRate: number;
+}
+
+interface HeatmapDay {
+  date: string;
+  count: number;
+  intensity: number;
+}
 export const VIEW_TYPE_STATS = 'learning-system-stats';
 
 export class StatsView extends ItemView {
@@ -99,7 +111,7 @@ export class StatsView extends ItemView {
       });
       tab.textContent = config.label;
       tab.addEventListener('click', () => {
-        this.currentTab = config.id as any;
+        this.currentTab = config.id as typeof this.currentTab;
         this.render();
       });
     });
@@ -419,7 +431,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
     row.createSpan({ text: value, cls: 'stat-value' });
   }
 
-  private renderSimpleBarChart(container: HTMLElement, data: any[]) {
+  private renderSimpleBarChart(container: HTMLElement, data: DailyStat[]) {
     const maxValue = Math.max(...data.map(d => d.reviewed));
 
     data.forEach(stat => {
@@ -439,7 +451,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
     });
   }
 
-  private renderBarChart(container: HTMLElement, data: any[]) {
+  private renderBarChart(container: HTMLElement, data: DailyStat[]) {
     const chart = container.createDiv({ cls: 'chart-canvas' });
     const maxValue = Math.max(...data.map(d => d.reviewed));
 
@@ -457,7 +469,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
     });
   }
 
-  private renderLineChart(container: HTMLElement, data: any[], key: string) {
+  private renderLineChart(container: HTMLElement, data: DailyStat[], key: keyof Pick<DailyStat, 'reviewed' | 'correctRate'>) {
     const chart = container.createDiv({ cls: 'line-chart-canvas' });
     
     const points = data.map((stat, i) => {
@@ -502,8 +514,8 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
     const heatmapData = this.analytics.getHeatmapData(90);
     
     // 按周分组
-    const weeks: any[][] = [];
-    let currentWeek: any[] = [];
+    const weeks: HeatmapDay[][] = [];
+    let currentWeek: HeatmapDay[] = [];
     
     heatmapData.forEach((day, i) => {
       currentWeek.push(day);
@@ -530,7 +542,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
 
 
 
-  private async jumpToCard(card: any) {
+  private async jumpToCard(card: { id: string; sourceFile: string; sourceContentId: string }) {
     const file = this.app.vault.getAbstractFileByPath(card.sourceFile);
     if (!(file instanceof TFile)) return;
 
@@ -543,7 +555,14 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
     setTimeout(() => {
       const view = this.app.workspace.getActiveViewOfType(ItemView);
       if (view) {
-        const editor = (view as any).editor;
+      
+        const editor = (view as unknown as { 
+          editor?: { 
+            setCursor: (pos: { line: number; ch: number }) => void; 
+            scrollIntoView: (range: { from: { line: number; ch: number }; to: { line: number; ch: number } }, center: boolean) => void 
+          } 
+        }).editor;
+        
         if (editor) {
           editor.setCursor({ line: contentUnit.source.position.line, ch: 0 });
           editor.scrollIntoView({
@@ -835,7 +854,8 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
     });
   }
   
-  private formatDateRange(start: string, end: string): string {
+  private formatDateRange(start: string | undefined, end: string | undefined): string {
+    if (!start || !end) return 'Unknown';
     const startDate = new Date(start);
     const endDate = new Date(end);
     const days = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));

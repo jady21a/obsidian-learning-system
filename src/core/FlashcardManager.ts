@@ -74,13 +74,25 @@ export interface ReviewLog {
     newEase: number;
   };
 }
-interface DeletedItem {
+interface DeletedFlashcardContent {
+  front: string;
+  back: string;
+  sourceFile: string;
+  sourceContentId: string;
+  cardType: 'qa' | 'cloze';
+  fullCard: Flashcard;
+}
+
+export interface DeletedItem {
   type: 'flashcard' | 'note';
   id: string;
-  content: any;
+  content: DeletedFlashcardContent;
   deletedAt: number;
   deletedBy: string;
-  metadata?: any;
+  metadata?: {
+    deck?: string;
+    stats?: Flashcard['stats'];
+  };
 }
 
 export class FlashcardManager {
@@ -389,7 +401,7 @@ async restoreFlashcard(deletedItem: DeletedItem): Promise<boolean> {
   try {
     if (deletedItem.type !== 'flashcard') return false;
     
-    const card = deletedItem.content.fullCard as Flashcard;
+    const card = deletedItem.content.fullCard;
     
     // 检查是否已存在
     if (this.flashcards.has(card.id)) {
@@ -438,7 +450,10 @@ async clearDeleteHistory(): Promise<number> {
   await this.persistDeleteHistory();
   return count;
 }
-
+async clearCardReviewLogs(cardId: string): Promise<void> {
+  this.reviewLogs = this.reviewLogs.filter(log => log.flashcardId !== cardId);
+  await this.persistReviewLogs();
+}
 // 新增：持久化删除历史
 private async persistDeleteHistory() {
   try {

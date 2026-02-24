@@ -4,6 +4,11 @@ import { CardScheduler } from '../../core/CardScheduler';
 import { TableRenderer } from './TableRenderer';
 import type { ReviewState } from '../stats/reviewStateManager';
 
+
+interface AnswerEvaluation {
+  correctness: 'correct' | 'partial' | 'incorrect';
+  similarity: number;
+}
 // ============================================================================
 // 卡片渲染策略接口
 // ============================================================================
@@ -460,7 +465,7 @@ export class QACardRenderer implements CardRenderStrategy {
       columnsContainer, 
       state.userAnswer, 
       isTable, 
-      evaluation
+      evaluation as AnswerEvaluation | null
     );
 
     // 相似度信息
@@ -497,7 +502,7 @@ export class QACardRenderer implements CardRenderStrategy {
     container: HTMLElement,
     userAnswer: string,
     isTable: boolean,
-    evaluation: any
+    evaluation: AnswerEvaluation | null
   ) {
     const userColumn = container.createDiv({ cls: 'qa-column' });
     userColumn.createEl('h4', { text: 'Your Answer:', cls: 'column-label' });
@@ -526,7 +531,7 @@ export class QACardRenderer implements CardRenderStrategy {
   private renderTextUserAnswer(
     container: HTMLElement,
     userAnswer: string,
-    evaluation: any
+    evaluation: AnswerEvaluation | null
   ) {
     const userAnswerElement = container.createEl('div', {
       text: userAnswer.trim() || '(no answer provided)',

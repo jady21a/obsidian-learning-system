@@ -10,13 +10,13 @@ export class AnnotationModal extends Modal {
   private annotationText: string = '';
   private badgeText: string = '';
   private badgeColor: string = '#5B9BD5';
-  private onSave: (annotation: Annotation) => void;
+  private onSave: (annotation: Annotation | null) => void;
 
   constructor(
     app: App,
     private plugin: LearningSystemPlugin,
     contentUnit: ContentUnit,
-    onSave: (annotation: Annotation) => void
+    onSave: (annotation: Annotation | null) => void  
   ) {
     super(app);
     this.contentUnit = contentUnit;
@@ -208,7 +208,7 @@ export class AnnotationModal extends Modal {
       );
       new Notice('Annotation deleted');
       this.close();
-      this.onSave(null as any); // 通知删除
+      this.onSave(null); // 通知删除
     } catch (error) {
       console.error('Error deleting annotation:', error);
       new Notice('Error deleting annotation');

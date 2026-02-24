@@ -1,5 +1,5 @@
 // reviewView.ts - 重构版本
-import { ItemView, WorkspaceLeaf, TFile, Notice } from 'obsidian';
+import { ItemView, WorkspaceLeaf, TFile, Notice,MarkdownView } from 'obsidian';
 import type LearningSystemPlugin from '../../main';
 import { Flashcard } from '../../core/FlashcardManager';
 import { CardScheduler, ReviewEase } from '../../core/CardScheduler';
@@ -549,9 +549,9 @@ export class ReviewView extends ItemView {
     await leaf.openFile(file);
 
     setTimeout(() => {
-      const view = this.app.workspace.getActiveViewOfType(ItemView);
+      const view = this.app.workspace.getActiveViewOfType(MarkdownView);
       if (view) {
-        const editor = (view as any).editor;
+        const editor = view.editor;
         if (editor) {
           editor.setCursor({ line: contentUnit.source.position.line, ch: 0 });
           editor.scrollIntoView({
@@ -643,10 +643,8 @@ export class ReviewView extends ItemView {
 
       await this.plugin.flashcardManager.updateCard(card);
       
-      const logs = this.plugin.flashcardManager['reviewLogs'] || [];
-      this.plugin.flashcardManager['reviewLogs'] = logs.filter(
-        log => log.flashcardId !== cardId
-      );
+      await this.plugin.flashcardManager.clearCardReviewLogs(cardId);
+      
       await this.plugin.dataManager.save();
       
       new Notice(t('notice.cardStatsReset', this.language));

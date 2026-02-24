@@ -1,6 +1,6 @@
 // src/ui/services/OverviewService.ts
 
-import { App, ItemView, TFile, Notice } from 'obsidian';
+import { App, ItemView, TFile, Notice, MarkdownView } from 'obsidian';
 import type LearningSystemPlugin from '../../main';
 import { ContentUnit } from '../../core/DataManager';
 import { QuickFlashcardCreator } from '../../core/QuickFlashcardCreator';
@@ -30,9 +30,9 @@ export class sideOverviewService {
     await leaf.openFile(file);
     
     setTimeout(() => {
-      const view = app.workspace.getActiveViewOfType(ItemView);
+      const view = app.workspace.getActiveViewOfType(MarkdownView);
       if (view) {
-        const editor = (view as any).editor;
+        const editor = view.editor;
         if (editor) {
           const line = unit.source.position.line;
           const lineCount = editor.lineCount();

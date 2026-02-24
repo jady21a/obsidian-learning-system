@@ -18,15 +18,15 @@ export interface GroupedCards {
 export class ContentList {
   private state: ViewState;
   private cardRenderer: ContentCard;
-  private language: string;
+  private language: 'en' | 'zh-CN';
 
-  constructor(state: ViewState, cardCallbacks: CardCallbacks, language: string = 'en') {
+  constructor(state: ViewState, cardCallbacks: CardCallbacks, language: 'en' | 'zh-CN' = 'en') {
     this.state = state;
     this.cardRenderer = new ContentCard(state, cardCallbacks);
     this.language = language;
 
   }
-  setLanguage(language: string): void {
+  setLanguage(language: 'en' | 'zh-CN'): void {
     this.language = language;
   }
   /**
@@ -123,7 +123,7 @@ renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): 
 
     if (cards.length === 0) {
       container.createDiv({ 
-        text: t('contentList.empty.noFlashcards', this.language as any),
+        text: t('contentList.empty.noFlashcards', this.language),
         cls: 'empty-state' 
       });
       return;
@@ -162,7 +162,7 @@ renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): 
     getUnit: (cardId: string) => ContentUnit | undefined
   ): GroupedCards[] {
     const grouped = new Map<string, Flashcard[]>();
-    const annotatedKey = t('contentList.group.annotated', this.language as any);
+    const annotatedKey = t('contentList.group.annotated', this.language);
   
     cards.forEach(card => {
       const unit = getUnit(card.sourceContentId);
@@ -201,20 +201,20 @@ renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): 
       
       case 'annotation':
         return [unit.annotationId 
-          ? t('contentList.group.annotated', this.language as any)
-          : t('contentList.group.notAnnotated', this.language as any)
+          ? t('contentList.group.annotated', this.language)
+          : t('contentList.group.notAnnotated', this.language)
         ];
       
       case 'tag':
         return unit.metadata.tags.length > 0 
           ? unit.metadata.tags 
-          : [t('group.uncategorized', this.language as any)];
+          : [t('group.uncategorized', this.language)];
       
       case 'date':
         return [this.formatDate(new Date(unit.metadata.createdAt))];
       
       default:
-        return [t('group.uncategorized', this.language as any)];
+        return [t('group.uncategorized', this.language)];
     }
   }
 
@@ -228,9 +228,9 @@ renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): 
       
       case 'annotation':
         if (unit && unit.annotationId) {
-          return [t('contentList.group.annotated', this.language as any)];
+          return [t('contentList.group.annotated', this.language)];
         } else {
-          return [t('contentList.group.notAnnotated', this.language as any)];
+          return [t('contentList.group.notAnnotated', this.language)];
         }
       
       case 'tag':
@@ -241,14 +241,14 @@ renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): 
         } else if (card.deck) {
           return [card.deck];
         } else {
-          return [t('group.uncategorized', this.language as any)];
+          return [t('group.uncategorized', this.language)];
         }
       
       case 'date':
         return [this.formatDate(new Date(card.metadata.createdAt))];
       
       default:
-        return [t('group.uncategorized', this.language as any)];
+        return [t('group.uncategorized', this.language)];
     }
   }
 
@@ -256,7 +256,7 @@ renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): 
    * 排序分组
    */
   private sortGroups(grouped: Map<string, ContentUnit[]>): GroupedUnits[] {
-    const annotatedKey = t('contentList.group.annotated', this.language as any);
+    const annotatedKey = t('contentList.group.annotated', this.language);
     
     return Array.from(grouped.entries())
       .map(([groupKey, units]) => ({ groupKey, units }))
@@ -296,17 +296,17 @@ renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): 
       emptyDiv.innerHTML = `
         <div style="padding: 20px; text-align: center;">
           <div style="font-size: 32px; margin-bottom: 10px;">📭</div>
-          <div style="color: var(--text-muted);">${t('contentList.empty.noNotes', this.language as any)}</div>
+          <div style="color: var(--text-muted);">${t('contentList.empty.noNotes', this.language)}</div>
           <div style="font-size: 12px; color: var(--text-faint); margin-top: 8px;">
             ${this.state.filterMode !== 'all' 
-              ? t('contentList.empty.tryFilter', this.language as any)
-              : t('contentList.empty.startHighlight', this.language as any)
+              ? t('contentList.empty.tryFilter', this.language)
+              : t('contentList.empty.startHighlight', this.language)
             }
           </div>
         </div>
       `;
     } else {
-      emptyDiv.textContent = t('contentList.empty.noContent', this.language as any);
+      emptyDiv.textContent = t('contentList.empty.noContent', this.language);
     }
   }
 

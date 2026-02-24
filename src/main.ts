@@ -22,7 +22,9 @@ interface LearningSystemSettings {
   cycleData?: CycleInfo;
   language?: 'en' | 'zh-CN'; 
 }
-
+interface ObsidianVaultWithConfig {
+  getConfig(key: string): string | undefined;
+}
 const DEFAULT_SETTINGS: LearningSystemSettings = {
   extractionEnabled: true,
   autoScan: false,
@@ -477,9 +479,9 @@ async saveCycleData() {
   }
   private detectAndSetLanguage() {
     // 如果已经有语言设置,先检查是否需要更新
-    const obsidianLang = (this.app as any).vault.getConfig('language') || 
-                         localStorage.getItem('language') ||
-                         'en';
+    const obsidianLang = (this.app.vault as unknown as ObsidianVaultWithConfig).getConfig('language')
+    ?? localStorage.getItem('language')
+    ?? 'en';
     
     // 映射到支持的语言
     const detectedLang: 'en' | 'zh-CN' = obsidianLang.startsWith('zh') ? 'zh-CN' : 'en';

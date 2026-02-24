@@ -27,7 +27,8 @@ export class ContentCard {
   }
   private getLanguage(): Language {
     // 从 Obsidian 设置中获取语言，如果是中文则返回 'zh-CN'，否则返回 'en'
-    const lang = (window as any).moment?.locale() || 'en';
+    const lang = (window as unknown as { moment?: { locale: () => string } })
+  .moment?.locale() ?? 'en';
     return lang.startsWith('zh') ? 'zh-CN' : 'en';
   }
   /**

@@ -2,6 +2,7 @@
 import type LearningSystemPlugin from '../main';
 import { Flashcard, ReviewLog } from './FlashcardManager';
 
+
 export interface DailyStats {
   date: string;
   reviewed: number;
@@ -36,17 +37,20 @@ export interface DifficultCard {
   averageTime: number;
   pattern: 'concept' | 'memory' | 'calculation' | 'unknown';
 }
+export interface CycleRecord {
+  cycleNumber: number;
+  startDate: string;
+  endDate?: string;
+  totalReviews: number;
+  totalCards: number;
+  correctRate: number;
+  dailyStats?: DailyStats[];
+  deckStats?: DeckStats[];
+}
 export interface CycleInfo {
   currentCycle: number;
   cycleStartDate: string; // ISO 格式
-  cycles: Array<{
-    cycleNumber: number;
-    startDate: string;
-    endDate?: string;
-    totalReviews: number;
-    totalCards: number;
-    correctRate: number;
-  }>;
+  cycles:  CycleRecord[];
 }
 export class AnalyticsEngine {
   constructor(private plugin: LearningSystemPlugin) {}
@@ -164,16 +168,7 @@ export class AnalyticsEngine {
 /**
  * 获取所有历史周期(用于UI显示)
  */
-getArchivedCycles(): Array<{
-  cycleNumber: number;
-  startDate: string;
-  endDate: string;
-  totalReviews: number;
-  totalCards: number;
-  correctRate: number;
-  dailyStats?: DailyStats[];
-  deckStats?: DeckStats[];
-}> {
+getArchivedCycles(): CycleRecord[] {
   const data = this.getCycleData();
   return data.cycles
     .filter((c): c is typeof c & { endDate: string } => !!c.endDate) 
@@ -184,7 +179,7 @@ getArchivedCycles(): Array<{
  * 获取指定周期的详细统计
  */
 getCycleDetails(cycleNumber: number): {
-  cycle: any;
+  cycle: CycleRecord;
   dailyStats: DailyStats[];
   deckStats: DeckStats[];
   weeklyStats: { thisWeek: WeeklyStats; lastWeek: WeeklyStats };

@@ -31,7 +31,7 @@ export class BatchCreateModal extends Modal {
 
   let selectedType: 'smart' | 'qa' | 'cloze' = 'smart';
 
-  const types = [
+    const types: Array<{ value: 'smart' | 'qa' | 'cloze'; label: string; desc: string }> = [
     { 
       value: 'smart', 
       label: t('batchCreate.smartType', lang), 
@@ -66,7 +66,7 @@ export class BatchCreateModal extends Modal {
 
       option.addEventListener('click', () => {
         radio.checked = true;
-        selectedType = type.value as any;
+        selectedType = type.value;
       });
     });
 

@@ -3,7 +3,7 @@
 import { Menu, Notice } from 'obsidian';
 import { ContentUnit } from '../../core/DataManager';
 import { Flashcard } from '../../core/FlashcardManager';
-import { t } from '../../i18n/translations';
+import { t, Language } from '../../i18n/translations';
 
 /**
  * 内容单元右键菜单回调接口
@@ -39,14 +39,14 @@ export class ContextMenuBuilder {
   static buildContentUnitMenu(
     unit: ContentUnit,
     callbacks: ContentUnitMenuCallbacks,
-    language: string = 'en'
+    language: Language = 'en'
   ): Menu {
     const menu = new Menu();
     
     // 跳转到原文
     menu.addItem((item) =>
       item
-        .setTitle(t('contextMenu.jumpToSource', language as any))
+        .setTitle(t('contextMenu.jumpToSource' ))
         .setIcon('arrow-up-right')
         .onClick(() => callbacks.onJumpToSource(unit))
     );
@@ -54,7 +54,7 @@ export class ContextMenuBuilder {
     // 编辑批注
     menu.addItem((item) =>
       item
-        .setTitle(t('contextMenu.editAnnotation', language as any))
+        .setTitle(t('contextMenu.editAnnotation' ))
         .setIcon('message-square')
         .onClick(() => callbacks.onToggleAnnotation(unit))
     );
@@ -65,7 +65,7 @@ export class ContextMenuBuilder {
     if (unit.flashcardIds.length > 0) {
       menu.addItem((item) =>
         item
-          .setTitle(t('contextMenu.editFlashcard', language as any))
+          .setTitle(t('contextMenu.editFlashcard' ))
           .setIcon('pencil')
           .onClick(() => callbacks.onEditFlashcard(unit))
       );
@@ -74,7 +74,7 @@ export class ContextMenuBuilder {
     // 生成闪卡 (AI智能生成)
     menu.addItem((item) =>
       item
-        .setTitle(t('contextMenu.generateFlashcard', language as any))
+        .setTitle(t('contextMenu.generateFlashcard' ))
         .setIcon('zap')
         .onClick(() => callbacks.onQuickGenerate(unit))
     );
@@ -82,7 +82,7 @@ export class ContextMenuBuilder {
     // 创建 QA 闪卡
     menu.addItem((item) =>
       item
-        .setTitle(t('contextMenu.createQA', language as any))
+        .setTitle(t('contextMenu.createQA' ))
         .setIcon('plus')
         .onClick(() => callbacks.onCreateQA(unit))
     );
@@ -90,7 +90,7 @@ export class ContextMenuBuilder {
     // 创建填空闪卡
     menu.addItem((item) =>
       item
-        .setTitle(t('contextMenu.createCloze', language as any))
+        .setTitle(t('contextMenu.createCloze' ))
         .setIcon('plus')
         .onClick(() => callbacks.onCreateCloze(unit))
     );
@@ -100,7 +100,7 @@ export class ContextMenuBuilder {
     // 查看统计
     menu.addItem((item) =>
       item
-        .setTitle(t('contextMenu.viewStats', language as any))
+        .setTitle(t('contextMenu.viewStats' ))
         .setIcon('bar-chart')
         .onClick(() => callbacks.onViewStats())
     );
@@ -110,7 +110,7 @@ export class ContextMenuBuilder {
     // 删除笔记
     menu.addItem((item) =>
       item
-        .setTitle(t('contextMenu.deleteNote', language as any))
+        .setTitle(t('contextMenu.deleteNote' ))
         .setIcon('trash')
         .onClick(() => callbacks.onDelete(unit))
     );
@@ -124,14 +124,14 @@ export class ContextMenuBuilder {
   static buildFlashcardMenu(
     card: Flashcard,
     callbacks: FlashcardMenuCallbacks,
-    language: string = 'en'
+    language: Language = 'en'
   ): Menu {
     const menu = new Menu();
     
     // 跳转到原文
     menu.addItem((item) =>
       item
-        .setTitle(t('contextMenu.jumpToSource', language as any))
+        .setTitle(t('contextMenu.jumpToSource' ))
         .setIcon('arrow-up-right')
         .onClick(() => callbacks.onJumpToSource(card))
     );
@@ -139,7 +139,7 @@ export class ContextMenuBuilder {
     // 编辑卡片
     menu.addItem((item) =>
       item
-        .setTitle(t('contextMenu.editCard', language as any))
+        .setTitle(t('contextMenu.editCard' ))
         .setIcon('pencil')
         .onClick(() => callbacks.onEdit(card))
     );
@@ -149,7 +149,7 @@ export class ContextMenuBuilder {
     // 查看统计
     menu.addItem((item) =>
       item
-        .setTitle(t('contextMenu.viewStats', language as any))
+        .setTitle(t('contextMenu.viewStats' ))
         .setIcon('bar-chart')
         .onClick(() => callbacks.onViewStats(card))
     );
@@ -159,7 +159,7 @@ export class ContextMenuBuilder {
     // 删除卡片
     menu.addItem((item) =>
       item
-        .setTitle(t('contextMenu.deleteCard', language as any))
+        .setTitle(t('contextMenu.deleteCard' ))
         .setIcon('trash')
         .onClick(() => callbacks.onDelete(card))
     );
@@ -170,38 +170,38 @@ export class ContextMenuBuilder {
   /**
    * 格式化闪卡统计信息
    */
-  static formatFlashcardStats(card: Flashcard, language: string = 'en'): string {
+  static formatFlashcardStats(card: Flashcard, language: Language = 'en'): string {
     const locale = language === 'zh-CN' ? 'zh-CN' : 'en-US';
     const createdDate = new Date(card.metadata.createdAt).toLocaleString(locale);
     const lastReview = card.stats.lastReview 
       ? new Date(card.stats.lastReview).toLocaleString(locale)
-      : t('stats.lastReview.never', language as any);
+      : t('stats.lastReview.never' );
     const nextReview = new Date(card.scheduling.due).toLocaleString(locale);
     const accuracy = card.stats.totalReviews > 0 
       ? ((card.stats.correctCount / card.stats.totalReviews) * 100).toFixed(1)
       : '0';
     
-    const separator = t('stats.separator', language as any);
+    const separator = t('stats.separator' );
     
     return (
-      `${t('stats.title', language as any)}\n` +
+      `${t('stats.title' )}\n` +
       `${separator}\n` +
-      `${t('stats.file', language as any)}: ${card.sourceFile.split('/').pop()}\n` +
-      `${t('stats.type', language as any)}: ${t(card.type === 'qa' ? 'stats.type.qa' : 'stats.type.cloze', language as any)}\n` +
-      `${t('stats.deck', language as any)}: ${card.deck}\n` +
-      `${t('stats.tags', language as any)}: ${card.tags?.length > 0 ? card.tags.join(', ') : t('stats.tags.none', language as any)}\n` +
+      `${t('stats.file' )}: ${card.sourceFile.split('/').pop()}\n` +
+      `${t('stats.type' )}: ${t(card.type === 'qa' ? 'stats.type.qa' : 'stats.type.cloze' )}\n` +
+      `${t('stats.deck' )}: ${card.deck}\n` +
+      `${t('stats.tags' )}: ${card.tags?.length > 0 ? card.tags.join(', ') : t('stats.tags.none' )}\n` +
       `${separator}\n` +
-      `${t('stats.reviewCount', language as any)}: ${card.stats.totalReviews} ${t('stats.times', language as any)}\n` +
-      `${t('stats.correctCount', language as any)}: ${card.stats.correctCount} ${t('stats.times', language as any)}\n` +
-      `${t('stats.accuracy', language as any)}: ${accuracy}%\n` +
-      `${t('stats.averageTime', language as any)}: ${card.stats.averageTime.toFixed(1)}${t('stats.seconds', language as any)}\n` +
-      `${t('stats.difficulty', language as any)}: ${(card.stats.difficulty * 100).toFixed(0)}%\n` +
+      `${t('stats.reviewCount' )}: ${card.stats.totalReviews} ${t('stats.times' )}\n` +
+      `${t('stats.correctCount' )}: ${card.stats.correctCount} ${t('stats.times' )}\n` +
+      `${t('stats.accuracy' )}: ${accuracy}%\n` +
+      `${t('stats.averageTime' )}: ${card.stats.averageTime.toFixed(1)}${t('stats.seconds' )}\n` +
+      `${t('stats.difficulty' )}: ${(card.stats.difficulty * 100).toFixed(0)}%\n` +
       `${separator}\n` +
-      `${t('stats.createdAt', language as any)}: ${createdDate}\n` +
-      `${t('stats.lastReview', language as any)}: ${lastReview}\n` +
-      `${t('stats.nextReview', language as any)}: ${nextReview}\n` +
-      `${t('stats.interval', language as any)}: ${card.scheduling.interval}${t('stats.days', language as any)}\n` +
-      `${t('stats.ease', language as any)}: ${card.scheduling.ease.toFixed(2)}`
+      `${t('stats.createdAt' )}: ${createdDate}\n` +
+      `${t('stats.lastReview' )}: ${lastReview}\n` +
+      `${t('stats.nextReview' )}: ${nextReview}\n` +
+      `${t('stats.interval' )}: ${card.scheduling.interval}${t('stats.days' )}\n` +
+      `${t('stats.ease' )}: ${card.scheduling.ease.toFixed(2)}`
     );
   }
 }

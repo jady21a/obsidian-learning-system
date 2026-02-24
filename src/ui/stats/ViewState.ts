@@ -1,6 +1,7 @@
 // src/ui/state/ViewState.ts
 import { ContentUnit } from '../../core/DataManager';
 import { Flashcard ,FlashcardManager} from '../../core/FlashcardManager';
+import type LearningSystemPlugin from '../../main';
 
 export type FilterMode = 'all' | 'annotated' | 'flashcards';
 export type DisplayMode = 'sidebar' | 'main';
@@ -159,7 +160,7 @@ export class ViewState {
   }
 
 // 获取待删除的统计信息
-getDeleteStats(plugin: any): { notes: number; cards: number } {
+getDeleteStats(plugin:  LearningSystemPlugin): { notes: number; cards: number } {
   let totalCards = 0;
   
   if (this.viewType === 'cards') {
@@ -182,18 +183,16 @@ getDeleteStats(plugin: any): { notes: number; cards: number } {
 }
 
 // 获取文件删除的统计信息
-static getFileDeleteStats(filePath: string, plugin: any): { notes: number; cards: number } {
+static getFileDeleteStats(filePath: string, plugin: LearningSystemPlugin): { notes: number; cards: number } {
   const units = plugin.dataManager.getAllContentUnits()
-    .filter((u: any) => u.source.file === filePath);
+    .filter((u: ContentUnit) => u.source.file === filePath);
   
-  const notes = units.length;
   let cards = 0;
-  
-  units.forEach((unit: any) => {
+  units.forEach((unit: ContentUnit) => {
     cards += unit.flashcardIds.length;
   });
   
-  return { notes, cards };
+  return { notes: units.length, cards };
 }
 
 }

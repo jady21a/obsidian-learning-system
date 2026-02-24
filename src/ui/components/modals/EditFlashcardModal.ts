@@ -129,8 +129,8 @@ new Setting(buttonContainer)
   private refreshOverviewView() {
     const view = this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR_OVERVIEW)[0]?.view ||
                  this.app.workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW)[0]?.view;
-    if (view && 'refresh' in view) {
-      (view as any).refresh();
+    if (view && 'refresh' in view && typeof (view as { refresh: unknown }).refresh === 'function') {
+      (view as { refresh: () => void }).refresh();
     }
   }
   

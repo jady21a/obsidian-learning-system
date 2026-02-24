@@ -2,7 +2,8 @@ import { Modal, Notice, ButtonComponent, Menu } from 'obsidian';
 import type LearningSystemPlugin from '../../main';
 import { t } from '../../i18n/translations';
 import { RecentlyDeletedStyle } from '../style/recentlyDeletedStyle';
-
+import { ContentUnit, DeletedContentUnit } from '../../core/DataManager';
+import { DeletedItem } from '../../core/FlashcardManager';
 
 
 export class RecentlyDeletedModal extends Modal {
@@ -87,7 +88,7 @@ export class RecentlyDeletedModal extends Modal {
     `;
   }
 
-  private renderDeletedNotes(container: HTMLElement, items: any[]) {
+  private renderDeletedNotes(container: HTMLElement, items: DeletedContentUnit[]) {
     const section = container.createDiv({ cls: 'deleted-section' });
     
     const header = section.createDiv({ cls: 'section-header' });
@@ -137,7 +138,7 @@ export class RecentlyDeletedModal extends Modal {
     });
   }
 
-  private renderDeletedCards(container: HTMLElement, items: any[]) {
+  private renderDeletedCards(container: HTMLElement, items: DeletedItem[]) {
     const section = container.createDiv({ cls: 'deleted-section' });
     
     const header = section.createDiv({ cls: 'section-header' });
@@ -191,7 +192,7 @@ export class RecentlyDeletedModal extends Modal {
     });
   }
 
-  private showNoteMenu(event: MouseEvent, item: any) {
+  private showNoteMenu(event: MouseEvent, item: DeletedContentUnit) {
     const menu = new Menu();
 
     menu.addItem((menuItem) =>
@@ -216,7 +217,7 @@ export class RecentlyDeletedModal extends Modal {
     menu.showAtMouseEvent(event);
   }
 
-  private showCardMenu(event: MouseEvent, item: any) {
+  private showCardMenu(event: MouseEvent, item: DeletedItem) {
     const menu = new Menu();
 
     menu.addItem((menuItem) =>
@@ -241,7 +242,7 @@ export class RecentlyDeletedModal extends Modal {
     menu.showAtMouseEvent(event);
   }
 
-  private async restoreNote(item: any) {
+  private async restoreNote(item: DeletedContentUnit) {
     
     const success = await this.plugin.dataManager.restoreContentUnit(item);
     if (success) {
@@ -265,7 +266,7 @@ export class RecentlyDeletedModal extends Modal {
     }
   }
 
-  private async restoreCard(item: any) {
+  private async restoreCard(item: DeletedItem) {
     const success = await this.plugin.flashcardManager.restoreFlashcard(item);
     
     if (success) {
@@ -277,7 +278,7 @@ export class RecentlyDeletedModal extends Modal {
     }
   }
 
-  private async permanentlyDeleteNote(item: any) {
+  private async permanentlyDeleteNote(item: DeletedContentUnit) {
     const success = await this.plugin.dataManager.permanentlyDeleteContentUnit(item.id);
     
     if (success) {
@@ -288,7 +289,7 @@ export class RecentlyDeletedModal extends Modal {
     }
   }
 
-  private async permanentlyDeleteCard(item: any) {
+  private async permanentlyDeleteCard(item: DeletedItem) {
     const success = await this.plugin.flashcardManager.permanentlyDeleteFlashcard(item.id);
     
     if (success) {

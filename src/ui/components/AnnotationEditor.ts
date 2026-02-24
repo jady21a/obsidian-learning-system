@@ -250,7 +250,6 @@ private bindEditorEvents(textarea: HTMLTextAreaElement, unitId: string): void {
       e.preventDefault();
       e.stopPropagation();
 
-      (textarea as any)._tabPressed = true;
       const editor = textarea.closest('.inline-annotation-editor') as HTMLElement;
       const card = editor?.closest('.compact-card, .grid-card') as HTMLElement;
       

@@ -297,11 +297,14 @@ const annotationCallbacks: AnnotationEditorCallbacks = {
       return;
     }
     
-    const parentSplit = (this.leaf as any).parentSplit;
-    const isLeftSidebar = parentSplit?.type === 'split' && 
-                          this.app.workspace.leftSplit === parentSplit;
-    const isRightSidebar = parentSplit?.type === 'split' && 
-                           this.app.workspace.rightSplit === parentSplit;
+    const leaf = this.leaf as unknown as Record<string, unknown>;
+    const parentSplit = leaf['parentSplit'] as Record<string, unknown> | undefined;
+    const isLeftSidebar = parentSplit?.['type'] === 'split' && 
+                          this.app.workspace.leftSplit === (parentSplit as unknown);
+    const isRightSidebar = parentSplit?.['type'] === 'split' && 
+                           this.app.workspace.rightSplit === (parentSplit as unknown);
+    
+  
     
     const width = this.containerEl.clientWidth;
     const isNarrow = width < 500;
