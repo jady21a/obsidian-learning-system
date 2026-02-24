@@ -49,10 +49,10 @@ export class QuickFlashcardCreator {
         answer
       );
 
-      new Notice(`✅ Flashcard created! (Q&A)`);
+      new Notice(`Flashcard created! (Q&A)`);
     } catch (error) {
       console.error('Error creating quick flashcard:', error);
-      new Notice('❌ Failed to create flashcard');
+      new Notice('Failed to create flashcard');
     }
   }
 
@@ -65,7 +65,7 @@ export class QuickFlashcardCreator {
       const keywords = this.extractKeywords(contentUnit.content);
       
       if (keywords.length === 0) {
-        new Notice('⚠️ No keywords found for cloze deletion');
+        new Notice('No keywords found for cloze deletion');
         return;
       }
 
@@ -79,7 +79,7 @@ export class QuickFlashcardCreator {
       }).filter(d => d.index !== -1);
 
       if (deletions.length === 0) {
-        new Notice('⚠️ Could not create cloze deletions');
+        new Notice('Could not create cloze deletions');
         return;
       }
 
@@ -90,10 +90,10 @@ export class QuickFlashcardCreator {
         deletions
       );
 
-      new Notice(`✅ Flashcard created! (Cloze with ${deletions.length} blanks)`);
+      new Notice(`Flashcard created! (Cloze with ${deletions.length} blanks)`);
     } catch (error) {
       console.error('Error creating quick cloze card:', error);
-      new Notice('❌ Failed to create flashcard');
+      new Notice('Failed to create flashcard');
     }
   }
 

@@ -23,7 +23,7 @@ export class ExtractionEngine {
 
     menu.addItem((item) => {
       item
-        .setTitle('📝 Extract as text only')
+        .setTitle('Extract as text only')
         .setIcon('file-text')
         .onClick(async () => {
           await this.extractSelectedText(editor, file, 'text');
@@ -32,7 +32,7 @@ export class ExtractionEngine {
 
     menu.addItem((item) => {
       item
-        .setTitle('❓ Extract as QA card')
+        .setTitle('Extract as QA card')
         .setIcon('help-circle')
         .onClick(async () => {
           await this.extractSelectedText(editor, file, 'QA');
@@ -41,7 +41,7 @@ export class ExtractionEngine {
 
     menu.addItem((item) => {
       item
-        .setTitle('✏️ Extract as Cloze card')
+        .setTitle('Extract as cloze card')
         .setIcon('highlighter')
         .onClick(async () => {
           await this.extractSelectedText(editor, file, 'cloze');
@@ -86,7 +86,7 @@ export class ExtractionEngine {
       // 检查是否重复
       const existingUnit = await this.findDuplicateUnit(unit);
       if (existingUnit) {
-        new Notice(`⚠️ This content was already extracted`);
+        new Notice(`This content was already extracted`);
         return;
       }
 
