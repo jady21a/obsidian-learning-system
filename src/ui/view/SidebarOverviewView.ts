@@ -887,7 +887,7 @@ private refreshContentOnly(): void {
     }
     
     if (this.state.viewType === 'cards') {
-      this.batchDeleteFlashcards();
+     void this.batchDeleteFlashcards();
     } else {
      void this.batchDeleteNotes();
     }
