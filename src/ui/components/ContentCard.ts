@@ -291,16 +291,16 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
   private formatContent(unit: ContentUnit): string {
     if (unit.type === 'QA' && unit.answer) {
       return `<span class="qa-question">${unit.content}</span> <span class="qa-separator">::</span> <span class="qa-answer">${unit.answer}</span>`;
-    } else if (unit.type === 'cloze' && unit.fullContext) {
-      let context = unit.fullContext.replace(/==/g, '');
-      const answer = unit.content;
-      return context.replace(
-        answer, 
-        `<span class="cloze-highlight">${answer}</span>`
-      );
-    } else {
-      return unit.content;
+    } else if (unit.type === 'cloze') {
+      if (unit.fullContext) {
+        return unit.fullContext.replace(
+          /==([^=]+)==/g,
+          '<span class="cloze-highlight">$1</span>'
+        );
+      }
+      return unit.content.replace(/==/g, '');
     }
+    return unit.content;  
   }
   private renderSideLine(meta: HTMLElement, unit: ContentUnit): void {
     meta.createSpan({ text: `L${unit.source.position.line}`, cls: 'line-info' });
@@ -329,6 +329,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     }
     
     
+
     const annEl = content.createDiv({ cls: 'annotation-preview' });
     const displayText = annotationContent.length > 60
       ? annotationContent.substring(0, 60) + '...'
