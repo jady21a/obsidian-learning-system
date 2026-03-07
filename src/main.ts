@@ -138,11 +138,11 @@ this.registerEvent(
   })
 );
     // 5. Ribbon 图标(带权限检查)
-    this.addRibbonIcon('layout-list', 'Open Learning Overview(Sidebar)', () => {
+    this.addRibbonIcon('layout-list', 'Open learning overview(sidebar)', () => {
      void this.activateSidebarOverview();
     });
   
-    this.addRibbonIcon('layers', 'Start Review', () => {
+    this.addRibbonIcon('layers', 'Start review', () => {
       if (!this.unlockSystem.tryUseFeature('review-page', 'Start Review')) {
         return;
       }
@@ -228,7 +228,7 @@ async saveCycleData() {
 
     this.addCommand({
       id: 'open-overview',
-      name: 'Open Learning Overview(Sidebar)',
+      name: 'Open learning overview(sidebar)',
       callback: () => {
        void this.activateSidebarOverview();
       }
@@ -236,7 +236,7 @@ async saveCycleData() {
 
     this.addCommand({
       id: 'open-main-overview',
-      name: 'Toggle Learning Overview (Main View)',
+      name: 'Toggle learning overview (main view)',
       callback: async () => {
                     // 🎯 权限检查
     if (!this.unlockSystem.tryUseFeature('open-main- overview', 'Toggle Learning Overview (Main View)')) {

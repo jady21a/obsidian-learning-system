@@ -423,33 +423,20 @@ class UnlockNoticeModal extends Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
-    
+  
     contentEl.createEl('h2', { text: t('unlock.modal.title', this.language) });
-    contentEl.createEl('p', { 
+    contentEl.createEl('p', {
       text: t('unlock.modal.requireLevel', this.language, {
         feature: this.featureName,
-        level: this.requiredLevel
-      })
+        level: this.requiredLevel,
+      }),
     });
-    
     contentEl.createEl('h3', { text: t('unlock.modal.currentProgress', this.language) });
-    
-    // 创建容器并设置样式
-    const container = contentEl.createDiv();
-    container.style.padding = '10px';
-    container.style.backgroundColor = 'var(--background-secondary)';
-    container.style.borderRadius = '5px';
-    container.style.lineHeight = '1.8';
-    
-    // 使用 innerHTML 直接插入带 <br> 的 HTML
+  
+    const container = contentEl.createDiv({ cls: 'unlock-modal-steps' });
     container.innerHTML = this.nextSteps.replace(/\n/g, '<br>');
-
-    // 添加分隔线
-    const divider = contentEl.createEl('div');
-    divider.style.width = '100%';
-    divider.style.height = '2px';
-    divider.style.backgroundColor = '#666';
-    divider.style.margin = '20px 0';
+  
+    contentEl.createDiv({ cls: 'unlock-modal-divider' });
   }
   
   onClose() {

@@ -32,7 +32,7 @@ export class ExtractionEngine {
 
     menu.addItem((item) => {
       item
-        .setTitle('Extract as QA card')
+        .setTitle('Extract as Q&A card')
         .setIcon('help-circle')
         .onClick(async () => {
           await this.extractSelectedText(editor, file, 'QA');

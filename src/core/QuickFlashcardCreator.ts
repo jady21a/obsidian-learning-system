@@ -49,7 +49,7 @@ export class QuickFlashcardCreator {
         answer
       );
 
-      new Notice(`Flashcard created! (Q&A)`);
+      new Notice(`Flashcard created (Q&A)`);
     } catch (error) {
       console.error('Error creating quick flashcard:', error);
       new Notice('Failed to create flashcard');

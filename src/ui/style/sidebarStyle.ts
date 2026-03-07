@@ -1364,6 +1364,20 @@ export class StyleLoader {
   white-space: nowrap;
 }
 
+.unlock-modal-steps {
+  padding: 10px;
+  background-color: var(--background-secondary);
+  border-radius: 5px;
+  line-height: 1.8;
+}
+
+.unlock-modal-divider {
+  width: 100%;
+  height: 2px;
+  background-color: #666;
+  margin: 20px 0;
+}
+
       `;
     }
   }

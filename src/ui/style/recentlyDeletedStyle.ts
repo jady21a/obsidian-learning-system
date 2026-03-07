@@ -193,6 +193,8 @@ export class RecentlyDeletedStyle {
           font-size: 0.9em;
         }
   
+
+
         /* 响应式设计 */
         @media (max-width: 768px) {
           .recently-deleted-container {
