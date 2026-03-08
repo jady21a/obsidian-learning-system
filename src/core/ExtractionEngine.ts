@@ -180,8 +180,9 @@ export class ExtractionEngine {
     return {
       id: this.generateId(),
       type: 'text',
-      content: selection.trim(),
-      fullContext: selection.trim(),
+      content: selection.replace(/^\n+|\n+$/g, ''),
+      fullContext: selection.replace(/^\n+|\n+$/g, ''),
+      
       source: {
         file: file.path,
         position: {
@@ -276,8 +277,9 @@ export class ExtractionEngine {
     return {
       id: this.generateId(),
       type: 'cloze',
-      content: selection.trim(),
-      fullContext: fullSentence,
+      content: selection.replace(/^\n+|\n+$/g, ''),
+      fullContext: selection.replace(/^\n+|\n+$/g, ''),
+      
       source: {
         file: file.path,
         position: {
@@ -326,7 +328,7 @@ export class ExtractionEngine {
       const units = await this.extractContent(file, content);
       
       if (units.length > 0) {
-        await this.dataManager.saveContentUnits(units);
+        // await this.dataManager.saveContentUnits(units);
         
         const qaCount = units.filter(u => u.type === 'QA').length;
         const clozeCount = units.filter(u => u.type === 'cloze').length;
@@ -445,19 +447,200 @@ if (this.plugin?.unlockSystem && units.length > 0) {
   ): Promise<ContentUnit[]> {
     const filtered: ContentUnit[] = [];
     
+    const tableClozeExisting = existingUnits.filter(
+      u => u.extractRule?.ruleId === 'cloze-table' && u.source.file === newUnits[0]?.source.file
+    );
+    console.log('[dedup] existing cloze-table units:', 
+      JSON.stringify(tableClozeExisting.map(u => ({ 
+        id: u.id, 
+        content: u.content, 
+        allHighlights: u.metadata?.customData?.allHighlights 
+      })))
+    );
+    console.log('[dedup] new cloze-table units:', 
+      JSON.stringify(newUnits.filter(u => u.extractRule?.ruleId === 'cloze-table')
+        .map(u => ({ content: u.content, allHighlights: u.metadata?.customData?.allHighlights })))
+    );
     for (const newUnit of newUnits) {
+      // 🆕 表格合并逻辑：同一表格时，合并而非新建
+      if (newUnit.extractRule?.ruleId === 'cloze-table') {
+        
+        type RowData = { key: string; highlights: string[] };
+        const rebuildContext = (originalContext: string, keepRows: RowData[]): string => {
+          const lines = originalContext.split('\n');
+          const header = lines[0] || '';
+          const separator = lines[1] || '';
+          const keepKeys = new Set(keepRows.map(r => r.key));
+          const dataLines = lines.slice(2).filter(l =>
+            keepKeys.has(l.replace(/==(.+?)==/g, '$1').trim())
+          );
+          return [header, separator, ...dataLines].join('\n');
+        };
+        const newTableKey = newUnit.metadata.customData?.tableKey as string | undefined;
+        const existingTableUnits = existingUnits.filter(u => {
+          if (u.type !== 'cloze' || u.extractRule?.ruleId !== 'cloze-table') return false;
+          if (u.source.file !== newUnit.source.file) return false;
+          const existingKey = u.metadata.customData?.tableKey as string | undefined;
+          if (newTableKey && existingKey) return existingKey === newTableKey;
+          return u.source.position.start === newUnit.source.position.start;
+        });
+      
+        const newRows = (newUnit.metadata.customData?.rows as RowData[]) || [];
+        const hasRowData = existingTableUnits.some(u => u.metadata.customData?.rows);
+      
+        let trulyNewRows: RowData[] = [];
+      
+        if (hasRowData) {
+          // ✅ 新格式：按行去重，每行独立比较自己的高亮
+          const existingRowHighlights = new Map<string, Set<string>>();
+          for (const u of existingTableUnits) {
+            for (const r of ((u.metadata.customData?.rows as RowData[]) || [])) {
+              if (!existingRowHighlights.has(r.key)) {
+                existingRowHighlights.set(r.key, new Set());
+              }
+              r.highlights.forEach(h => existingRowHighlights.get(r.key)!.add(h));
+            }
+          }
+          for (const row of newRows) {
+            const existingHl = existingRowHighlights.get(row.key) || new Set();
+            const newHl = row.highlights.filter(h => !existingHl.has(h));
+            if (newHl.length > 0) {
+              trulyNewRows.push({ key: row.key, highlights: newHl });
+            }
+          }
+        } else {
+          // ⬇️ 旧数据兼容：全表文本去重
+          const existingHighlightsSet = new Set<string>(
+            existingTableUnits.flatMap(u =>
+              (u.metadata.customData?.allHighlights as string[]) || []
+            )
+          );
+          const allNewHighlights = newRows.flatMap(r => r.highlights);
+          const trulyNew = allNewHighlights.filter(h => !existingHighlightsSet.has(h));
+          if (trulyNew.length === 0) continue;
+      
+          const chunkUnit: ContentUnit = {
+            ...newUnit,
+            id: this.generateId(),
+            content: trulyNew.join(', '),
+            fullContext: newUnit.fullContext,
+            metadata: {
+              ...newUnit.metadata,
+              customData: {
+                ...newUnit.metadata.customData,
+                allHighlights: trulyNew,
+                highlightCount: trulyNew.length,
+                chunkIndex: existingTableUnits.length
+              }
+            },
+            flashcardIds: []
+          };
+          filtered.push(chunkUnit);
+          existingUnits.push(chunkUnit);
+          continue;
+        }
+      
+      
+        if (trulyNewRows.length === 0) continue;
+
+        const rowChunkSize = 6;
+        
+        // 找最后一个已有 chunk，检查是否未满
+        const sortedExisting = [...existingTableUnits]
+        .sort((a, b) => (Number(a.metadata.customData?.chunkIndex) || 0) - (Number(b.metadata.customData?.chunkIndex) || 0));
+      const lastExistingUnit: ContentUnit | undefined = sortedExisting[sortedExisting.length - 1];
+      const lastExistingRows: RowData[] = (lastExistingUnit?.metadata.customData?.rows as RowData[]) ?? [];     const lastChunkRemainingSlots = lastExistingRows.length < rowChunkSize
+          ? rowChunkSize - lastExistingRows.length
+          : 0;
+        
+        let rowsToProcess = [...trulyNewRows];
+        
+        // 如果最后一个 chunk 未满，先填满它
+        if (lastChunkRemainingSlots > 0 && lastExistingUnit) {
+          const fillRows = rowsToProcess.splice(0, lastChunkRemainingSlots);
+          const mergedRows = [...lastExistingRows, ...fillRows];
+          const mergedHighlights = mergedRows.flatMap(r => r.highlights);
+          lastExistingUnit.metadata.customData = {
+            ...lastExistingUnit.metadata.customData,
+            rows: mergedRows,
+            allHighlights: mergedHighlights,
+            highlightCount: mergedHighlights.length,
+            rowCount: mergedRows.length,
+          };
+          lastExistingUnit.content = mergedHighlights.join(', ');
+          lastExistingUnit.fullContext = rebuildContext(newUnit.fullContext || '', mergedRows);
+          lastExistingUnit.metadata.updatedAt = Date.now();
+          await this.dataManager.saveContentUnits([lastExistingUnit]);
+        }
+        
+        // 剩余的按 6 行一组新建 chunk
+        for (let i = 0; i < rowsToProcess.length; i += rowChunkSize) {
+          const chunk = rowsToProcess.slice(i, i + rowChunkSize);
+          const chunkHighlights = chunk.flatMap(r => r.highlights);
+          const chunkUnit: ContentUnit = {
+            ...newUnit,
+            id: this.generateId(),
+            content: chunkHighlights.join(', '),
+            fullContext: rebuildContext(newUnit.fullContext || '', chunk),
+            metadata: {
+              ...newUnit.metadata,
+              customData: {
+                ...newUnit.metadata.customData,
+                rows: chunk,
+                allHighlights: chunkHighlights,
+                highlightCount: chunkHighlights.length,
+                rowCount: chunk.length,
+                chunkIndex: existingTableUnits.length + Math.floor(i / rowChunkSize)
+              }
+            },
+            flashcardIds: []
+          };
+          filtered.push(chunkUnit);
+          existingUnits.push(chunkUnit); // 防止同次 scan 内自我重复
+        }
+        continue;
+      }
+  // 非表格 cloze：同一句子有新高亮时合并
+if (newUnit.type === 'cloze' && newUnit.extractRule?.ruleId === 'cloze') {
+  const sameSentenceUnit = existingUnits.find(existing =>
+    existing.type === 'cloze' &&
+    existing.extractRule?.ruleId === 'cloze' &&
+    existing.source.file === newUnit.source.file &&
+    existing.source.position.start === newUnit.source.position.start &&
+    existing.source.position.end === newUnit.source.position.end
+  );
+
+  if (sameSentenceUnit) {
+    const existingHighlights = sameSentenceUnit.content.split(', ').map(s => s.trim()).filter(Boolean);
+    const newHighlights = newUnit.content.split(', ').map(s => s.trim()).filter(Boolean);
+    const merged = Array.from(new Set([...existingHighlights, ...newHighlights]));
+
+    if (merged.length > existingHighlights.length) {
+      // 有新增高亮，更新原 unit
+      sameSentenceUnit.content = merged.join(', ');
+      sameSentenceUnit.fullContext = newUnit.fullContext; // 更新句子上下文
+      sameSentenceUnit.metadata.updatedAt = Date.now();
+      
+      await this.dataManager.saveContentUnits([sameSentenceUnit]);
+    }
+    continue; // 无论是否有新增，都不新建 unit
+  }
+}
+
       const isDuplicate = existingUnits.some(existing => {
-        // 方式1: 相同文件 + 相同位置 + 相同类型
+        // 方式1: 相同文件 + 相同位置 + 相同类型（排除表格 cloze）
         const sameLocation = 
           existing.source.file === newUnit.source.file &&
           existing.source.position.start === newUnit.source.position.start &&
           existing.source.position.end === newUnit.source.position.end &&
-          existing.type === newUnit.type;
+          existing.type === newUnit.type &&
+          !(existing.extractRule?.ruleId === 'cloze-table' && newUnit.extractRule?.ruleId === 'cloze-table');
         
-        // 方式2: 相同文件 + 相同内容 + 相同类型（防止位置偏移）
+        // 方式2: 相同文件 + 相同内容 + 相同类型（排除表格 cloze）
         const sameContent = 
           existing.source.file === newUnit.source.file &&
           existing.type === newUnit.type &&
+          existing.extractRule?.ruleId !== 'cloze-table' &&
           this.isContentDuplicate(existing.content, newUnit.content) &&
           this.isContentDuplicate(existing.fullContext || '', newUnit.fullContext || '');
         
@@ -467,7 +650,32 @@ if (this.plugin?.unlockSystem && units.length > 0) {
           this.isContentDuplicate(existing.content, newUnit.content) &&
           this.isContentDuplicate(existing.answer || '', newUnit.answer || '');
         
-        return sameLocation || sameContent || sameQA;
+        // 方式4: 手动提取覆盖自动提取（排除表格 cloze）
+        const coveredByManual =
+          existing.source.file === newUnit.source.file &&
+          existing.extractRule?.extractedBy === 'manual' &&
+          newUnit.extractRule?.ruleId !== 'cloze-table' &&
+          existing.source.position.start <= newUnit.source.position.start &&
+          existing.source.position.end >= newUnit.source.position.end;
+  
+        // 方式5: 表格 cloze 按高亮内容去重
+        const sameTableHighlights =
+          existing.type === 'cloze' && newUnit.type === 'cloze' &&
+          existing.source.file === newUnit.source.file &&
+          existing.extractRule?.ruleId === 'cloze-table' &&
+          newUnit.extractRule?.ruleId === 'cloze-table' &&
+          JSON.stringify([...((existing.metadata.customData?.allHighlights as string[]) || [])].sort()) ===
+          JSON.stringify([...((newUnit.metadata.customData?.allHighlights as string[]) || [])].sort());
+  
+          // 新增：表格 cloze 按 content 字符串去重（allHighlights 丢失时的最后防线）
+const sameTableContent =
+existing.type === 'cloze' && newUnit.type === 'cloze' &&
+existing.extractRule?.ruleId === 'cloze-table' &&
+newUnit.extractRule?.ruleId === 'cloze-table' &&
+existing.source.file === newUnit.source.file &&
+this.isContentDuplicate(existing.content, newUnit.content);
+
+return sameLocation || sameContent || sameQA || coveredByManual || sameTableHighlights || sameTableContent;
       });
       
       if (!isDuplicate) {
@@ -734,7 +942,7 @@ private extractTableWithHighlights(
   });
   
   // 统计表格中所有高亮
-  const highlightRegex = /==(.+?)==/g;
+  // const highlightRegex = /==(.+?)==/g;
   const highlightRows = new Set<number>();
   const highlightColumns = new Set<number>();
   let highlightCount = 0;
@@ -748,7 +956,7 @@ private extractTableWithHighlights(
     const cells = line.split('|').map(c => c.trim()).filter(c => c);
     
     cells.forEach((cell, colIndex) => {
-      if (highlightRegex.test(cell)) {
+        if (/==(.+?)==/.test(cell)) {
         highlightRows.add(rowIndex);  // ✅ 现在 rowIndex 是正确的
         highlightColumns.add(colIndex);
         highlightCount++;
@@ -906,67 +1114,123 @@ if (!hasSeparator && extractedLines.length >= 2) {
           tableStartOffset += lines[i].length + 1;
         }
         
-        // 🆕 收集所有高亮内容
-        const allHighlights = this.extractAllHighlightsFromTable(tableInfo.tableContent);
-        
-        const unit: ContentUnit = {
-          id: this.generateId(),
-          type: 'cloze',
-          content: allHighlights.join(', '), // 🆕 包含所有高亮
-          fullContext: extractedTable, // 显示提取的表格部分
-          source: {
-            file: file.path,
-            position: {
-              start: tableStartOffset,
-              end: tableStartOffset + tableInfo.tableContent.length,
-              line: tableStart
-            },
-            heading: this.findHeading(content, match.index),
-            anchorLink: `[[${file.basename}#^${this.generateBlockId()}]]`
-          },
-          extractRule: {
-            ruleId: 'cloze-table',
-            ruleName: 'Table Cloze Deletion',
-            extractedBy: 'auto'
-          },
-          metadata: {
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-            tags: [...this.extractTags(content, match.index), '#table'],
-            customData: {
-              tableType: 'partial',
-              highlightCount: tableInfo.highlightCount,
-              rowCount: tableInfo.highlightRows.size,
-              columnCount: tableInfo.highlightColumns.size,
-              allHighlights: allHighlights // 🆕 保存所有高亮
-            }
-          },
-          flashcardIds: []
-        };
-        
-        units.push(unit);
-
-// 🎯 解锁系统检查点 - 扫描到表格
-if (this.plugin?.unlockSystem) {
-  await this.plugin.unlockSystem.onTableScanned();
+// 先收集所有高亮（带所在行信息）
+const allHighlightEntries: { text: string; rowIdx: number }[] = [];
+const sortedRows = Array.from(tableInfo.highlightRows).sort((a, b) => a - b);
+for (const rowIdx of sortedRows) {
+  const rowContent = tableLines[rowIdx] || '';
+  const hlRegex = /==(.+?)==/g;
+  let hm;
+  while ((hm = hlRegex.exec(rowContent)) !== null) {
+    allHighlightEntries.push({ text: hm[1].trim(), rowIdx });
+  }
 }
+
+// 按行分组，每 6 行为一块（每块新表不重复已提取的行）
+const rowMap = new Map<number, string[]>();
+for (const { text, rowIdx } of allHighlightEntries) {
+  if (!rowMap.has(rowIdx)) rowMap.set(rowIdx, []);
+  rowMap.get(rowIdx)!.push(text);
+}
+const sortedRowIndices = Array.from(rowMap.keys()).sort((a, b) => a - b);
+
+const rowChunkSize = 6;
+for (let i = 0; i < sortedRowIndices.length; i += rowChunkSize) {
+  const chunkRowIndices = sortedRowIndices.slice(i, i + rowChunkSize);
+  const chunkRows = new Set<number>(chunkRowIndices);
+  const chunkHighlights = chunkRowIndices.flatMap(rowIdx => rowMap.get(rowIdx)!);
+  const chunkRowsData = chunkRowIndices.map(rowIdx => ({
+    key: tableLines[rowIdx].replace(/==(.+?)==/g, '$1').trim(),
+    highlights: rowMap.get(rowIdx)!
+  }));
+  
+// 直接构建 chunk 表：表头 + 分隔符 + 本块的数据行
+const sepIdx = tableLines.findIndex((ln, idx) => {
+  if (idx === 0) return false;
+  const cells = ln.split('|').map(c => c.trim()).filter(c => c);
+  return cells.length > 0 && cells.every(cell => /^[-:\s]+$/.test(cell));
+});
+const actualSepIdx = sepIdx !== -1 ? sepIdx : 1;
+
+const chunkTable = [
+  tableLines[0],
+  tableLines[actualSepIdx],
+  ...chunkRowIndices.map(rowIdx => tableLines[rowIdx])
+].join('\n');
+
+
+
+          const unit: ContentUnit = {
+            id: this.generateId(),
+            type: 'cloze',
+            content: chunkHighlights.join(', '),
+            fullContext: chunkTable,
+            source: {
+              file: file.path,
+              position: {
+                start: tableStartOffset,
+                end: tableStartOffset + tableInfo.tableContent.length,
+                line: tableStart
+              },
+              heading: this.findHeading(content, match.index),
+              anchorLink: `[[${file.basename}#^${this.generateBlockId()}]]`
+            },
+            extractRule: {
+              ruleId: 'cloze-table',
+              ruleName: 'Table Cloze Deletion',
+              extractedBy: 'auto'
+            },
+            metadata: {
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+              tags: [...this.extractTags(content, match.index), '#table'],
+              customData: {
+                tableKey,
+                rows: chunkRowsData, 
+                tableType: 'partial',
+                chunkIndex: Math.floor(i / rowChunkSize),
+                highlightCount: chunkRows.size,
+                rowCount: chunkRows.size,
+                columnCount: tableInfo.highlightColumns.size,
+                allHighlights: chunkHighlights
+              }
+            },
+            flashcardIds: []
+          };
+
+          units.push(unit);
+        }
+
+        if (this.plugin?.unlockSystem) {
+          await this.plugin.unlockSystem.onTableScanned();
+        }
         continue;
+  
       }
     }
     
     // 原有的普通高亮处理逻辑...
-    const fullSentence = this.extractFullSentence(content, match.index, fullMatch.length);
-
+    const { sentence: fullSentence, start: sentenceStart, end: sentenceEnd } =
+    this.extractFullSentenceWithPosition(content, match.index, fullMatch.length);
+  
+  // 标记句子内所有高亮为已处理（保留原逻辑，改用新变量）
+  const sentenceHighlightRegex = /==(.+?)==/g;
+  let sentenceMatch;
+  while ((sentenceMatch = sentenceHighlightRegex.exec(content)) !== null) {
+    if (sentenceMatch.index >= sentenceStart && sentenceMatch.index < sentenceEnd) {
+      processedHighlights.add(sentenceMatch.index);
+    }
+  }
     const unit: ContentUnit = {
       id: this.generateId(),
       type: 'cloze',
-      content: extractedText.trim(),
+      content: this.extractAllHighlightsFromTable(fullSentence).join(', '),
       fullContext: fullSentence,
       source: {
         file: file.path,
         position: {
-          start: match.index,
-          end: match.index + fullMatch.length,
+          start: sentenceStart,
+          end:  sentenceEnd,       
           line: position.line
         },
         heading: this.findHeading(content, match.index),
@@ -1044,5 +1308,21 @@ private extractAllHighlightsFromTable(tableContent: string): string[] {
   
   return highlights;
 }
+private extractFullSentenceWithPosition(
+  content: string,
+  highlightStart: number,
+  highlightLength: number
+): { sentence: string; start: number; end: number } {
+  const sentenceEnds = /[.!?。！?\n]/;
+  let start = highlightStart;
+  while (start > 0 && !sentenceEnds.test(content[start - 1])) start--;
+  let end = highlightStart + highlightLength;
+  while (end < content.length) {
+    if (sentenceEnds.test(content[end])) { end++; break; }
+    end++;
+  }
+  return { sentence: content.substring(start, end).trim(), start, end };
+}
+
 
 }

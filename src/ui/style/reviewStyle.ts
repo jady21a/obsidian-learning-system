@@ -793,6 +793,26 @@ export class reviewStyle {
   border-radius: 3px;
   font-weight: 500;
 }
+
+
+.cloze {
+  color: transparent;          /* 文字透明，但撑开宽度 */
+  border-bottom: 2px solid var(--text-normal);
+  letter-spacing: 0.05em;      /* 让宽度稍微宽一点更自然 */
+  cursor: default;
+  user-select: none;
+  display: inline-block;       /* border-bottom 需要 inline-block */
+  min-width: 2em;              /* 防止超短答案太窄 */
+  vertical-align: bottom;
+}
+  .cloze-underline {
+  display: inline-block;
+  border-bottom: 2px solid currentColor;
+  vertical-align: bottom;
+  margin: 0 2px;
+   color: inherit !important;
+}
+
 `
       ;
 }

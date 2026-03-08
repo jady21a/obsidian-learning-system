@@ -337,7 +337,10 @@ export class ReviewView extends ItemView {
       reviewTextDiv.appendChild(tableEl);
       reviewTextDiv.classList.add('table-question');
     } else {
-      reviewTextDiv.textContent = this.currentCard.front;
+      reviewTextDiv.innerHTML = (this.currentCard.cloze?.original || this.currentCard.front).replace(
+        /==([^=]+)==/g,
+        '<span class="cloze-underline">$1</span>'
+      );
     }
   }
 

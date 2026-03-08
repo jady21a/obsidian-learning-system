@@ -289,18 +289,23 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
   
 
   private formatContent(unit: ContentUnit): string {
+    const isManual = unit.extractRule?.extractedBy === 'manual';
+    const nl2br = (str: string) => {
+      const escaped = str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return isManual ? escaped.replace(/\n/g, '<br>') : escaped;
+    };
     if (unit.type === 'QA' && unit.answer) {
-      return `<span class="qa-question">${unit.content}</span> <span class="qa-separator">::</span> <span class="qa-answer">${unit.answer}</span>`;
+      return `<span class="qa-question">${nl2br(unit.content)}</span> <span class="qa-separator">::</span> <span class="qa-answer">${nl2br(unit.answer)}</span>`;
     } else if (unit.type === 'cloze') {
       if (unit.fullContext) {
-        return unit.fullContext.replace(
+        return nl2br(unit.fullContext).replace(
           /==([^=]+)==/g,
           '<span class="cloze-highlight">$1</span>'
         );
       }
-      return unit.content.replace(/==/g, '');
+      return nl2br(unit.content).replace(/==/g, '');
     }
-    return unit.content;  
+    return nl2br(unit.content);
   }
   private renderSideLine(meta: HTMLElement, unit: ContentUnit): void {
     meta.createSpan({ text: `L${unit.source.position.line}`, cls: 'line-info' });

@@ -1,4 +1,4 @@
-// CardRenderers.ts
+// reviewCardRenderers.ts
 import { Flashcard } from '../../core/FlashcardManager';
 import { CardScheduler } from '../../core/CardScheduler';
 import { TableRenderer } from './TableRenderer';
@@ -13,6 +13,7 @@ interface AnswerEvaluation {
 // 卡片渲染策略接口
 // ============================================================================
 export interface CardRenderStrategy {
+  
   renderQuestion(
     container: HTMLElement, 
     card: Flashcard, 
@@ -34,6 +35,17 @@ export interface CardRenderStrategy {
 // 完形填空卡片渲染器
 // ============================================================================
 export class ClozeCardRenderer implements CardRenderStrategy {
+  private normalizeOriginal(card: Flashcard): string {
+    const original = card.cloze?.original || '';
+    if (/==[^=]+==/.test(original)) return original;
+    
+    // 手动提取的卡片：back 里存的就是答案
+    const answer = Array.isArray(card.back) ? card.back[0] : card.back as string;
+    if (answer && original.includes(answer)) {
+      return original.replace(answer, `==${answer}==`);
+    }
+    return original;
+  }
     renderQuestion(
         container: HTMLElement, 
         card: Flashcard, 
@@ -57,14 +69,24 @@ export class ClozeCardRenderer implements CardRenderStrategy {
           questionText.appendChild(tableEl);
           questionText.classList.add('table-question');
         } else {
-          const tableEl = TableRenderer.renderTable(card.front, false);
-          questionText.appendChild(tableEl);
-          questionText.classList.add('table-question');
+          let deletionIdx = 0;
+          const deletions = card.cloze?.deletions || [];
+          
+          const sourceText = card.cloze?.original || card.front;
+          questionText.innerHTML = sourceText
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br>')
+          .replace(/==([^=]+)==/g, (_fullMatch, innerText) => {
+            const underlineWidth = Math.max(innerText.length * 0.6, 3);
+            return `<span class="cloze-underline" style="display:inline-block;min-width:${underlineWidth}em;border-bottom:2px solid currentColor;color:transparent;">&nbsp;</span>`;
+          });
         }
       
         // 输入框(移到表格下方或保持在原位)
         if (card.cloze) {
-          const actualBlankCount = (card.cloze.original.match(/==[^=]+==/g) || []).length;
+          const normalizedOriginal = this.normalizeOriginal(card);
+          const actualBlankCount = (normalizedOriginal.match(/==[^=]+==/g) || []).length;
+
           const blankCount = Math.max(actualBlankCount, card.cloze.deletions.length);
           
           if (state.userAnswers.length !== blankCount) {
@@ -282,7 +304,8 @@ const updatePreview = (inputValue: string) => {
     const userDiv = userColumn.createDiv({ cls: 'comparison-item' });
   
     // ← 修改:提取实际的答案来构建 deletions
-    const actualAnswers = this.extractClozeAnswers(card.cloze!.original);
+    const actualAnswers =  this.extractClozeAnswers(this.normalizeOriginal(card))
+;
     const constructedDeletions = actualAnswers.map(answer => ({ answer }));
     
   
@@ -311,8 +334,12 @@ const updatePreview = (inputValue: string) => {
     scheduler: CardScheduler
   ) {
     const fullText = answerArea.createDiv({ cls: 'full-text' });
-    fullText.textContent = card.cloze!.original;
-    
+    const normalized = this.normalizeOriginal(card);
+    fullText.innerHTML = normalized
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/\n/g, '<br>')
+  .replace(/==([^=]+)==/g, '<span class="cloze-highlight">$1</span>');
+
     // ← 这里已经会调用 renderDetailedComparison,它会使用新的逻辑
     this.renderDetailedComparison(answerArea, card, state, scheduler);
   }
@@ -330,7 +357,8 @@ const updatePreview = (inputValue: string) => {
   
     // ← 关键修改:使用实际的挖空数量,而不是 deletions.length
     // 方法1: 从原始文本提取所有挖空答案
-    const actualAnswers = this.extractClozeAnswers(card.cloze!.original);
+    const actualAnswers =  this.extractClozeAnswers(this.normalizeOriginal(card))
+;
     
   
     // 使用实际答案数量进行对比
@@ -414,7 +442,9 @@ export class QACardRenderer implements CardRenderStrategy {
           questionText.appendChild(tableEl);
           questionText.classList.add('table-question');
         } else {
-          questionText.textContent = card.front;
+          questionText.innerHTML = card.front
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br>');
         }
     
         // 输入框
@@ -491,10 +521,10 @@ export class QACardRenderer implements CardRenderStrategy {
       correctAnswerDiv.appendChild(tableEl);
       correctAnswerDiv.classList.add('table-answer');
     } else {
-      correctAnswerDiv.createEl('div', {
-        text: correctAnswer,
-        cls: 'correct-answer qa-correct-answer'
-      });
+      const el = correctAnswerDiv.createEl('div', { cls: 'correct-answer qa-correct-answer' });
+      el.innerHTML = correctAnswer
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
     }
   }
 
@@ -533,10 +563,11 @@ export class QACardRenderer implements CardRenderStrategy {
     userAnswer: string,
     evaluation: AnswerEvaluation | null
   ) {
-    const userAnswerElement = container.createEl('div', {
-      text: userAnswer.trim() || '(no answer provided)',
-      cls: 'qa-user-answer'
-    });
+    const userAnswerElement = container.createEl('div', { cls: 'qa-user-answer' });
+    const displayText = userAnswer.trim() || '(no answer provided)';
+    userAnswerElement.innerHTML = displayText
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>');
     
     if (evaluation) {
       userAnswerElement.classList.add('user-answer', evaluation.correctness);
