@@ -601,14 +601,16 @@ if (this.plugin?.unlockSystem && units.length > 0) {
         continue;
       }
   // 非表格 cloze：同一句子有新高亮时合并
-if (newUnit.type === 'cloze' && newUnit.extractRule?.ruleId === 'cloze') {
-  const sameSentenceUnit = existingUnits.find(existing =>
-    existing.type === 'cloze' &&
-    existing.extractRule?.ruleId === 'cloze' &&
-    existing.source.file === newUnit.source.file &&
-    existing.source.position.start === newUnit.source.position.start &&
-    existing.source.position.end === newUnit.source.position.end
-  );
+  if (newUnit.type === 'cloze' && newUnit.extractRule?.ruleId === 'cloze') {
+    const stripMarkers = (s: string) => s.replace(/==(.+?)==/g, '$1').trim();
+    const newNormalized = stripMarkers(newUnit.fullContext || '');
+  
+    const sameSentenceUnit = existingUnits.find(existing =>
+      existing.type === 'cloze' &&
+      existing.extractRule?.ruleId === 'cloze' &&
+      existing.source.file === newUnit.source.file &&
+      existing.source.position.line === newUnit.source.position.line
+    );
 
   if (sameSentenceUnit) {
     const existingHighlights = sameSentenceUnit.content.split(', ').map(s => s.trim()).filter(Boolean);
@@ -616,11 +618,11 @@ if (newUnit.type === 'cloze' && newUnit.extractRule?.ruleId === 'cloze') {
     const merged = Array.from(new Set([...existingHighlights, ...newHighlights]));
 
     if (merged.length > existingHighlights.length) {
-      // 有新增高亮，更新原 unit
       sameSentenceUnit.content = merged.join(', ');
-      sameSentenceUnit.fullContext = newUnit.fullContext; // 更新句子上下文
+      sameSentenceUnit.fullContext = newUnit.fullContext; // 含最新 == 标记
+      sameSentenceUnit.source.position.start = newUnit.source.position.start; // 同步偏移
+      sameSentenceUnit.source.position.end = newUnit.source.position.end;
       sameSentenceUnit.metadata.updatedAt = Date.now();
-      
       await this.dataManager.saveContentUnits([sameSentenceUnit]);
     }
     continue; // 无论是否有新增，都不新建 unit
@@ -637,13 +639,19 @@ if (newUnit.type === 'cloze' && newUnit.extractRule?.ruleId === 'cloze') {
           !(existing.extractRule?.ruleId === 'cloze-table' && newUnit.extractRule?.ruleId === 'cloze-table');
         
         // 方式2: 相同文件 + 相同内容 + 相同类型（排除表格 cloze）
+        const stripMarkers = (s: string) => s.replace(/==(.+?)==/g, '$1').trim();
+
         const sameContent = 
           existing.source.file === newUnit.source.file &&
           existing.type === newUnit.type &&
           existing.extractRule?.ruleId !== 'cloze-table' &&
-          this.isContentDuplicate(existing.content, newUnit.content) &&
-          this.isContentDuplicate(existing.fullContext || '', newUnit.fullContext || '');
-        
+          (
+            (this.isContentDuplicate(existing.content, newUnit.content) &&
+             this.isContentDuplicate(existing.fullContext || '', newUnit.fullContext || '')) ||
+            // 同行新增高亮后 fullContext 原文相同但标记不同的情况
+            (existing.type === 'cloze' && 
+             existing.source.position.line === newUnit.source.position.line)
+            );
         // 方式3: 对于 QA 类型，额外检查答案是否相同
         const sameQA = existing.type === 'QA' && newUnit.type === 'QA' &&
           existing.source.file === newUnit.source.file &&
@@ -1313,7 +1321,7 @@ private extractFullSentenceWithPosition(
   highlightStart: number,
   highlightLength: number
 ): { sentence: string; start: number; end: number } {
-  const sentenceEnds = /[.!?。！?\n]/;
+  const sentenceEnds = /[\n]/;
   let start = highlightStart;
   while (start > 0 && !sentenceEnds.test(content[start - 1])) start--;
   let end = highlightStart + highlightLength;

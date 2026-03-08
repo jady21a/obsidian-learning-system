@@ -1408,6 +1408,14 @@ public checkReviewReminder(): void {
   }
   
   this.refresh();
+
+  requestAnimationFrame(() => {
+    const contentList = this.containerEl.querySelector('.sidebar-content-list') as HTMLElement;
+    if (contentList) {
+      contentList.scrollTop = 0;
+    }
+  });
+
 }
 
 
