@@ -5,6 +5,7 @@ import { ContentUnit } from '../../core/DataManager';
 import { Flashcard } from '../../core/FlashcardManager';
 import { Toolbar } from './Toolbar';
 import { t, Language } from '../../i18n/translations'; 
+import { setCssProps } from '../utils/setCssProps';
 
 
 export interface BatchActionCallbacks {
@@ -69,8 +70,7 @@ export class BatchActions {
     
     if (shouldDisable) {
       selectAllBtn.disabled = true;
-      selectAllBtn.style.setProperty('opacity', '0.5');
-      selectAllBtn.style.setProperty('cursor', 'not-allowed');
+      setCssProps(selectAllBtn, { opacity: '0.5', cursor: 'not-allowed' });
       selectAllBtn.title = itemCount === 0 
         ? this.t('batch.noItems')  
         : this.t('batch.selectAnnotationFirst');
@@ -131,16 +131,17 @@ export class BatchActions {
         e.stopPropagation();
         e.preventDefault();
     
-        createBtn.style.setProperty('background', 'var(--interactive-accent)');
-        createBtn.style.setProperty('color', 'white');
+        setCssProps(createBtn, {
+          background: 'var(--interactive-accent)',
+          color: 'white'
+        });
       });
       
       createBtn.addEventListener('mouseleave', (e) => {
         e.stopPropagation();
         e.preventDefault();
     
-        createBtn.style.setProperty('background', 'var(--background-secondary)');
-        createBtn.style.removeProperty('color');
+        setCssProps(createBtn, { background: 'var(--background-secondary)', color: null });
       });
     }
     
@@ -160,16 +161,14 @@ export class BatchActions {
       e.stopPropagation();
       e.preventDefault();
   
-      deleteBtn.style.setProperty('background', 'var(--color-red)');
-      deleteBtn.style.setProperty('color', 'white');
+      setCssProps(deleteBtn, { background: 'var(--color-red)', color: 'white' });
     });
     
     deleteBtn.addEventListener('mouseleave', (e) => {
       e.stopPropagation();
       e.preventDefault();
   
-      deleteBtn.style.setProperty('background', 'var(--background-secondary)');
-      deleteBtn.style.removeProperty('color');
+      setCssProps(deleteBtn, { background: 'var(--background-secondary)', color: null });
     });
     
     // 取消按钮

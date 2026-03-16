@@ -2,6 +2,7 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
 import type LearningSystemPlugin from '../../main';
 import { ContentUnit } from '../../core/DataManager';
+import { setCssProps } from '../utils/setCssProps';
 
 export class FlashcardCreateModal extends Modal {
   private contentUnit: ContentUnit;
@@ -36,21 +37,21 @@ export class FlashcardCreateModal extends Modal {
     const { contentEl } = this;
     
     contentEl.addClass('flashcard-create-modal');
-    contentEl.createEl('h2', { text: 'Create Flashcard' });
+    contentEl.createEl('h2', { text: 'Create flashcard' });
 
     // 显示源内容
     const contentPreview = contentEl.createDiv({ cls: 'content-preview' });
-    contentPreview.createEl('h3', { text: 'Source Content:' });
+    contentPreview.createEl('h3', { text: 'Source content:' });
     contentPreview.createEl('blockquote', { text: this.contentUnit.content });
 
     // 卡片类型选择
     new Setting(contentEl)
-      .setName('Card Type')
+      .setName('Card type')
       .setDesc('Choose the type of flashcard')
       .addDropdown(dropdown => {
         dropdown
-          .addOption('qa', '📝 Question & Answer')
-          .addOption('cloze', '✏️ Cloze Deletion')
+          .addOption('qa', '📝 Question & answer')
+          .addOption('cloze', '✏️ Cloze deletion')
           .setValue(this.cardType)
           .onChange(value => {
             this.cardType = value as 'qa' | 'cloze';
@@ -69,7 +70,7 @@ export class FlashcardCreateModal extends Modal {
     cancelBtn.addEventListener('click', () => this.close());
 
     const saveBtn = buttonContainer.createEl('button', { 
-      text: 'Create Flashcard',
+      text: 'Create flashcard',
       cls: 'mod-cta'
     });
     saveBtn.addEventListener('click', () => this.saveFlashcard());
@@ -92,7 +93,7 @@ export class FlashcardCreateModal extends Modal {
   private renderQAInputs() {
     // 问题输入
     new Setting(this.cardInputContainer)
-      .setName('Question (Front)')
+      .setName('Question (front)')
       .setDesc('What question should this card ask?')
       .addTextArea(text => {
         text
@@ -102,12 +103,12 @@ export class FlashcardCreateModal extends Modal {
             this.question = value;
           });
         text.inputEl.rows = 3;
-        text.inputEl.style.width = '100%';
+        setCssProps(text.inputEl, { width: '100%' });
       });
 
     // 答案输入
     new Setting(this.cardInputContainer)
-      .setName('Answer (Back)')
+      .setName('Answer (back)')
       .setDesc('What is the correct answer?')
       .addTextArea(text => {
         text
@@ -117,7 +118,7 @@ export class FlashcardCreateModal extends Modal {
             this.answer = value;
           });
         text.inputEl.rows = 3;
-        text.inputEl.style.width = '100%';
+        setCssProps(text.inputEl, { width: '100%' });
       });
 
     // 提示：可以使用原内容
@@ -130,7 +131,7 @@ export class FlashcardCreateModal extends Modal {
   private renderClozeInputs() {
     const container = this.cardInputContainer;
 
-    container.createEl('h3', { text: 'Cloze Deletion' });
+    container.createEl('h3', { text: 'Cloze deletion' });
     container.createEl('p', { 
       text: 'Select text to hide (cloze deletion). Click on words to toggle selection.',
       cls: 'cloze-instruction'
@@ -143,7 +144,7 @@ export class FlashcardCreateModal extends Modal {
     // 选中的删除项列表
     if (this.selectedRanges.length > 0) {
       const selectedList = container.createDiv({ cls: 'selected-deletions' });
-      selectedList.createEl('h4', { text: 'Selected Deletions:' });
+      selectedList.createEl('h4', { text: 'Selected deletions:' });
       
       this.selectedRanges.forEach((range, index) => {
         const item = selectedList.createDiv({ cls: 'deletion-item' });
@@ -288,8 +289,7 @@ export class FlashcardCreateModal extends Modal {
   }
 
   private addStyles() {
-    const styleEl = document.createElement('style');
-    styleEl.textContent = `
+    const _css = `
       .flashcard-create-modal {
         padding: 20px;
         max-width: 600px;
@@ -443,8 +443,7 @@ export class FlashcardCreateModal extends Modal {
         cursor: pointer;
       }
     `;
-
-    document.head.appendChild(styleEl);
+    void _css;
   }
 
   onClose() {

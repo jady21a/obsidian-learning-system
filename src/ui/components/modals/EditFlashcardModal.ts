@@ -5,6 +5,7 @@ import type LearningSystemPlugin from '../../../main';
 import { Flashcard } from '../../../core/FlashcardManager';
 import { VIEW_TYPE_SIDEBAR_OVERVIEW, VIEW_TYPE_MAIN_OVERVIEW } from '../../view/SidebarOverviewView';
 import { t } from '../../../i18n/translations';
+import { setCssProps } from '../../utils/setCssProps';
 
 export class EditFlashcardModal extends Modal {
   card: Flashcard;
@@ -55,7 +56,7 @@ export class EditFlashcardModal extends Modal {
           .setValue(this.front)
           .onChange((value: string) => this.front = value);
         text.inputEl.rows = 4;
-        text.inputEl.style.setProperty('width', '100%');
+        setCssProps(text.inputEl, { width: '100%' });
       });
     
     // 答案/后面
@@ -67,7 +68,7 @@ export class EditFlashcardModal extends Modal {
           .setValue(this.back)
           .onChange((value: string) => this.back = value);
         text.inputEl.rows = 3;
-        text.inputEl.style.setProperty('width', '100%');
+        setCssProps(text.inputEl, { width: '100%' });
       });
     
 // 按钮组

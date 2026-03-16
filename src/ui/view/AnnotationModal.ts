@@ -3,6 +3,7 @@ import { App, Modal, Notice, Setting } from 'obsidian';
 import type LearningSystemPlugin from '../../main';
 import { Annotation } from '../../core/AnnotationManager';
 import { ContentUnit } from '../../core/DataManager';
+import { setCssProps } from '../utils/setCssProps';
 
 export class AnnotationModal extends Modal {
   private contentUnit: ContentUnit;
@@ -62,15 +63,15 @@ export class AnnotationModal extends Modal {
           });
         
         text.inputEl.rows = 6;
-        text.inputEl.style.width = '100%';
+        setCssProps(text.inputEl, { width: '100%' });
       });
 
     // 角标设置
-    contentEl.createEl('h3', { text: 'Badge (Optional)' });
+    contentEl.createEl('h3', { text: 'Badge (optional)' });
 
     new Setting(contentEl)
       .setName('Badge text')
-      .setDesc('Short text to display as a badge (e.g., “Important”, “To Review”")')
+      .setDesc('Short text to display as a badge (e.g., “Important”, “To review”).')
       .addText(text =>
         text
           .setPlaceholder('Badge text')
@@ -86,12 +87,12 @@ export class AnnotationModal extends Modal {
       .setDesc('Choose a color for the badge')
       .addDropdown(dropdown => {
         dropdown
-          .addOption('#5B9BD5', '🔵 Blue')
-          .addOption('#70AD47', '🟢 Green')
-          .addOption('#FFC000', '🟡 Yellow')
-          .addOption('#FF6B6B', '🔴 Red')
-          .addOption('#C78BFF', '🟣 Purple')
-          .addOption('#FF9F43', '🟠 Orange')
+          .addOption('#5B9BD5', '🔵 blue')
+          .addOption('#70AD47', '🟢 green')
+          .addOption('#FFC000', '🟡 yellow')
+          .addOption('#FF6B6B', '🔴 red')
+          .addOption('#C78BFF', '🟣 purple')
+          .addOption('#FF9F43', '🟠 orange')
           .setValue(this.badgeColor)
           .onChange(value => {
             this.badgeColor = value;
@@ -133,8 +134,6 @@ export class AnnotationModal extends Modal {
       await this.saveAnnotation();
     });
 
-    // 添加样式
-    this.addStyles();
   }
 
   private badgePreviewEl: HTMLElement;
@@ -144,12 +143,18 @@ export class AnnotationModal extends Modal {
 
     if (this.badgeText) {
       this.badgePreviewEl.textContent = this.badgeText;
-      this.badgePreviewEl.style.backgroundColor = this.badgeColor;
-      this.badgePreviewEl.style.display = 'inline-block';
+      setCssProps(this.badgePreviewEl, {
+        'background-color': this.badgeColor,
+        display: 'inline-block',
+        color: null
+      });
     } else {
       this.badgePreviewEl.textContent = 'No badge';
-      this.badgePreviewEl.style.backgroundColor = 'transparent';
-      this.badgePreviewEl.style.color = 'var(--text-muted)';
+      setCssProps(this.badgePreviewEl, {
+        'background-color': 'transparent',
+        display: null,
+        color: 'var(--text-muted)'
+      });
     }
   }
 
@@ -215,71 +220,7 @@ export class AnnotationModal extends Modal {
     }
   }
 
-  private addStyles() {
-    const styleEl = document.createElement('style');
-    styleEl.textContent = `
-      .annotation-modal {
-        padding: 20px;
-      }
 
-      .annotation-content-preview {
-        margin: 20px 0;
-        padding: 15px;
-        background: var(--background-secondary);
-        border-radius: 6px;
-      }
-
-      .annotation-content-preview h3 {
-        margin-top: 0;
-        margin-bottom: 10px;
-        font-size: 0.9em;
-        color: var(--text-muted);
-      }
-
-      .annotation-content-preview blockquote {
-        margin: 0;
-        padding: 10px;
-        border-left: 3px solid var(--interactive-accent);
-        background: var(--background-primary);
-        border-radius: 4px;
-      }
-
-      .badge-preview-container {
-        margin: 10px 0;
-        padding: 10px;
-        background: var(--background-secondary);
-        border-radius: 4px;
-      }
-
-      .preview-label {
-        color: var(--text-muted);
-        margin-right: 10px;
-      }
-
-      .badge-preview {
-        padding: 4px 10px;
-        border-radius: 12px;
-        color: white;
-        font-size: 0.85em;
-        font-weight: 500;
-      }
-
-      .modal-button-container {
-        display: flex;
-        gap: 10px;
-        justify-content: flex-end;
-        margin-top: 20px;
-      }
-
-      .modal-button-container button {
-        padding: 8px 16px;
-        border-radius: 4px;
-        cursor: pointer;
-      }
-    `;
-
-    document.head.appendChild(styleEl);
-  }
 
   onClose() {
     const { contentEl } = this;
@@ -313,7 +254,7 @@ export class FileAnnotationModal extends Modal {
   onOpen() {
     const { contentEl } = this;
     
-    contentEl.createEl('h2', { text: 'File Annotations' });
+    contentEl.createEl('h2', { text: 'File annotations' });
 
     const fileName = this.filePath.split('/').pop()?.replace('.md', '') || this.filePath;
     contentEl.createEl('p', { 
@@ -324,7 +265,7 @@ export class FileAnnotationModal extends Modal {
     // 显示现有批注
     if (this.existingAnnotations.length > 0) {
       const existingSection = contentEl.createDiv({ cls: 'existing-annotations' });
-      existingSection.createEl('h3', { text: 'Existing Annotations' });
+      existingSection.createEl('h3', { text: 'Existing annotations' });
 
       this.existingAnnotations.forEach(annotation => {
         const annotationCard = existingSection.createDiv({ cls: 'annotation-card' });
@@ -349,7 +290,7 @@ export class FileAnnotationModal extends Modal {
     }
 
     // 新批注输入
-    contentEl.createEl('h3', { text: 'Add New Annotation' });
+    contentEl.createEl('h3', { text: 'Add new annotation' });
 
     new Setting(contentEl)
       .setName('Annotation')
@@ -363,7 +304,7 @@ export class FileAnnotationModal extends Modal {
           });
         
         text.inputEl.rows = 4;
-        text.inputEl.style.width = '100%';
+        setCssProps(text.inputEl, { width: '100%' });
       });
 
     // 按钮

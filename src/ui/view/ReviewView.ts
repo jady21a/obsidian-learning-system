@@ -8,6 +8,7 @@ import { ReviewStateManager,ReviewState } from '../stats/reviewStateManager';
 // import { ReviewKeyboardHandler } from './ReviewKeyboardHandler';
 import { TableRenderer } from '../components/TableRenderer';
 import { CardRendererFactory } from '../components/reviewCardRender';
+import { setCssProps } from '../utils/setCssProps';
 
 
 import { t,Language } from '../../i18n/translations';
@@ -40,7 +41,7 @@ export class ReviewView extends ItemView {
   }
 
   getDisplayText(): string {
-    return 'Flashcard Review';
+    return 'Flashcard review';
   }
 
   getIcon(): string {
@@ -115,7 +116,7 @@ export class ReviewView extends ItemView {
 
   private renderNoDueCards(container: Element) {
     const emptyState = container.createDiv({ cls: 'empty-state' });
-    emptyState.createEl('h2', { text: '🎉 All Done!' });
+    emptyState.createEl('h2', { text: '🎉 All done!' });
     emptyState.createEl('p', { text: 'No cards due for review right now.' });
 
     const stats = this.plugin.flashcardManager.getStats();
@@ -125,7 +126,7 @@ export class ReviewView extends ItemView {
     statsDiv.createEl('p', { text: `Reviewed today: ${stats.reviewedToday}` });
 
     const closeBtn = emptyState.createEl('button', {
-      text: 'Close Review',
+      text: 'Close review',
       cls: 'mod-cta'
     });
     
@@ -150,7 +151,7 @@ export class ReviewView extends ItemView {
     const barContainer = progressBar.createDiv({ cls: 'bar-container' });
     const bar = barContainer.createDiv({ cls: 'bar' });
     const progress = (reviewed / total) * 100;
-    bar.style.width = `${progress}%`;
+    setCssProps(bar, { width: `${progress}%` });
   }
 
   private renderTopActions(container: HTMLElement) {
@@ -159,7 +160,7 @@ export class ReviewView extends ItemView {
     // Jump to Source 按钮
     const jumpBtn = actionsBar.createEl('button', {
       cls: 'top-action-btn jump-icon-btn',
-      attr: { 'aria-label': 'Jump to Source' }
+      attr: { 'aria-label': 'Jump to source' }
     });
     jumpBtn.innerHTML = '↗';
     jumpBtn.addEventListener('click', () => this.jumpToSource());
@@ -176,16 +177,16 @@ export class ReviewView extends ItemView {
     moreBtn.innerHTML = '⋯';
     
     const dropdown = actionsBar.createDiv({ cls: 'more-dropdown' });
-    dropdown.style.display = 'none';
+    setCssProps(dropdown, { display: 'none' });
 
     // 菜单项配置
     const menuItems = [
       {
-        label: '✏️ Edit Card',
+        label: '✏️ Edit card',
         onClick: () => this.editCurrentFlashcard()
       },
       {
-        label: '🔄 Reset Card Stats',
+        label: '🔄 Reset card stats',
         onClick: async () => {
           if (this.currentCard && confirm(t('confirm.resetCardStats', this.language))) {
             await this.resetCardStats(this.currentCard.id);
@@ -193,7 +194,7 @@ export class ReviewView extends ItemView {
         }
       },
       {
-        label: '📚 Reset Deck Stats',
+        label: '📚 Reset deck stats',
         onClick: async () => {
           if (this.currentCard) {
             const deckName = this.currentCard.deck;
@@ -207,7 +208,7 @@ export class ReviewView extends ItemView {
         }
       },
       {
-        label: '🗑️ Delete Card',
+        label: '🗑️ Delete card',
         onClick: async () => {
           if (this.currentCard && confirm(t('confirm.deleteFlashcard', this.language))) {
             await this.deleteFlashcard(this.currentCard.id);
@@ -225,18 +226,19 @@ export class ReviewView extends ItemView {
       menuItem.innerHTML = item.label;
       menuItem.addEventListener('click', () => {
         void item.onClick();
-        dropdown.style.display = 'none';
+        setCssProps(dropdown, { display: 'none' });
       });
     });
 
     // 切换下拉菜单
     moreBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+      const isHidden = dropdown.style.getPropertyValue('display') === 'none';
+      setCssProps(dropdown, { display: isHidden ? 'block' : 'none' });
     });
 
     document.addEventListener('click', () => {
-      dropdown.style.display = 'none';
+      setCssProps(dropdown, { display: 'none' });
     });
 
     dropdown.addEventListener('click', (e) => {

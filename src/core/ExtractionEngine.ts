@@ -32,6 +32,7 @@ export class ExtractionEngine {
 
     menu.addItem((item) => {
       item
+        // eslint-disable-next-line obsidianmd/ui/sentence-case -- "Q&A" is an acronym
         .setTitle('Extract as Q&A card')
         .setIcon('help-circle')
         .onClick(async () => {

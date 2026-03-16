@@ -49,7 +49,8 @@ export class QuickFlashcardCreator {
         answer
       );
 
-      new Notice(`Flashcard created (Q&A)`);
+      // eslint-disable-next-line obsidianmd/ui/sentence-case -- "Q&A" is an acronym
+      new Notice('Flashcard created (Q&A).');
     } catch (error) {
       console.error('Error creating quick flashcard:', error);
       new Notice('Failed to create flashcard');

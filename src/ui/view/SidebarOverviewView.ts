@@ -24,6 +24,7 @@ import {
 } from '../components/ContextMenuBuilder';
 import { BatchCreateModal } from '../components/modals/BatchCreateModal';
 import { LevelInfoModal ,UnlockProgress} from '../../core/UnlockSystem'
+import { setCssProps } from '../utils/setCssProps';
 
 
 export const VIEW_TYPE_SIDEBAR_OVERVIEW = 'learning-system-sidebar-overview';
@@ -79,7 +80,7 @@ export class SidebarOverviewView extends ItemView {
   }
 
   getDisplayText(): string {
-    return 'Learning Overview';
+    return 'Learning overview';
   }
 
   getIcon(): string {
@@ -106,7 +107,7 @@ export class SidebarOverviewView extends ItemView {
     // 禁用编辑器自动聚焦
     const editorContainer = document.querySelector('.cm-content');
     if (editorContainer) {
-      (editorContainer as HTMLElement).style.pointerEvents = 'auto';
+      setCssProps(editorContainer as HTMLElement, { 'pointer-events': 'auto' });
       editorContainer.addEventListener('mousedown', (e) => {
         // 如果点击的是搜索框区域，不让编辑器处理
         const searchBox = document.querySelector('.search-container');
@@ -409,18 +410,20 @@ if (shouldShowFullBadge) {
   const levelName = this.t(`level.${progress.currentLevel}`);
 
   levelBadge.textContent = `Lv${progress.currentLevel}:  ${levelName}`;
-  levelBadge.style.fontSize = '1em';
+  setCssProps(levelBadge, { 'font-size': '1em' });
 
   const progressText = container.createDiv({ cls: 'progress-text' });
   progressText.innerHTML = this.plugin.unlockSystem.getNextStepsForLevel(progress.currentLevel).replace(/\n/g, '<br>');
-  progressText.style.fontSize = '0.93em';
+  setCssProps(progressText, { 'font-size': '0.93em' });
   
   // 添加第一条分隔线
   const divider = container.createDiv({ cls: 'level-divider' });
-  divider.style.width = 'calc(100% - 24px)';
-  divider.style.height = '1px';
-  divider.style.backgroundColor = 'var(--background-modifier-border)';
-  divider.style.margin = '12px auto';
+  setCssProps(divider, {
+    width: 'calc(100% - 24px)',
+    height: '1px',
+    'background-color': 'var(--background-modifier-border)',
+    margin: '12px auto'
+  });
 }
 
 // 6. 创建右侧容器(等级徽章 + 复习检查按钮)
@@ -1449,10 +1452,12 @@ private insertReviewReminderAtTop(container: HTMLElement): void {
     // 在 banner 后面添加第二条分隔线
     const divider2 = document.createElement('div');
     divider2.className = 'review-divider';
-    divider2.style.width = '100%';
-    divider2.style.height = '1px';
-    divider2.style.backgroundColor = 'var(--background-modifier-border)';
-    divider2.style.margin = '12px 0';
+    setCssProps(divider2, {
+      width: '100%',
+      height: '1px',
+      'background-color': 'var(--background-modifier-border)',
+      margin: '12px 0'
+    });
     
     if (banner.nextSibling) {
       container.insertBefore(divider2, banner.nextSibling);
@@ -1535,12 +1540,11 @@ private createReviewBanner(count: number): HTMLElement {
 `;
 
 // 设置字体大小
-banner.style.fontSize = '0.85em';
+setCssProps(banner, { 'font-size': '0.85em' });
 // 设置按钮居中
 const actions = banner.querySelector('.reminder-actions') as HTMLElement;
 if (actions) {
-  actions.style.display = 'flex';
-  actions.style.justifyContent = 'center';
+  setCssProps(actions, { display: 'flex', 'justify-content': 'center' });
 }
   
   banner.querySelector('.primary')!.addEventListener('mousedown', (e) => {

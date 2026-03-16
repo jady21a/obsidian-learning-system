@@ -4,6 +4,7 @@ import { ContentUnit } from '../../core/DataManager';
 import { Flashcard } from '../../core/FlashcardManager';
 import { ViewState } from '../stats/ViewState';
 import { t, Language } from '../../i18n/translations';
+import { setCssProps } from '../utils/setCssProps';
 
 
 export interface CardCallbacks {
@@ -114,7 +115,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     }
   });
   
-  card.style.setProperty('cursor', 'default');
+  setCssProps(card, { cursor: 'default' });
 
   if (this.state.batchMode) {
     this.renderCheckbox(card, unit.id, this.state.selectedUnitIds.has(unit.id));
@@ -128,12 +129,12 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     e.stopPropagation();
     this.callbacks.onJumpToSource(unit);
   };
-  fileName.style.setProperty('cursor', 'pointer');
+  setCssProps(fileName, { cursor: 'pointer' });
   
   this.renderGridTools(header, unit);
 
   const content = card.createDiv({ cls: 'grid-card-content' });
-  content.style.setProperty('cursor', 'pointer');
+  setCssProps(content, { cursor: 'pointer' });
   
   this.renderGridContent(content, card, unit);
   this.renderGridAnnotation(content, card, unit);
@@ -245,7 +246,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
       e.stopPropagation();
       this.callbacks.onJumpToSource(unit);
     });
-    annotationBtn.style.setProperty('cursor', 'pointer');
+    setCssProps(annotationBtn, { cursor: 'pointer' });
   
     // ⭐ 右侧工具按钮区域
     const tools = header.createDiv({ cls: 'card-tools' });
@@ -284,7 +285,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     }
   
     // ⭐ 只设置样式,不绑定事件
-    noteText.style.setProperty('cursor', 'pointer');
+    setCssProps(noteText, { cursor: 'pointer' });
   }
   
 
@@ -392,6 +393,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     const typeIndicator = header.createDiv({ cls: 'type-indicator' });
     if (unit.type === 'QA') {
       typeIndicator.addClass('type-qa');
+      // eslint-disable-next-line obsidianmd/ui/sentence-case -- "Q&A" is an acronym
       typeIndicator.textContent = 'Q&A';
     } else if (unit.type === 'cloze') {
       typeIndicator.addClass('type-cloze');
@@ -448,7 +450,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
       this.callbacks.onToggleAnnotation(card, unit);
     });
     
-    noteText.style.setProperty('cursor', 'pointer');
+    setCssProps(noteText, { cursor: 'pointer' });
   }
   
   private renderGridAnnotation(content: HTMLElement, card: HTMLElement, unit: ContentUnit): void {

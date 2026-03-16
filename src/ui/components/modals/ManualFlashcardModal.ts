@@ -5,6 +5,7 @@ import type LearningSystemPlugin from '../../../main';
 import { ContentUnit } from '../../../core/DataManager';
 import { VIEW_TYPE_SIDEBAR_OVERVIEW, VIEW_TYPE_MAIN_OVERVIEW } from '../../view/SidebarOverviewView';
 import { t } from '../../../i18n/translations';
+import { setCssProps } from '../../utils/setCssProps';
 
 
 export class ManualFlashcardModal extends Modal {
@@ -55,7 +56,7 @@ export class ManualFlashcardModal extends Modal {
           .setPlaceholder(t(this.type === 'qa' ? 'manualCard.front.placeholder.qa' : 'manualCard.front.placeholder.cloze', lang))
           .onChange((value: string) => this.question = value);
         text.inputEl.rows = 4;
-        text.inputEl.style.setProperty('width', '100%');
+        setCssProps(text.inputEl, { width: '100%' });
       });
     
     // 答案/挖空内容
@@ -68,7 +69,7 @@ export class ManualFlashcardModal extends Modal {
           .setPlaceholder(t(this.type === 'qa' ? 'manualCard.back.placeholder.qa' : 'manualCard.back.placeholder.cloze', lang))
           .onChange((value: string) => this.answer = value);
         text.inputEl.rows = 3;
-        text.inputEl.style.setProperty('width', '100%');
+        setCssProps(text.inputEl, { width: '100%' });
       });
     
     // 按钮组

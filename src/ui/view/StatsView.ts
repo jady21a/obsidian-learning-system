@@ -3,6 +3,7 @@ import { ItemView, WorkspaceLeaf, TFile, Notice } from 'obsidian';
 import type LearningSystemPlugin from '../../main';
 import { AnalyticsEngine } from '../../core/AnalyticsEngine';
 import { t ,Language} from '../../i18n/translations';
+import { setCssProps } from '../utils/setCssProps';
 
 
 interface DailyStat {
@@ -37,7 +38,7 @@ export class StatsView extends ItemView {
   }
 
   getDisplayText(): string {
-    return 'Learning Statistics';
+    return 'Learning statistics';
   }
 
   getIcon(): string {
@@ -48,7 +49,6 @@ export class StatsView extends ItemView {
       // 🎯 解锁系统检查点
   await this.plugin.unlockSystem.onStatsPageVisited();
     this.render();
-    this.addStyles();
   }
 
   async onClose() {}
@@ -60,7 +60,7 @@ export class StatsView extends ItemView {
 
     // 标题栏
     const header = container.createDiv({ cls: 'stats-header' });
-    header.createEl('h2', { text: 'Learning Statistics' });
+    header.createEl('h2', { text: 'Learning statistics' });
 
     // 刷新按钮
     const refreshBtn = header.createEl('button', {
@@ -154,7 +154,7 @@ export class StatsView extends ItemView {
 
     // 本周 vs 上周
     const weekComparison = container.createDiv({ cls: 'week-comparison' });
-    weekComparison.createEl('h3', { text: 'This Week vs Last Week' });
+    weekComparison.createEl('h3', { text: 'This week vs last week' });
 
     const comparisonGrid = weekComparison.createDiv({ cls: 'comparison-grid' });
 
@@ -182,7 +182,7 @@ export class StatsView extends ItemView {
 
     // 最近7天活动
     const recentActivity = container.createDiv({ cls: 'recent-activity' });
-    recentActivity.createEl('h3', { text: 'Last 7 Days Activity' });
+    recentActivity.createEl('h3', { text: 'Last 7 days activity' });
 
     const activityChart = recentActivity.createDiv({ cls: 'activity-chart' });
     this.renderSimpleBarChart(activityChart, dailyStats);
@@ -190,46 +190,46 @@ export class StatsView extends ItemView {
     // 生成报告按钮
     const reportSection = container.createDiv({ cls: 'report-section' });
     const reportBtn = reportSection.createEl('button', {
-      text: '📄 Generate Full Report',
+      text: '📄 Generate full report',
       cls: 'mod-cta'
     });
     reportBtn.addEventListener('click', () => this.generateAndShowReport());
   
   // 清除统计按钮
 const clearBtn = reportSection.createEl('button', {
-  text: '🗑️ Clear Statistics',
+  text: '🗑️ Clear statistics',
   cls: 'mod-warning'
 });
-clearBtn.style.marginLeft = '10px';
+setCssProps(clearBtn, { 'margin-left': '10px' });
 clearBtn.addEventListener('click', () => this.showClearStatsModal());
   }
 
   private renderTrends(container: HTMLElement) {
-    container.createEl('h3', { text: 'Performance Trends' });
+    container.createEl('h3', { text: 'Performance trends' });
 
     const dailyStats = this.analytics.getDailyStats(30);
 
     // 正确率趋势
     const correctRateSection = container.createDiv({ cls: 'chart-section' });
-    correctRateSection.createEl('h4', { text: 'Correct Rate (Last 30 Days)' });
+    correctRateSection.createEl('h4', { text: 'Correct rate (last 30 days)' });
     const correctRateChart = correctRateSection.createDiv({ cls: 'line-chart' });
     this.renderLineChart(correctRateChart, dailyStats, 'correctRate');
 
     // 每日复习量
     const reviewsSection = container.createDiv({ cls: 'chart-section' });
-    reviewsSection.createEl('h4', { text: 'Daily Reviews' });
+    reviewsSection.createEl('h4', { text: 'Daily reviews' });
     const reviewsChart = reviewsSection.createDiv({ cls: 'bar-chart' });
     this.renderBarChart(reviewsChart, dailyStats);
 
     // 热力图
     const heatmapSection = container.createDiv({ cls: 'chart-section' });
-    heatmapSection.createEl('h4', { text: 'Study Activity Calendar' });
+    heatmapSection.createEl('h4', { text: 'Study activity calendar' });
     const heatmap = heatmapSection.createDiv({ cls: 'heatmap' });
     this.renderHeatmap(heatmap);
   }
 
   private renderDecks(container: HTMLElement) {
-    container.createEl('h3', { text: 'Deck Statistics' });
+    container.createEl('h3', { text: 'Deck statistics' });
 
     const deckStats = this.analytics.getDeckStats();
 
@@ -278,7 +278,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
       
       const progressBar = progress.createDiv({ cls: 'progress-bar-container' });
       const bar = progressBar.createDiv({ cls: 'progress-bar-fill' });
-      bar.style.width = `${masteredPercent}%`;
+      setCssProps(bar, { width: `${masteredPercent}%` });
       
       progress.createDiv({
         text: `${masteredPercent.toFixed(0)}% mastered`,
@@ -341,7 +341,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
       // 难度条
       const difficultyBar = content.createDiv({ cls: 'difficulty-bar-container' });
       const diffBar = difficultyBar.createDiv({ cls: 'difficulty-bar' });
-      diffBar.style.width = `${dc.card.stats.difficulty * 100}%`;
+      setCssProps(diffBar, { width: `${dc.card.stats.difficulty * 100}%` });
 
       // 操作按钮
       const actions = cardItem.createDiv({ cls: 'card-actions' });
@@ -445,7 +445,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
       const barContainer = bar.createDiv({ cls: 'bar-container' });
       const barFill = barContainer.createDiv({ cls: 'bar-fill' });
       const height = maxValue > 0 ? (stat.reviewed / maxValue) * 100 : 0;
-      barFill.style.height = `${height}%`;
+      setCssProps(barFill, { height: `${height}%` });
       
       bar.createDiv({ text: stat.reviewed.toString(), cls: 'bar-value' });
     });
@@ -460,7 +460,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
       
       const barContainer = barGroup.createDiv({ cls: 'bar' });
       const height = maxValue > 0 ? (stat.reviewed / maxValue) * 100 : 0;
-      barContainer.style.height = `${height}%`;
+      setCssProps(barContainer, { height: `${height}%` });
       barContainer.title = `${stat.reviewed} reviews`;
       
       const barLabel = barGroup.createDiv({ cls: 'bar-label' });
@@ -482,8 +482,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 100 100');
     svg.setAttribute('preserveAspectRatio', 'none');
-    svg.style.width = '100%';
-    svg.style.height = '200px';
+    setCssProps(svg as unknown as HTMLElement, { width: '100%', height: '200px' });
 
     // 创建折线路径
     const pathData = points.map((p, i) => 
@@ -625,7 +624,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
     modal.querySelector('[data-action="all"]')?.addEventListener('click', async () => {
       if (confirm('⚠️ This will reset ALL statistics and card progress. Are you sure?')) {
         await this.analytics.clearAllStats();
-        new Notice('✅ All statistics cleared');
+        new Notice('✅ All statistics cleared.');
         modal.remove();
         this.render();
       }
@@ -635,7 +634,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
     modal.querySelector('[data-action="old"]')?.addEventListener('click', async () => {
       if (confirm('Clear statistics older than 30 days?')) {
         await this.analytics.clearStatsBeforeDate(30);
-        new Notice('✅ Old statistics cleared');
+        new Notice('✅ Old statistics cleared.');
         modal.remove();
         this.render();
       }
@@ -738,12 +737,14 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
       
       // 打开报告文件
       const leaf = this.app.workspace.getLeaf(false);
-      await leaf.openFile(file as TFile);
+      if (file instanceof TFile) {
+        await leaf.openFile(file);
+      }
       
-      new Notice('📊 Report generated!');
+      new Notice('📊 Report generated.');
     } catch (error) {
       console.error('Error generating report:', error);
-      new Notice('❌ Failed to generate report');
+      new Notice('❌ Failed to generate report.');
     }
 
   }
@@ -762,7 +763,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
     stats.textContent = `Day ${daysSince} · ${cycleInfo.reviewsThisCycle} reviews`;
     
     const btn = banner.createEl('button', {
-      text: 'Start New Cycle',
+      text: 'Start new cycle',
       cls: 'start-new-cycle-btn'
     });
     
@@ -957,671 +958,6 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
     modal.querySelector('.close-btn')?.addEventListener('click', () => modal.remove());
     modal.querySelector('.modal-bg')?.addEventListener('click', () => modal.remove());
   }
-  private addStyles() {
-    const styleEl = document.createElement('style');
-    styleEl.textContent = `
-      .stats-container {
-        padding: 20px;
-        overflow-y: auto;
-      }
 
-      .stats-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-      }
 
-      .stats-header h2 {
-        margin: 0;
-      }
-
-      .stats-tabs {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 20px;
-        border-bottom: 2px solid var(--background-modifier-border);
-      }
-
-      .tab {
-        padding: 10px 20px;
-        cursor: pointer;
-        border-bottom: 3px solid transparent;
-        transition: all 0.2s;
-        user-select: none;
-      }
-
-      .tab:hover {
-        background: var(--background-modifier-hover);
-      }
-
-      .tab.active {
-        border-bottom-color: var(--interactive-accent);
-        color: var(--interactive-accent);
-        font-weight: 600;
-      }
-
-      .metrics-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
-        margin-bottom: 30px;
-      }
-
-      .metric-card {
-        padding: 20px;
-        background: var(--background-secondary);
-        border-radius: 8px;
-        display: flex;
-        gap: 15px;
-        align-items: center;
-      }
-
-      .metric-icon {
-        font-size: 32px;
-      }
-
-      .metric-content {
-        flex: 1;
-      }
-
-      .metric-title {
-        font-size: 0.9em;
-        color: var(--text-muted);
-        margin-bottom: 5px;
-      }
-
-      .metric-value {
-        font-size: 1.8em;
-        font-weight: 600;
-      }
-
-      .week-comparison {
-        margin-bottom: 30px;
-      }
-
-      .comparison-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        margin-top: 15px;
-      }
-
-      .comparison-item {
-        padding: 15px;
-        background: var(--background-secondary);
-        border-radius: 6px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .comparison-label {
-        font-weight: 500;
-      }
-
-      .comparison-values {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-
-      .this-week {
-        font-weight: 600;
-        font-size: 1.1em;
-      }
-
-      .last-week {
-        color: var(--text-muted);
-      }
-
-      .change {
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 0.9em;
-        font-weight: 500;
-      }
-
-      .change.positive {
-        background: var(--background-modifier-success);
-        color: var(--text-on-accent);
-      }
-
-      .change.negative {
-        background: var(--background-modifier-error);
-        color: white;
-      }
-
-      .chart-section {
-        margin-bottom: 30px;
-      }
-
-      .recent-activity .activity-chart {
-        display: flex;
-        justify-content: space-around;
-        align-items: flex-end;
-        height: 150px;
-        padding: 20px;
-        background: var(--background-secondary);
-        border-radius: 8px;
-      }
-
-      .simple-bar {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        flex: 1;
-      }
-
-      .simple-bar .bar-container {
-        width: 100%;
-        height: 100px;
-        display: flex;
-        align-items: flex-end;
-        justify-content: center;
-      }
-
-      .simple-bar .bar-fill {
-        width: 60%;
-        background: var(--interactive-accent);
-        border-radius: 4px 4px 0 0;
-        transition: height 0.3s;
-      }
-
-      .bar-label, .bar-value {
-        font-size: 0.85em;
-        color: var(--text-muted);
-      }
-
-      .heatmap {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        padding: 15px;
-        background: var(--background-secondary);
-        border-radius: 8px;
-      }
-
-      .heatmap-week {
-        display: flex;
-        gap: 4px;
-      }
-
-      .heatmap-cell {
-        width: 12px;
-        height: 12px;
-        background: var(--background-primary);
-        border-radius: 2px;
-        cursor: pointer;
-      }
-
-      .heatmap-cell.level-1 { background: rgba(94, 156, 235, 0.3); }
-      .heatmap-cell.level-2 { background: rgba(94, 156, 235, 0.5); }
-      .heatmap-cell.level-3 { background: rgba(94, 156, 235, 0.7); }
-      .heatmap-cell.level-4 { background: rgba(94, 156, 235, 1); }
-
-      .decks-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 15px;
-      }
-
-      .deck-card {
-        padding: 20px;
-        background: var(--background-secondary);
-        border-radius: 8px;
-        border: 1px solid var(--background-modifier-border);
-      }
-
-      .deck-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid var(--background-modifier-border);
-      }
-
-      .deck-card-header h4 {
-        margin: 0;
-      }
-
-      .deck-badge {
-        padding: 4px 10px;
-        background: var(--interactive-accent);
-        color: white;
-        border-radius: 12px;
-        font-size: 0.85em;
-      }
-
-      .deck-card-stats {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-bottom: 15px;
-      }
-
-      .stat-row {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-
-      .stat-icon {
-        width: 20px;
-      }
-
-      .stat-label {
-        flex: 1;
-        color: var(--text-muted);
-      }
-
-      .stat-value {
-        font-weight: 500;
-      }
-
-      .deck-progress {
-        margin-top: 15px;
-      }
-
-      .progress-bar-container {
-        height: 8px;
-        background: var(--background-primary);
-        border-radius: 4px;
-        overflow: hidden;
-        margin-bottom: 5px;
-      }
-
-
-      .progress-label {
-        font-size: 0.85em;
-        color: var(--text-muted);
-      }
-
-      .difficult-cards-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .difficult-card-item {
-        display: flex;
-        gap: 15px;
-        padding: 15px;
-        background: var(--background-secondary);
-        border-radius: 8px;
-        border: 1px solid var(--background-modifier-border);
-      }
-
-      .card-rank {
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--interactive-accent);
-        color: white;
-        border-radius: 50%;
-        font-weight: 600;
-        flex-shrink: 0;
-      }
-
-      .card-content {
-        flex: 1;
-      }
-
-      .card-question {
-        font-weight: 500;
-        margin-bottom: 8px;
-      }
-
-      .card-meta {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-bottom:8px;
-      } 
-
-.pattern-badge, .error-count, .avg-time {
-    padding: 3px 10px;
-    background: var(--background-primary);
-    border-radius: 12px;
-    font-size: 0.85em;
-  }
-
-  .difficulty-bar-container {
-    height: 6px;
-    background: var(--background-primary);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-
-  .difficulty-bar {
-    height: 100%;
-    background: linear-gradient(to right, var(--color-green), var(--color-yellow), var(--color-red));
-    transition: width 0.3s;
-  }
-
-  .card-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .action-btn-small {
-    padding: 6px 12px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 4px;
-    background: var(--background-primary);
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .action-btn-small:hover {
-    background: var(--interactive-accent);
-    color: white;
-    border-color: var(--interactive-accent);
-  }
-
-  .action-btn-small.delete-btn:hover {
-    background: var(--color-red);
-    border-color: var(--color-red);
-    color: white;
-  }
-
-  .empty-message {
-    text-align: center;
-    padding: 40px;
-    color: var(--text-muted);
-    font-size: 1.1em;
-  }
-
-  .report-section {
-    text-align: center;
-    margin-top: 30px;
-    padding: 20px;
-  }
-
-  .chart-canvas {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-around;
-    height: 200px;
-    padding: 20px;
-    background: var(--background-secondary);
-    border-radius: 8px;
-    margin-bottom: 10px;
-  }
-
-  .bar-group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex: 1;
-    height: 100%;
-  }
-
-  .bar-group .bar {
-    width: 80%;
-    background: var(--interactive-accent);
-    border-radius: 4px 4px 0 0;
-    transition: height 0.3s;
-    margin-top: auto;
-  }
-
-  .line-chart-canvas {
-    background: var(--background-secondary);
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 10px;
-  }
-
-  .chart-labels {
-    display: flex;
-    justify-content: space-around;
-    padding: 10px 20px;
-    background: var(--background-secondary);
-    border-radius: 8px;
-  }
-
-  .chart-label {
-    font-size: 0.85em;
-    color: var(--text-muted);
-  }
-    .modal-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
-
-.modal-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-}
-
-.modal {
-  position: relative;
-  background: var(--background-primary);
-  border-radius: 8px;
-  padding: 20px;
-  max-width: 500px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-.modal-title {
-  font-size: 1.5em;
-  font-weight: 600;
-  margin-bottom: 15px;
-}
-
-.modal-content {
-  margin-bottom: 20px;
-}
-
-.clear-options {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.clear-option-btn {
-  padding: 15px;
-  background: var(--background-secondary);
-  border: 2px solid var(--background-modifier-border);
-  border-radius: 6px;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.2s;
-  display: flex;
-  gap: 5px;
-}
-
-.clear-option-btn:hover {
-  border-color: var(--interactive-accent);
-  background: var(--background-modifier-hover);
-}
-
-.option-desc {
-  font-size: 0.85em;
-  color: var(--text-muted);
-}
-
-.modal-button-container {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-
-/* 重置复习周期 */           
-.cycle-info-banner {
-  display: flex;
-  flex-direction: row;  /* 👈 明确指定横向排列 */
-  align-items: center;
-  justify-content: space-between; /* 👈 两端对齐 */
-  gap: 15px;
-  padding: 15px 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  color: white;
-  flex-wrap: nowrap; /* 👈 禁止换行 */
-}
-
-.cycle-badge {
-  font-size: 1.2em;
-  font-weight: 600;
-  padding: 5px 15px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
-}
-
-.cycle-stats {
-  flex: 1;
-  font-size: 0.95em;
-  opacity: 0.9;
-}
-
-.start-new-cycle-btn {
-  padding: 8px 16px;
-  background: white;
-  color: var(--interactive-accent);
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.start-new-cycle-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-  /* 周期历史卡片 */
-.cycles-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.cycle-card {
-  padding: 20px;
-  background: var(--background-secondary);
-  border-radius: 8px;
-  border: 1px solid var(--background-modifier-border);
-}
-
-.cycle-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--background-modifier-border);
-}
-
-.cycle-card-header h4 {
-  margin: 0;
-  font-size: 1.2em;
-}
-
-.cycle-duration {
-  font-size: 0.85em;
-  color: var(--text-muted);
-  padding: 4px 10px;
-  background: var(--background-primary);
-  border-radius: 12px;
-}
-
-.cycle-card-actions {
-  margin-top: 15px;
-  text-align: right;
-}
-
-/* 周期详情弹窗 */
-.cycle-details-modal .modal-large {
-  max-width: 800px;
-}
-
-.cycle-detail-section {
-  margin-bottom: 25px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--background-modifier-border);
-}
-
-.cycle-detail-section:last-child {
-  border-bottom: none;
-}
-
-.cycle-detail-section h4 {
-  margin: 0 0 15px 0;
-  font-size: 1.1em;
-}
-
-.metrics-grid-small {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 15px;
-}
-
-.metric-small {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 15px;
-  background: var(--background-primary);
-  border-radius: 6px;
-}
-
-.metric-small .metric-label {
-  font-size: 0.85em;
-  color: var(--text-muted);
-}
-
-.metric-small .metric-value {
-  font-size: 1.5em;
-  font-weight: 600;
-}
-
-.deck-stat-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--background-modifier-border);
-}
-
-.deck-stat-row:last-child {
-  border-bottom: none;
-}
-
-.deck-name {
-  font-weight: 500;
-}
-
-.deck-info {
-  display: flex;
-  gap: 15px;
-}
-
-.deck-detail {
-  font-size: 0.9em;
-  color: var(--text-muted);
-}
-`;
-
-document.head.appendChild(styleEl);
-  }}

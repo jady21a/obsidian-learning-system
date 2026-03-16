@@ -2241,7 +2241,889 @@
     font-size: 0.95em;
     white-space: nowrap;
   }
+
+
+/* from AnnotationModal.ts */
+  .annotation-modal {
+    padding: 20px;
+  }
+
+  .annotation-content-preview {
+    margin: 20px 0;
+    padding: 15px;
+    background: var(--background-secondary);
+    border-radius: 6px;
+  }
+
+  .annotation-content-preview h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    color: var(--text-muted);
+  }
+
+  .annotation-content-preview blockquote {
+    margin: 0;
+    padding: 10px;
+    border-left: 3px solid var(--interactive-accent);
+    background: var(--background-primary);
+    border-radius: 4px;
+  }
+
+  .badge-preview-container {
+    margin: 10px 0;
+    padding: 10px;
+    background: var(--background-secondary);
+    border-radius: 4px;
+  }
+
+  .preview-label {
+    color: var(--text-muted);
+    margin-right: 10px;
+  }
+
+  .badge-preview {
+    padding: 4px 10px;
+    border-radius: 12px;
+    color: white;
+    font-size: 0.85em;
+    font-weight: 500;
+  }
+
+  .modal-button-container {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+
+  .modal-button-container button {
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
   
+/* from FlashcardCreateModal.ts */
+.flashcard-create-modal {
+  padding: 20px;
+  max-width: 600px;
+}
+
+.content-preview {
+  margin: 20px 0;
+  padding: 15px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.content-preview h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+.content-preview blockquote {
+  margin: 0;
+  padding: 10px;
+  border-left: 3px solid var(--interactive-accent);
+  background: var(--background-primary);
+  border-radius: 4px;
+}
+
+.card-input-container {
+  margin: 20px 0;
+}
+
+.input-hint {
+  margin-top: 10px;
+  padding: 10px;
+  background: var(--background-secondary);
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+
+/* Cloze 样式 */
+.cloze-instruction {
+  color: var(--text-muted);
+  font-size: 0.9em;
+  margin-bottom: 15px;
+}
+
+.cloze-text-container {
+  padding: 15px;
+  background: var(--background-primary);
+  border: 2px solid var(--background-modifier-border);
+  border-radius: 6px;
+  line-height: 1.8;
+  margin-bottom: 15px;
+  cursor: default;
+}
+
+.cloze-word {
+  padding: 2px 4px;
+  margin: 0 1px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cloze-word:hover {
+  background: var(--background-modifier-hover);
+}
+
+.cloze-word.selected {
+  background: var(--interactive-accent);
+  color: white;
+  font-weight: 500;
+}
+
+.selected-deletions {
+  margin: 15px 0;
+  padding: 15px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.selected-deletions h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+.deletion-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--background-primary);
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.deletion-text {
+  flex: 1;
+  font-weight: 500;
+  color: var(--interactive-accent);
+}
+
+.remove-deletion-btn {
+  padding: 2px 8px;
+  background: var(--background-modifier-error);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.remove-deletion-btn:hover {
+  background: var(--color-red);
+}
+
+.cloze-preview {
+  margin: 15px 0;
+  padding: 15px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.cloze-preview h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+.preview-text {
+  padding: 10px;
+  background: var(--background-primary);
+  border-radius: 4px;
+  line-height: 1.6;
+}
+
+.modal-button-container {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.modal-button-container button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+
+/* from  statsView.ts */
+.stats-container {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.stats-header h2 {
+  margin: 0;
+}
+
+.stats-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.tab:hover {
+  background: var(--background-modifier-hover);
+}
+
+.tab.active {
+  border-bottom-color: var(--interactive-accent);
+  color: var(--interactive-accent);
+  font-weight: 600;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.metric-card {
+  padding: 20px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.metric-icon {
+  font-size: 32px;
+}
+
+.metric-content {
+  flex: 1;
+}
+
+.metric-title {
+  font-size: 0.9em;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+
+.metric-value {
+  font-size: 1.8em;
+  font-weight: 600;
+}
+
+.week-comparison {
+  margin-bottom: 30px;
+}
+
+.comparison-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.comparison-item {
+  padding: 15px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.comparison-label {
+  font-weight: 500;
+}
+
+.comparison-values {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.this-week {
+  font-weight: 600;
+  font-size: 1.1em;
+}
+
+.last-week {
+  color: var(--text-muted);
+}
+
+.change {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.change.positive {
+  background: var(--background-modifier-success);
+  color: var(--text-on-accent);
+}
+
+.change.negative {
+  background: var(--background-modifier-error);
+  color: white;
+}
+
+.chart-section {
+  margin-bottom: 30px;
+}
+
+.recent-activity .activity-chart {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  height: 150px;
+  padding: 20px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+}
+
+.simple-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.simple-bar .bar-container {
+  width: 100%;
+  height: 100px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.simple-bar .bar-fill {
+  width: 60%;
+  background: var(--interactive-accent);
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s;
+}
+
+.bar-label, .bar-value {
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+.heatmap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 15px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+}
+
+.heatmap-week {
+  display: flex;
+  gap: 4px;
+}
+
+.heatmap-cell {
+  width: 12px;
+  height: 12px;
+  background: var(--background-primary);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.heatmap-cell.level-1 { background: rgba(94, 156, 235, 0.3); }
+.heatmap-cell.level-2 { background: rgba(94, 156, 235, 0.5); }
+.heatmap-cell.level-3 { background: rgba(94, 156, 235, 0.7); }
+.heatmap-cell.level-4 { background: rgba(94, 156, 235, 1); }
+
+.decks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 15px;
+}
+
+.deck-card {
+  padding: 20px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.deck-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.deck-card-header h4 {
+  margin: 0;
+}
+
+.deck-badge {
+  padding: 4px 10px;
+  background: var(--interactive-accent);
+  color: white;
+  border-radius: 12px;
+  font-size: 0.85em;
+}
+
+.deck-card-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.stat-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.stat-icon {
+  width: 20px;
+}
+
+.stat-label {
+  flex: 1;
+  color: var(--text-muted);
+}
+
+.stat-value {
+  font-weight: 500;
+}
+
+.deck-progress {
+  margin-top: 15px;
+}
+
+.progress-bar-container {
+  height: 8px;
+  background: var(--background-primary);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+
+
+.progress-label {
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+.difficult-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.difficult-card-item {
+  display: flex;
+  gap: 15px;
+  padding: 15px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.card-rank {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--interactive-accent);
+  color: white;
+  border-radius: 50%;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.card-content {
+  flex: 1;
+}
+
+.card-question {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.card-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom:8px;
+} 
+
+.pattern-badge, .error-count, .avg-time {
+padding: 3px 10px;
+background: var(--background-primary);
+border-radius: 12px;
+font-size: 0.85em;
+}
+
+.difficulty-bar-container {
+height: 6px;
+background: var(--background-primary);
+border-radius: 3px;
+overflow: hidden;
+}
+
+.difficulty-bar {
+height: 100%;
+background: linear-gradient(to right, var(--color-green), var(--color-yellow), var(--color-red));
+transition: width 0.3s;
+}
+
+.card-actions {
+display: flex;
+gap: 8px;
+}
+
+.action-btn-small {
+padding: 6px 12px;
+border: 1px solid var(--background-modifier-border);
+border-radius: 4px;
+background: var(--background-primary);
+cursor: pointer;
+transition: all 0.2s;
+}
+
+.action-btn-small:hover {
+background: var(--interactive-accent);
+color: white;
+border-color: var(--interactive-accent);
+}
+
+.action-btn-small.delete-btn:hover {
+background: var(--color-red);
+border-color: var(--color-red);
+color: white;
+}
+
+.empty-message {
+text-align: center;
+padding: 40px;
+color: var(--text-muted);
+font-size: 1.1em;
+}
+
+.report-section {
+text-align: center;
+margin-top: 30px;
+padding: 20px;
+}
+
+.chart-canvas {
+display: flex;
+align-items: flex-end;
+justify-content: space-around;
+height: 200px;
+padding: 20px;
+background: var(--background-secondary);
+border-radius: 8px;
+margin-bottom: 10px;
+}
+
+.bar-group {
+display: flex;
+flex-direction: column;
+align-items: center;
+flex: 1;
+height: 100%;
+}
+
+.bar-group .bar {
+width: 80%;
+background: var(--interactive-accent);
+border-radius: 4px 4px 0 0;
+transition: height 0.3s;
+margin-top: auto;
+}
+
+.line-chart-canvas {
+background: var(--background-secondary);
+border-radius: 8px;
+padding: 20px;
+margin-bottom: 10px;
+}
+
+.chart-labels {
+display: flex;
+justify-content: space-around;
+padding: 10px 20px;
+background: var(--background-secondary);
+border-radius: 8px;
+}
+
+.chart-label {
+font-size: 0.85em;
+color: var(--text-muted);
+}
+.modal-container {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+z-index: 1000;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+.modal-bg {
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: rgba(0, 0, 0, 0.5);
+}
+
+.modal {
+position: relative;
+background: var(--background-primary);
+border-radius: 8px;
+padding: 20px;
+max-width: 500px;
+width: 90%;
+max-height: 80vh;
+overflow-y: auto;
+box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.modal-title {
+font-size: 1.5em;
+font-weight: 600;
+margin-bottom: 15px;
+}
+
+.modal-content {
+margin-bottom: 20px;
+}
+
+.clear-options {
+display: flex;
+flex-direction: column;
+gap: 10px;
+margin-top: 15px;
+}
+
+.clear-option-btn {
+padding: 15px;
+background: var(--background-secondary);
+border: 2px solid var(--background-modifier-border);
+border-radius: 6px;
+cursor: pointer;
+text-align: left;
+transition: all 0.2s;
+display: flex;
+gap: 5px;
+}
+
+.clear-option-btn:hover {
+border-color: var(--interactive-accent);
+background: var(--background-modifier-hover);
+}
+
+.option-desc {
+font-size: 0.85em;
+color: var(--text-muted);
+}
+
+.modal-button-container {
+display: flex;
+justify-content: flex-end;
+gap: 10px;
+}
+
+
+/* 重置复习周期 */           
+.cycle-info-banner {
+display: flex;
+flex-direction: row;  /* 👈 明确指定横向排列 */
+align-items: center;
+justify-content: space-between; /* 👈 两端对齐 */
+gap: 15px;
+padding: 15px 20px;
+border-radius: 8px;
+margin-bottom: 20px;
+color: white;
+flex-wrap: nowrap; /* 👈 禁止换行 */
+}
+
+.cycle-badge {
+font-size: 1.2em;
+font-weight: 600;
+padding: 5px 15px;
+background: rgba(255, 255, 255, 0.2);
+border-radius: 20px;
+}
+
+.cycle-stats {
+flex: 1;
+font-size: 0.95em;
+opacity: 0.9;
+}
+
+.start-new-cycle-btn {
+padding: 8px 16px;
+background: white;
+color: var(--interactive-accent);
+border: none;
+border-radius: 6px;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.2s;
+}
+
+.start-new-cycle-btn:hover {
+transform: scale(1.05);
+box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+/* 周期历史卡片 */
+.cycles-list {
+display: flex;
+flex-direction: column;
+gap: 15px;
+}
+
+.cycle-card {
+padding: 20px;
+background: var(--background-secondary);
+border-radius: 8px;
+border: 1px solid var(--background-modifier-border);
+}
+
+.cycle-card-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 15px;
+padding-bottom: 10px;
+border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.cycle-card-header h4 {
+margin: 0;
+font-size: 1.2em;
+}
+
+.cycle-duration {
+font-size: 0.85em;
+color: var(--text-muted);
+padding: 4px 10px;
+background: var(--background-primary);
+border-radius: 12px;
+}
+
+.cycle-card-actions {
+margin-top: 15px;
+text-align: right;
+}
+
+/* 周期详情弹窗 */
+.cycle-details-modal .modal-large {
+max-width: 800px;
+}
+
+.cycle-detail-section {
+margin-bottom: 25px;
+padding-bottom: 20px;
+border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.cycle-detail-section:last-child {
+border-bottom: none;
+}
+
+.cycle-detail-section h4 {
+margin: 0 0 15px 0;
+font-size: 1.1em;
+}
+
+.metrics-grid-small {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+gap: 15px;
+}
+
+.metric-small {
+display: flex;
+flex-direction: column;
+gap: 5px;
+padding: 15px;
+background: var(--background-primary);
+border-radius: 6px;
+}
+
+.metric-small .metric-label {
+font-size: 0.85em;
+color: var(--text-muted);
+}
+
+.metric-small .metric-value {
+font-size: 1.5em;
+font-weight: 600;
+}
+
+.deck-stat-row {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 10px 0;
+border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.deck-stat-row:last-child {
+border-bottom: none;
+}
+
+.deck-name {
+font-weight: 500;
+}
+
+.deck-info {
+display: flex;
+gap: 15px;
+}
+
+.deck-detail {
+font-size: 0.9em;
+color: var(--text-muted);
+}
+
+
+
+
   /* =============================================================================
      SECTION 9: Animations 动画
      ============================================================================= */

@@ -1,6 +1,7 @@
 // src/ui/components/Toolbar.ts  工具栏组件
 import { ViewState, FilterMode, GroupMode } from '../stats/ViewState';
 import { t, Language } from '../../i18n/translations';
+import { setCssProps } from '../utils/setCssProps';
 
 export class Toolbar {
   private state: ViewState;
@@ -139,8 +140,7 @@ export class Toolbar {
     // ⭐ 设置提示文本
     if (!hasNotes) {
       chip.setAttribute('title', 'No notes of this type in the current file');
-      chip.style.opacity = '0.4';
-      chip.style.cursor = 'not-allowed';
+      setCssProps(chip, { opacity: '0.4', cursor: 'not-allowed' });
     } else {
       chip.setAttribute('title', tooltip);
     }
@@ -188,8 +188,7 @@ export class Toolbar {
     // ⭐ 设置提示文本
     if (!hasNotes) {
       btn.setAttribute('title', 'Notes in the current file cannot be grouped this way');
-      btn.style.opacity = '0.4';
-      btn.style.cursor = 'not-allowed';
+      setCssProps(btn, { opacity: '0.4', cursor: 'not-allowed' });
     } else {
       btn.setAttribute('title', tooltip);
     }
@@ -216,7 +215,7 @@ renderReviewCheckButton(container: HTMLElement): HTMLElement | null {
   const reviewBtn = container.createEl('button', {
     cls: 'review-check-btn-stats',
     attr: { 
-      'aria-label': 'Check for Cards to Review'
+      'aria-label': 'Check for cards to review'
     }
   });
   reviewBtn.innerHTML = '🔔'; 
