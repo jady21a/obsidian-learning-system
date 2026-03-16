@@ -683,7 +683,17 @@ newUnit.extractRule?.ruleId === 'cloze-table' &&
 existing.source.file === newUnit.source.file &&
 this.isContentDuplicate(existing.content, newUnit.content);
 
-return sameLocation || sameContent || sameQA || coveredByManual || sameTableHighlights || sameTableContent;
+// 方式6: 自动提取的内容已包含在某条手动提取的 fullContext 里
+const contentCoveredByManual =
+  existing.source.file === newUnit.source.file &&
+  existing.extractRule?.extractedBy === 'manual' &&
+  newUnit.extractRule?.extractedBy === 'auto' &&
+  !!(existing.fullContext?.toLowerCase().includes(
+    (newUnit.fullContext || newUnit.content).toLowerCase().trim()
+  ));
+  
+  return sameLocation || sameContent || sameQA || coveredByManual 
+    || sameTableHighlights || sameTableContent || contentCoveredByManual;
       });
       
       if (!isDuplicate) {

@@ -69,8 +69,8 @@ export class BatchActions {
     
     if (shouldDisable) {
       selectAllBtn.disabled = true;
-      selectAllBtn.style.opacity = '0.5';
-      selectAllBtn.style.cursor = 'not-allowed';
+      selectAllBtn.style.setProperty('opacity', '0.5');
+      selectAllBtn.style.setProperty('cursor', 'not-allowed');
       selectAllBtn.title = itemCount === 0 
         ? this.t('batch.noItems')  
         : this.t('batch.selectAnnotationFirst');
@@ -131,16 +131,16 @@ export class BatchActions {
         e.stopPropagation();
         e.preventDefault();
     
-        createBtn.style.background = 'var(--interactive-accent)';
-        createBtn.style.color = 'white';
+        createBtn.style.setProperty('background', 'var(--interactive-accent)');
+        createBtn.style.setProperty('color', 'white');
       });
       
       createBtn.addEventListener('mouseleave', (e) => {
         e.stopPropagation();
         e.preventDefault();
     
-        createBtn.style.background = 'var(--background-secondary)';
-        createBtn.style.color = '';
+        createBtn.style.setProperty('background', 'var(--background-secondary)');
+        createBtn.style.removeProperty('color');
       });
     }
     
@@ -160,16 +160,16 @@ export class BatchActions {
       e.stopPropagation();
       e.preventDefault();
   
-      deleteBtn.style.background = 'var(--color-red)';
-      deleteBtn.style.color = 'white';
+      deleteBtn.style.setProperty('background', 'var(--color-red)');
+      deleteBtn.style.setProperty('color', 'white');
     });
     
     deleteBtn.addEventListener('mouseleave', (e) => {
       e.stopPropagation();
       e.preventDefault();
   
-      deleteBtn.style.background = 'var(--background-secondary)';
-      deleteBtn.style.color = '';
+      deleteBtn.style.setProperty('background', 'var(--background-secondary)');
+      deleteBtn.style.removeProperty('color');
     });
     
     // 取消按钮
