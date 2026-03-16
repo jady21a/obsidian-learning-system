@@ -1,6 +1,4 @@
 // src/ui/SidebarOverviewView.ts - 重构后版本
-import { StyleLoader } from '../style/sidebarStyle'
-import { reviewStyle } from '../style/reviewStyle';
 import { t } from '../../i18n/translations';
 
 import { QuickFlashcardCreator } from '../../core/QuickFlashcardCreator';
@@ -136,8 +134,6 @@ export class SidebarOverviewView extends ItemView {
     
     // 先渲染界面
     this.render();
-    StyleLoader.inject();
-    reviewStyle.inject();
     
     // 界面渲染后再检查复习提醒
     await new Promise(resolve => setTimeout(resolve, 100));

@@ -1,7 +1,6 @@
 import { Modal, Notice, ButtonComponent, Menu } from 'obsidian';
 import type LearningSystemPlugin from '../../main';
 import { t } from '../../i18n/translations';
-import { RecentlyDeletedStyle } from '../style/recentlyDeletedStyle';
 import { ContentUnit, DeletedContentUnit } from '../../core/DataManager';
 import { DeletedItem } from '../../core/FlashcardManager';
 
@@ -15,7 +14,6 @@ export class RecentlyDeletedModal extends Modal {
   }
 
   onOpen() {
-    RecentlyDeletedStyle.inject();
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass('recently-deleted-modal');

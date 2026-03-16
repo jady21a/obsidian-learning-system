@@ -114,7 +114,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     }
   });
   
-  card.style.cursor = 'default';
+  card.style.setProperty('cursor', 'default');
 
   if (this.state.batchMode) {
     this.renderCheckbox(card, unit.id, this.state.selectedUnitIds.has(unit.id));
@@ -128,12 +128,12 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     e.stopPropagation();
     this.callbacks.onJumpToSource(unit);
   };
-  fileName.style.cursor = 'pointer';
+  fileName.style.setProperty('cursor', 'pointer');
   
   this.renderGridTools(header, unit);
 
   const content = card.createDiv({ cls: 'grid-card-content' });
-  content.style.cursor = 'pointer';
+  content.style.setProperty('cursor', 'pointer');
   
   this.renderGridContent(content, card, unit);
   this.renderGridAnnotation(content, card, unit);
@@ -245,7 +245,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
       e.stopPropagation();
       this.callbacks.onJumpToSource(unit);
     });
-    annotationBtn.style.cursor = 'pointer';
+    annotationBtn.style.setProperty('cursor', 'pointer');
   
     // ⭐ 右侧工具按钮区域
     const tools = header.createDiv({ cls: 'card-tools' });
@@ -258,7 +258,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     if (!this.state.batchMode) {
       const flashcardBtn = tools.createDiv({ cls: 'tool-btn flashcard-btn' });
       flashcardBtn.innerHTML = '⚡';
-      flashcardBtn.setAttribute('aria-label', 'Generate Flashcards');
+      flashcardBtn.setAttribute('aria-label', 'Generate flashcards');
       flashcardBtn.addEventListener('mousedown', (e) => {
         e.stopPropagation();
         this.callbacks.onQuickFlashcard(unit);
@@ -284,7 +284,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     }
   
     // ⭐ 只设置样式,不绑定事件
-    noteText.style.cursor = 'pointer';
+    noteText.style.setProperty('cursor', 'pointer');
   }
   
 
@@ -414,7 +414,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     if (!this.state.batchMode) {
       const flashcardBtn = tools.createDiv({ cls: 'tool-btn-grid' });
       flashcardBtn.innerHTML = '⚡';
-      flashcardBtn.setAttribute('aria-label', 'Generate Flashcards');
+      flashcardBtn.setAttribute('aria-label', 'Generate flashcards');
       flashcardBtn.addEventListener('mousedown', (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -448,7 +448,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
       this.callbacks.onToggleAnnotation(card, unit);
     });
     
-    noteText.style.cursor = 'pointer';
+    noteText.style.setProperty('cursor', 'pointer');
   }
   
   private renderGridAnnotation(content: HTMLElement, card: HTMLElement, unit: ContentUnit): void {

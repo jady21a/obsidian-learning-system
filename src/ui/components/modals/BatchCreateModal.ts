@@ -101,44 +101,8 @@ export class BatchCreateModal extends Modal {
   }
 
   private addStyles() {
-    const styleEl = document.createElement('style');
-    styleEl.textContent = `
-      .type-select-container {
-        margin: 20px 0;
-      }
-
-      .type-option {
-        padding: 15px;
-        margin: 10px 0;
-        background: var(--background-secondary);
-        border: 2px solid var(--background-modifier-border);
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .type-option:hover {
-        border-color: var(--interactive-accent);
-        background: var(--background-modifier-hover);
-      }
-
-      .type-option input[type="radio"] {
-        margin-right: 10px;
-      }
-
-      .type-label {
-        display: inline-block;
-        vertical-align: top;
-      }
-
-      .type-desc {
-        font-size: 0.9em;
-        color: var(--text-muted);
-        margin-top: 4px;
-      }
-    `;
-
-    document.head.appendChild(styleEl);
+    // Obsidian 会自动加载插件根目录的 `styles.css`
+    // 这里不允许动态注入 <style>，对应样式已迁移到 `.obsidian/plugins/learning-system/styles.css`
   }
 
   onClose() {

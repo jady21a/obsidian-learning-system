@@ -1,7 +1,6 @@
 // src/core/UnlockSystem.ts
 import { App, Notice,Modal } from 'obsidian';
 import type LearningSystemPlugin from '../main';
-import { StyleLoader } from 'src/ui/style/sidebarStyle';
 import { t ,Language} from '../i18n/translations';
 
 export type UserLevel = 1 | 2 | 3 | 4 | 5;

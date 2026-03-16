@@ -9,7 +9,6 @@ import { ReviewStateManager,ReviewState } from '../stats/reviewStateManager';
 import { TableRenderer } from '../components/TableRenderer';
 import { CardRendererFactory } from '../components/reviewCardRender';
 
-import { reviewStyle } from '../style/reviewStyle';
 
 import { t,Language } from '../../i18n/translations';
 
@@ -50,7 +49,6 @@ export class ReviewView extends ItemView {
 
   async onOpen() {
     await this.loadDueCards();
-    reviewStyle.inject();
     this.render();
     this.registerKeyboardHandlers();
   }

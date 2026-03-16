@@ -55,7 +55,7 @@ export class EditFlashcardModal extends Modal {
           .setValue(this.front)
           .onChange((value: string) => this.front = value);
         text.inputEl.rows = 4;
-        text.inputEl.style.width = '100%';
+        text.inputEl.style.setProperty('width', '100%');
       });
     
     // 答案/后面
@@ -67,7 +67,7 @@ export class EditFlashcardModal extends Modal {
           .setValue(this.back)
           .onChange((value: string) => this.back = value);
         text.inputEl.rows = 3;
-        text.inputEl.style.width = '100%';
+        text.inputEl.style.setProperty('width', '100%');
       });
     
 // 按钮组

@@ -292,7 +292,7 @@ const updatePreview = (inputValue: string) => {
     
     // 左列:正确答案
     const correctColumn = columnsContainer.createDiv({ cls: 'qa-column' });
-    correctColumn.createEl('h4', { text: 'Correct Answer:', cls: 'column-label' });
+    correctColumn.createEl('h4', { text: 'Correct answer:', cls: 'column-label' });
     const correctDiv = correctColumn.createDiv({ cls: 'comparison-item' });
     const tableEl = TableRenderer.renderTable(card.cloze!.original, true);
     correctDiv.appendChild(tableEl);
@@ -300,7 +300,7 @@ const updatePreview = (inputValue: string) => {
     
     // 右列:用户答案
     const userColumn = columnsContainer.createDiv({ cls: 'qa-column' });
-    userColumn.createEl('h4', { text: 'Your Answer:', cls: 'column-label' });
+    userColumn.createEl('h4', { text: 'Your answer:', cls: 'column-label' });
     const userDiv = userColumn.createDiv({ cls: 'comparison-item' });
   
     // ← 修改:提取实际的答案来构建 deletions
@@ -353,7 +353,7 @@ const updatePreview = (inputValue: string) => {
     if (state.userAnswers.length === 0) return;
   
     const comparison = answerArea.createDiv({ cls: 'answer-comparison' });
-    comparison.createEl('h4', { text: 'Answer Details:' });
+    comparison.createEl('h4', { text: 'Answer details:' });
   
     // ← 关键修改:使用实际的挖空数量,而不是 deletions.length
     // 方法1: 从原始文本提取所有挖空答案
@@ -449,7 +449,7 @@ export class QACardRenderer implements CardRenderStrategy {
     
         // 输入框
         const inputArea = container.createDiv({ cls: 'qa-input-area' });
-        inputArea.createEl('h4', { text: 'Your Answer:' });
+        inputArea.createEl('h4', { text: 'Your answer:' });
         
         const textarea = inputArea.createEl('textarea', {
           placeholder: 'Type your answer here...',
@@ -513,7 +513,7 @@ export class QACardRenderer implements CardRenderStrategy {
     isTable: boolean
   ) {
     const correctColumn = container.createDiv({ cls: 'qa-column' });
-    correctColumn.createEl('h4', { text: 'Correct Answer:', cls: 'column-label' });
+    correctColumn.createEl('h4', { text: 'Correct answer:', cls: 'column-label' });
     const correctAnswerDiv = correctColumn.createDiv({ cls: 'comparison-item' });
     
     if (isTable) {
@@ -535,7 +535,7 @@ export class QACardRenderer implements CardRenderStrategy {
     evaluation: AnswerEvaluation | null
   ) {
     const userColumn = container.createDiv({ cls: 'qa-column' });
-    userColumn.createEl('h4', { text: 'Your Answer:', cls: 'column-label' });
+    userColumn.createEl('h4', { text: 'Your answer:', cls: 'column-label' });
     const userAnswerDiv = userColumn.createDiv({ cls: 'comparison-item' });
 
     const isUserAnswerTable = TableRenderer.isTableFormat(userAnswer.trim());
