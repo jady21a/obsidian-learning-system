@@ -107,7 +107,7 @@
 
 ### 计划中的功能
 - [ ] **智囊团 / 社区学习系统**  
-  👉 [了解更多](https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%A2%E5%9B%A2)
+  👉 [了解更多](https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%8A%E5%9B%A2)
 - [ ] mindmap式复习
 - [ ] 移动端体验优化
 
