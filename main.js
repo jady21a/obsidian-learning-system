@@ -10761,6 +10761,21 @@ function cleanOutlineText(text) {
   t2 = t2.replace(/^\[[ xX]\]\s+/, "");
   return truncate(t2, 60);
 }
+function rebuildOutlineLine(original, newText) {
+  const blockIdOf = (s) => {
+    var _a, _b;
+    return (_b = (_a = s.match(/(\s+\^[\w-]+)\s*$/)) == null ? void 0 : _a[1]) != null ? _b : "";
+  };
+  const heading = original.match(/^(#{1,6}\s+)(.*)$/);
+  if (heading) {
+    return heading[1] + newText + blockIdOf(heading[2]);
+  }
+  const list = original.match(/^(\s*(?:[-*+]|\d+[.)])\s+(?:\[[ xX]\]\s+)?)(.*)$/);
+  if (list) {
+    return list[1] + newText + blockIdOf(list[2]);
+  }
+  return null;
+}
 function buildTreeFromMarkdown(fileName, markdown) {
   let idCounter = 0;
   const newId = () => `n${idCounter++}`;
@@ -10826,6 +10841,10 @@ var MindmapView = class extends import_obsidian13.ItemView {
     this.mind = null;
     this.container = null;
     this.filePath = null;
+    this.modifyWatcherRegistered = false;
+    this.refreshTimer = null;
+    /** 记录我们自己写回的内容,用于在 modify 事件中识别并跳过自写入,避免回环。 */
+    this.lastWrittenContent = null;
     this.plugin = plugin;
   }
   getViewType() {
@@ -10855,7 +10874,65 @@ var MindmapView = class extends import_obsidian13.ItemView {
   }
   async onOpen() {
     this.injectStyles();
+    this.registerModifyWatcher();
     await this.renderMindmap();
+  }
+  /** 笔记 → 地图:监听文件变更,去抖后刷新地图(仅文件模式)。 */
+  registerModifyWatcher() {
+    if (this.modifyWatcherRegistered)
+      return;
+    this.modifyWatcherRegistered = true;
+    this.registerEvent(
+      this.app.vault.on("modify", (file) => {
+        if (file instanceof import_obsidian13.TFile && this.filePath && file.path === this.filePath) {
+          this.scheduleRefresh();
+        }
+      })
+    );
+  }
+  scheduleRefresh() {
+    if (this.refreshTimer !== null)
+      window.clearTimeout(this.refreshTimer);
+    this.refreshTimer = window.setTimeout(() => {
+      this.refreshTimer = null;
+      void this.refreshFromFile();
+    }, 250);
+  }
+  async refreshFromFile() {
+    if (!this.filePath || !this.mind)
+      return;
+    const file = this.app.vault.getAbstractFileByPath(this.filePath);
+    if (!(file instanceof import_obsidian13.TFile))
+      return;
+    const text = await this.app.vault.cachedRead(file);
+    if (this.lastWrittenContent !== null && text === this.lastWrittenContent) {
+      this.lastWrittenContent = null;
+      return;
+    }
+    this.mind.refresh(buildTreeFromMarkdown(file.name, text));
+  }
+  /** 地图 → 笔记:节点改名后,按 metadata.line 改写原文对应行(保留前缀/缩进)。 */
+  async writeBackRename(node) {
+    if (!this.filePath)
+      return;
+    const meta = node.metadata;
+    if (!meta || typeof meta.line !== "number")
+      return;
+    const file = this.app.vault.getAbstractFileByPath(this.filePath);
+    if (!(file instanceof import_obsidian13.TFile))
+      return;
+    const text = await this.app.vault.cachedRead(file);
+    const eol = text.includes("\r\n") ? "\r\n" : "\n";
+    const lines = text.split(/\r?\n/);
+    if (meta.line < 0 || meta.line >= lines.length)
+      return;
+    const rebuilt = rebuildOutlineLine(lines[meta.line], node.topic);
+    if (rebuilt === null || rebuilt === lines[meta.line])
+      return;
+    lines[meta.line] = rebuilt;
+    const newText = lines.join(eol);
+    this.lastWrittenContent = newText;
+    await this.app.vault.modify(file, newText);
   }
   /** 根据 this.filePath 渲染:有则按文档大纲,无则全部闪卡。 */
   async renderMindmap() {
@@ -10908,6 +10985,9 @@ var MindmapView = class extends import_obsidian13.ItemView {
     mind.init(data);
     mind.bus.addListener("operation", (operation) => {
       console.debug("[learning-system] mindmap operation", operation);
+      if (this.filePath && operation.name === "finishEdit") {
+        void this.writeBackRename(operation.obj);
+      }
     });
     this.mind = mind;
     this.enableDragToRoot(container);
@@ -10991,6 +11071,10 @@ var MindmapView = class extends import_obsidian13.ItemView {
   }
   async onClose() {
     var _a, _b;
+    if (this.refreshTimer !== null) {
+      window.clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
+    }
     if (this.mind) {
       (_b = (_a = this.mind).destroy) == null ? void 0 : _b.call(_a);
       this.mind = null;

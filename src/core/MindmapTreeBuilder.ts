@@ -74,6 +74,27 @@ function cleanOutlineText(text: string): string {
 }
 
 /**
+ * 在保留原行结构(标题/列表前缀、缩进、复选框、行尾 ^blockid)的前提下,
+ * 仅把行内的文本替换为 newText。用于「改名」写回原文。
+ * 若该行既不是标题也不是列表项,返回 null(不改写)。
+ */
+export function rebuildOutlineLine(original: string, newText: string): string | null {
+  const blockIdOf = (s: string) => s.match(/(\s+\^[\w-]+)\s*$/)?.[1] ?? '';
+
+  const heading = original.match(/^(#{1,6}\s+)(.*)$/);
+  if (heading) {
+    return heading[1] + newText + blockIdOf(heading[2]);
+  }
+
+  const list = original.match(/^(\s*(?:[-*+]|\d+[.)])\s+(?:\[[ xX]\]\s+)?)(.*)$/);
+  if (list) {
+    return list[1] + newText + blockIdOf(list[2]);
+  }
+
+  return null;
+}
+
+/**
  * 把一篇 markdown 文档的大纲(标题 + 列表)解析为 Mind Elixir 树。
  * - 标题(#~######)按层级嵌套;
  * - 列表项按缩进嵌套,挂到最近的标题下(无标题则挂根);

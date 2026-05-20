@@ -2,7 +2,13 @@ import { ItemView, WorkspaceLeaf, Notice, TFile, type ViewStateResult } from 'ob
 import MindElixir, { type MindElixirInstance, type MindElixirData } from 'mind-elixir';
 import mindElixirCss from 'mind-elixir/style.css';
 import type LearningSystemPlugin from '../../main';
-import { buildTreeFromFlashcards, buildTreeFromMarkdown } from '../../core/MindmapTreeBuilder';
+import {
+  buildTreeFromFlashcards,
+  buildTreeFromMarkdown,
+  rebuildOutlineLine,
+  type OutlineNodeMeta,
+} from '../../core/MindmapTreeBuilder';
+import type { NodeObj } from 'mind-elixir';
 
 export const VIEW_TYPE_MINDMAP = 'learning-system-mindmap';
 
@@ -18,6 +24,10 @@ export class MindmapView extends ItemView {
   private mind: MindElixirInstance | null = null;
   private container: HTMLElement | null = null;
   private filePath: string | null = null;
+  private modifyWatcherRegistered = false;
+  private refreshTimer: number | null = null;
+  /** 记录我们自己写回的内容,用于在 modify 事件中识别并跳过自写入,避免回环。 */
+  private lastWrittenContent: string | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: LearningSystemPlugin) {
     super(leaf);
@@ -54,7 +64,66 @@ export class MindmapView extends ItemView {
 
   async onOpen() {
     this.injectStyles();
+    this.registerModifyWatcher();
     await this.renderMindmap();
+  }
+
+  /** 笔记 → 地图:监听文件变更,去抖后刷新地图(仅文件模式)。 */
+  private registerModifyWatcher() {
+    if (this.modifyWatcherRegistered) return;
+    this.modifyWatcherRegistered = true;
+    this.registerEvent(
+      this.app.vault.on('modify', (file) => {
+        if (file instanceof TFile && this.filePath && file.path === this.filePath) {
+          this.scheduleRefresh();
+        }
+      })
+    );
+  }
+
+  private scheduleRefresh() {
+    if (this.refreshTimer !== null) window.clearTimeout(this.refreshTimer);
+    this.refreshTimer = window.setTimeout(() => {
+      this.refreshTimer = null;
+      void this.refreshFromFile();
+    }, 250);
+  }
+
+  private async refreshFromFile() {
+    if (!this.filePath || !this.mind) return;
+    const file = this.app.vault.getAbstractFileByPath(this.filePath);
+    if (!(file instanceof TFile)) return;
+
+    const text = await this.app.vault.cachedRead(file);
+    // 跳过我们自己写回触发的变更,避免覆盖用户在图上的其它(内存)编辑
+    if (this.lastWrittenContent !== null && text === this.lastWrittenContent) {
+      this.lastWrittenContent = null;
+      return;
+    }
+    this.mind.refresh(buildTreeFromMarkdown(file.name, text));
+  }
+
+  /** 地图 → 笔记:节点改名后,按 metadata.line 改写原文对应行(保留前缀/缩进)。 */
+  private async writeBackRename(node: NodeObj) {
+    if (!this.filePath) return;
+    const meta = node.metadata as OutlineNodeMeta | undefined;
+    if (!meta || typeof meta.line !== 'number') return; // 内存中新增的节点没有源行,跳过
+
+    const file = this.app.vault.getAbstractFileByPath(this.filePath);
+    if (!(file instanceof TFile)) return;
+
+    const text = await this.app.vault.cachedRead(file);
+    const eol = text.includes('\r\n') ? '\r\n' : '\n';
+    const lines = text.split(/\r?\n/);
+    if (meta.line < 0 || meta.line >= lines.length) return;
+
+    const rebuilt = rebuildOutlineLine(lines[meta.line], node.topic);
+    if (rebuilt === null || rebuilt === lines[meta.line]) return;
+
+    lines[meta.line] = rebuilt;
+    const newText = lines.join(eol);
+    this.lastWrittenContent = newText;
+    await this.app.vault.modify(file, newText);
   }
 
   /** 根据 this.filePath 渲染:有则按文档大纲,无则全部闪卡。 */
@@ -112,10 +181,14 @@ export class MindmapView extends ItemView {
     });
     mind.init(data);
 
-    // 编辑事件钩子。步骤3将在此把节点改动写回卡片/markdown;
-    // 当前编辑仅存在于内存中,重新打开会从来源重新生成。
+    // 编辑事件钩子。
+    // 文件模式下:节点改名(finishEdit)写回原文对应行。
+    // 增/删/移动暂不写回(仅内存),与用户约定的同步范围一致。
     mind.bus.addListener('operation', (operation) => {
       console.debug('[learning-system] mindmap operation', operation);
+      if (this.filePath && operation.name === 'finishEdit') {
+        void this.writeBackRename(operation.obj);
+      }
     });
 
     this.mind = mind;
@@ -210,6 +283,10 @@ export class MindmapView extends ItemView {
   }
 
   async onClose() {
+    if (this.refreshTimer !== null) {
+      window.clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
+    }
     if (this.mind) {
       this.mind.destroy?.();
       this.mind = null;
