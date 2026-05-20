@@ -5,14 +5,28 @@ import type LearningSystemPlugin from '../../main';
 import {
   buildTreeFromFlashcards,
   buildTreeFromMarkdown,
-  rebuildOutlineLine,
-  type OutlineNodeMeta,
+  serializeOutline,
 } from '../../core/MindmapTreeBuilder';
-import type { NodeObj } from 'mind-elixir';
 
 export const VIEW_TYPE_MINDMAP = 'learning-system-mindmap';
 
 const STYLE_EL_ID = 'learning-system-mindmap-styles';
+
+/** 需要写回原文的操作类型(改名 + 增/删/移动/复制)。 */
+const WRITE_BACK_OPS = new Set<string>([
+  'finishEdit',
+  'addChild',
+  'insertSibling',
+  'insertParent',
+  'removeNodes',
+  'moveNodeIn',
+  'moveNodeBefore',
+  'moveNodeAfter',
+  'moveUpNode',
+  'moveDownNode',
+  'copyNode',
+  'copyNodes',
+]);
 
 interface MindmapViewState {
   /** 指定来源文件路径时,按该文档大纲渲染;为空则渲染全部闪卡。 */
@@ -103,25 +117,17 @@ export class MindmapView extends ItemView {
     this.mind.refresh(buildTreeFromMarkdown(file.name, text));
   }
 
-  /** 地图 → 笔记:节点改名后,按 metadata.line 改写原文对应行(保留前缀/缩进)。 */
-  private async writeBackRename(node: NodeObj) {
-    if (!this.filePath) return;
-    const meta = node.metadata as OutlineNodeMeta | undefined;
-    if (!meta || typeof meta.line !== 'number') return; // 内存中新增的节点没有源行,跳过
-
+  /**
+   * 地图 → 笔记:把当前整棵大纲树序列化后写回原文。
+   * 统一处理增/删/移动/改名 —— 避免逐操作改行带来的行号漂移问题。
+   * 非大纲内容(frontmatter/段落/代码块)由序列化器逐字保留。
+   */
+  private async writeBackStructure() {
+    if (!this.filePath || !this.mind) return;
     const file = this.app.vault.getAbstractFileByPath(this.filePath);
     if (!(file instanceof TFile)) return;
 
-    const text = await this.app.vault.cachedRead(file);
-    const eol = text.includes('\r\n') ? '\r\n' : '\n';
-    const lines = text.split(/\r?\n/);
-    if (meta.line < 0 || meta.line >= lines.length) return;
-
-    const rebuilt = rebuildOutlineLine(lines[meta.line], node.topic);
-    if (rebuilt === null || rebuilt === lines[meta.line]) return;
-
-    lines[meta.line] = rebuilt;
-    const newText = lines.join(eol);
+    const newText = serializeOutline(this.mind.nodeData);
     this.lastWrittenContent = newText;
     await this.app.vault.modify(file, newText);
   }
@@ -181,18 +187,40 @@ export class MindmapView extends ItemView {
     });
     mind.init(data);
 
-    // 编辑事件钩子。
-    // 文件模式下:节点改名(finishEdit)写回原文对应行。
-    // 增/删/移动暂不写回(仅内存),与用户约定的同步范围一致。
+    // 编辑事件钩子。文件模式下:任何结构/文本变更都整树序列化写回原文。
     mind.bus.addListener('operation', (operation) => {
       console.debug('[learning-system] mindmap operation', operation);
-      if (this.filePath && operation.name === 'finishEdit') {
-        void this.writeBackRename(operation.obj);
+      if (this.filePath && WRITE_BACK_OPS.has(operation.name)) {
+        void this.writeBackStructure();
       }
     });
 
     this.mind = mind;
     this.enableDragToRoot(container);
+    this.patchUndoRedo(mind);
+  }
+
+  /**
+   * 让撤销/重做(Ctrl+Z / Ctrl+Y)也写回原文。
+   * Mind Elixir 的 undo/redo 只 refresh 快照、不发 operation 事件,
+   * 所以包装这两个实例方法,执行后整树序列化写回。
+   * 快照经 getData 保留了我们的 metadata,因此恢复后内容可完整还原。
+   */
+  private patchUndoRedo(mind: MindElixirInstance) {
+    const origUndo = mind.undo?.bind(mind);
+    const origRedo = mind.redo?.bind(mind);
+    if (origUndo) {
+      mind.undo = () => {
+        origUndo();
+        if (this.filePath) void this.writeBackStructure();
+      };
+    }
+    if (origRedo) {
+      mind.redo = () => {
+        origRedo();
+        if (this.filePath) void this.writeBackStructure();
+      };
+    }
   }
 
   /**

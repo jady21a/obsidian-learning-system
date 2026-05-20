@@ -1976,8 +1976,8 @@ var ContentCard = class {
       return;
     }
     const annEl = content.createDiv({ cls: "annotation-preview" });
-    const displayText = annotationContent.length > 60 ? annotationContent.substring(0, 60) + "..." : annotationContent;
-    annEl.textContent = `\u{1F4AC} ${displayText}`;
+    const displayText2 = annotationContent.length > 60 ? annotationContent.substring(0, 60) + "..." : annotationContent;
+    annEl.textContent = `\u{1F4AC} ${displayText2}`;
     annEl.addEventListener("click", (e) => {
       e.stopPropagation();
       this.callbacks.onToggleAnnotation(card, unit);
@@ -2748,8 +2748,8 @@ var AnnotationEditor = class {
     if (isGridCard) {
       annEl.innerHTML = `\u{1F4AC} ${annotationText}`;
     } else {
-      const displayText = annotationText.length > 60 ? annotationText.substring(0, 60) + "..." : annotationText;
-      annEl.textContent = `\u{1F4AC} ${displayText}`;
+      const displayText2 = annotationText.length > 60 ? annotationText.substring(0, 60) + "..." : annotationText;
+      annEl.textContent = `\u{1F4AC} ${displayText2}`;
     }
     annEl.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -5443,11 +5443,11 @@ var TableRenderer = class {
     const correctAnswer = deletions[deletionIndex].answer;
     const userAnswer = userAnswers[deletionIndex] || "";
     const evaluation = scheduler.evaluateAnswer(correctAnswer, userAnswer);
-    const displayText = userAnswer || "(empty)";
+    const displayText2 = userAnswer || "(empty)";
     const correctnessClass = evaluation.correctness;
     return cell.replace(
       /==([^=]+)==/g,
-      `<span class="user-answer-cell ${correctnessClass}">${displayText}</span>`
+      `<span class="user-answer-cell ${correctnessClass}">${displayText2}</span>`
     );
   }
   // 处理带用户答案的单元格(返回 HTML 和正确性类)
@@ -5465,11 +5465,11 @@ var TableRenderer = class {
     const correctAnswer = deletions[deletionIndex].answer;
     const userAnswer = userAnswers[deletionIndex] || "";
     const evaluation = scheduler.evaluateAnswer(correctAnswer, userAnswer);
-    const displayText = userAnswer || "(empty)";
+    const displayText2 = userAnswer || "(empty)";
     const correctnessClass = evaluation.correctness;
     const html = cell.replace(
       /==([^=]+)==/g,
-      `<span class="user-answer-cell ${correctnessClass}">${displayText}</span>`
+      `<span class="user-answer-cell ${correctnessClass}">${displayText2}</span>`
     );
     return { html, correctnessClass: `cell-${correctnessClass}` };
   }
@@ -5617,8 +5617,8 @@ var ClozeCardRenderer = class {
       return { html: cell, hasBlank: false };
     }
     const userAnswer = userAnswers[deletionIndex] || "";
-    const displayText = userAnswer ? `<span class="preview-answer">${userAnswer}</span>` : '<span class="cloze-blank"></span>';
-    const html = cell.replace(/==([^=]+)==/g, displayText);
+    const displayText2 = userAnswer ? `<span class="preview-answer">${userAnswer}</span>` : '<span class="cloze-blank"></span>';
+    const html = cell.replace(/==([^=]+)==/g, displayText2);
     return { html, hasBlank: true };
   }
   // ← 添加新的辅助方法:解析多答案输入
@@ -5813,8 +5813,8 @@ var QACardRenderer = class {
   }
   renderTextUserAnswer(container, userAnswer, evaluation) {
     const userAnswerElement = container.createEl("div", { cls: "qa-user-answer" });
-    const displayText = userAnswer.trim() || "(no answer provided)";
-    userAnswerElement.innerHTML = displayText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+    const displayText2 = userAnswer.trim() || "(no answer provided)";
+    userAnswerElement.innerHTML = displayText2.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
     if (evaluation) {
       userAnswerElement.classList.add("user-answer", evaluation.correctness);
     } else {
@@ -10755,33 +10755,41 @@ function buildTreeFromFlashcards(flashcards) {
   };
   return { nodeData };
 }
-function cleanOutlineText(text) {
-  let t2 = text.trim();
-  t2 = t2.replace(/\s+\^[\w-]+$/, "");
-  t2 = t2.replace(/^\[[ xX]\]\s+/, "");
-  return truncate(t2, 60);
+function collapseWs(text) {
+  return text.replace(/\s+/g, " ").trim();
 }
-function rebuildOutlineLine(original, newText) {
-  const blockIdOf = (s) => {
-    var _a, _b;
-    return (_b = (_a = s.match(/(\s+\^[\w-]+)\s*$/)) == null ? void 0 : _a[1]) != null ? _b : "";
-  };
-  const heading = original.match(/^(#{1,6}\s+)(.*)$/);
-  if (heading) {
-    return heading[1] + newText + blockIdOf(heading[2]);
-  }
-  const list = original.match(/^(\s*(?:[-*+]|\d+[.)])\s+(?:\[[ xX]\]\s+)?)(.*)$/);
-  if (list) {
-    return list[1] + newText + blockIdOf(list[2]);
-  }
-  return null;
+function displayText(text) {
+  return truncate(collapseWs(text), 60);
 }
+var BLOCK_ID_RE = /(\s+\^[\w-]+)\s*$/;
+var CHECKBOX_RE = /^\[[ xX]\]\s+/;
 function buildTreeFromMarkdown(fileName, markdown) {
+  var _a, _b, _c, _d, _e2, _f;
   let idCounter = 0;
   const newId = () => `n${idCounter++}`;
-  const root = { topic: fileName.replace(/\.md$/, ""), id: "root", children: [] };
+  const eol = markdown.includes("\r\n") ? "\r\n" : "\n";
+  const rootMeta = {
+    isOutlineRoot: true,
+    leading: [],
+    indentUnit: "  ",
+    eol
+  };
+  let indentUnitSet = false;
+  const root = {
+    topic: fileName.replace(/\.md$/, ""),
+    id: "root",
+    children: [],
+    metadata: rootMeta
+  };
   const headingStack = [{ level: 0, node: root }];
   let listStack = [];
+  let lastNode = null;
+  const attach = (line) => {
+    if (lastNode)
+      lastNode.metadata.trailing.push(line);
+    else
+      rootMeta.leading.push(line);
+  };
   const lines = markdown.split(/\r?\n/);
   let inFence = false;
   for (let i = 0; i < lines.length; i++) {
@@ -10789,52 +10797,145 @@ function buildTreeFromMarkdown(fileName, markdown) {
     const trimmed = line.trim();
     if (/^(```|~~~)/.test(trimmed)) {
       inFence = !inFence;
+      attach(line);
       continue;
     }
-    if (inFence || trimmed.length === 0)
+    if (inFence || trimmed.length === 0) {
+      attach(line);
       continue;
+    }
     const heading = line.match(/^(#{1,6})\s+(.+?)\s*#*$/);
     if (heading) {
       const level = heading[1].length;
+      let text = heading[2];
+      const blockId = (_b = (_a = text.match(BLOCK_ID_RE)) == null ? void 0 : _a[1]) != null ? _b : "";
+      if (blockId)
+        text = text.slice(0, text.length - blockId.length);
       while (headingStack.length > 1 && headingStack[headingStack.length - 1].level >= level) {
         headingStack.pop();
       }
       const parent = headingStack[headingStack.length - 1].node;
-      const node = {
-        topic: cleanOutlineText(heading[2]),
-        id: newId(),
-        children: [],
-        metadata: { line: i }
+      const meta = {
+        line: i,
+        kind: "heading",
+        level,
+        marker: "",
+        checkbox: "",
+        blockId,
+        text,
+        trailing: []
       };
+      const node = { topic: displayText(text), id: newId(), children: [], metadata: meta };
       parent.children.push(node);
       headingStack.push({ level, node });
       listStack = [];
+      lastNode = node;
       continue;
     }
     const list = line.match(/^(\s*)([-*+]|\d+[.)])\s+(.+)$/);
     if (list) {
-      const indent = list[1].replace(/\t/g, "    ").length;
+      const indentStr = list[1];
+      if (!indentUnitSet && indentStr.length > 0) {
+        rootMeta.indentUnit = indentStr;
+        indentUnitSet = true;
+      }
+      const indent = indentStr.replace(/\t/g, "    ").length;
+      let text = list[3];
+      const blockId = (_d = (_c = text.match(BLOCK_ID_RE)) == null ? void 0 : _c[1]) != null ? _d : "";
+      if (blockId)
+        text = text.slice(0, text.length - blockId.length);
+      const checkbox = (_f = (_e2 = text.match(CHECKBOX_RE)) == null ? void 0 : _e2[0]) != null ? _f : "";
+      if (checkbox)
+        text = text.slice(checkbox.length);
       while (listStack.length > 0 && listStack[listStack.length - 1].indent >= indent) {
         listStack.pop();
       }
       const parent = listStack.length > 0 ? listStack[listStack.length - 1].node : headingStack[headingStack.length - 1].node;
-      const node = {
-        topic: cleanOutlineText(list[3]),
-        id: newId(),
-        children: [],
-        metadata: { line: i }
+      const meta = {
+        line: i,
+        kind: "list",
+        level: 0,
+        marker: list[2],
+        checkbox,
+        blockId,
+        text,
+        trailing: []
       };
+      const node = { topic: displayText(text), id: newId(), children: [], metadata: meta };
       parent.children.push(node);
       listStack.push({ indent, node });
+      lastNode = node;
       continue;
     }
+    attach(line);
   }
   return { nodeData: root };
+}
+function renderOutlineLine(node, listDepth, indentUnit, seenBlockIds) {
+  var _a, _b;
+  const meta = node.metadata;
+  let text;
+  if (meta && node.topic === displayText(meta.text))
+    text = meta.text;
+  else
+    text = node.topic;
+  let blockId = (_a = meta == null ? void 0 : meta.blockId) != null ? _a : "";
+  if (blockId) {
+    const id = blockId.trim();
+    if (seenBlockIds.has(id))
+      blockId = "";
+    else
+      seenBlockIds.add(id);
+  }
+  if ((meta == null ? void 0 : meta.kind) === "heading") {
+    const level = Math.min(6, Math.max(1, meta.level || 1));
+    return "#".repeat(level) + " " + text + blockId;
+  }
+  const marker = (meta == null ? void 0 : meta.marker) || "-";
+  const checkbox = (_b = meta == null ? void 0 : meta.checkbox) != null ? _b : "";
+  return indentUnit.repeat(listDepth) + marker + " " + checkbox + text + blockId;
+}
+function serializeOutline(root) {
+  var _a;
+  const rootMeta = root.metadata;
+  const indentUnit = (rootMeta == null ? void 0 : rootMeta.indentUnit) || "  ";
+  const eol = (rootMeta == null ? void 0 : rootMeta.eol) || "\n";
+  const out = [];
+  const seenBlockIds = /* @__PURE__ */ new Set();
+  if (rootMeta == null ? void 0 : rootMeta.leading)
+    out.push(...rootMeta.leading);
+  const emit = (node, listDepth) => {
+    var _a2;
+    out.push(renderOutlineLine(node, listDepth, indentUnit, seenBlockIds));
+    const meta = node.metadata;
+    if (meta == null ? void 0 : meta.trailing)
+      out.push(...meta.trailing);
+    const childDepth = (meta == null ? void 0 : meta.kind) === "heading" ? 0 : listDepth + 1;
+    for (const child of (_a2 = node.children) != null ? _a2 : [])
+      emit(child, childDepth);
+  };
+  for (const child of (_a = root.children) != null ? _a : [])
+    emit(child, 0);
+  return out.join(eol);
 }
 
 // src/ui/view/MindmapView.ts
 var VIEW_TYPE_MINDMAP = "learning-system-mindmap";
 var STYLE_EL_ID = "learning-system-mindmap-styles";
+var WRITE_BACK_OPS = /* @__PURE__ */ new Set([
+  "finishEdit",
+  "addChild",
+  "insertSibling",
+  "insertParent",
+  "removeNodes",
+  "moveNodeIn",
+  "moveNodeBefore",
+  "moveNodeAfter",
+  "moveUpNode",
+  "moveDownNode",
+  "copyNode",
+  "copyNodes"
+]);
 var MindmapView = class extends import_obsidian13.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
@@ -10911,26 +11012,18 @@ var MindmapView = class extends import_obsidian13.ItemView {
     }
     this.mind.refresh(buildTreeFromMarkdown(file.name, text));
   }
-  /** 地图 → 笔记:节点改名后,按 metadata.line 改写原文对应行(保留前缀/缩进)。 */
-  async writeBackRename(node) {
-    if (!this.filePath)
-      return;
-    const meta = node.metadata;
-    if (!meta || typeof meta.line !== "number")
+  /**
+   * 地图 → 笔记:把当前整棵大纲树序列化后写回原文。
+   * 统一处理增/删/移动/改名 —— 避免逐操作改行带来的行号漂移问题。
+   * 非大纲内容(frontmatter/段落/代码块)由序列化器逐字保留。
+   */
+  async writeBackStructure() {
+    if (!this.filePath || !this.mind)
       return;
     const file = this.app.vault.getAbstractFileByPath(this.filePath);
     if (!(file instanceof import_obsidian13.TFile))
       return;
-    const text = await this.app.vault.cachedRead(file);
-    const eol = text.includes("\r\n") ? "\r\n" : "\n";
-    const lines = text.split(/\r?\n/);
-    if (meta.line < 0 || meta.line >= lines.length)
-      return;
-    const rebuilt = rebuildOutlineLine(lines[meta.line], node.topic);
-    if (rebuilt === null || rebuilt === lines[meta.line])
-      return;
-    lines[meta.line] = rebuilt;
-    const newText = lines.join(eol);
+    const newText = serializeOutline(this.mind.nodeData);
     this.lastWrittenContent = newText;
     await this.app.vault.modify(file, newText);
   }
@@ -10985,12 +11078,38 @@ var MindmapView = class extends import_obsidian13.ItemView {
     mind.init(data);
     mind.bus.addListener("operation", (operation) => {
       console.debug("[learning-system] mindmap operation", operation);
-      if (this.filePath && operation.name === "finishEdit") {
-        void this.writeBackRename(operation.obj);
+      if (this.filePath && WRITE_BACK_OPS.has(operation.name)) {
+        void this.writeBackStructure();
       }
     });
     this.mind = mind;
     this.enableDragToRoot(container);
+    this.patchUndoRedo(mind);
+  }
+  /**
+   * 让撤销/重做(Ctrl+Z / Ctrl+Y)也写回原文。
+   * Mind Elixir 的 undo/redo 只 refresh 快照、不发 operation 事件,
+   * 所以包装这两个实例方法,执行后整树序列化写回。
+   * 快照经 getData 保留了我们的 metadata,因此恢复后内容可完整还原。
+   */
+  patchUndoRedo(mind) {
+    var _a, _b;
+    const origUndo = (_a = mind.undo) == null ? void 0 : _a.bind(mind);
+    const origRedo = (_b = mind.redo) == null ? void 0 : _b.bind(mind);
+    if (origUndo) {
+      mind.undo = () => {
+        origUndo();
+        if (this.filePath)
+          void this.writeBackStructure();
+      };
+    }
+    if (origRedo) {
+      mind.redo = () => {
+        origRedo();
+        if (this.filePath)
+          void this.writeBackStructure();
+      };
+    }
   }
   /**
    * 让深层节点可以被「拖拽」到根节点变成一级节点。
