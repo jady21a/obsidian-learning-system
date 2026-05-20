@@ -4,6 +4,7 @@ import { SettingsTab } from './ui/view/SettingsTab';
 import { SidebarOverviewView, VIEW_TYPE_SIDEBAR_OVERVIEW, VIEW_TYPE_MAIN_OVERVIEW  } from './ui/view/SidebarOverviewView';
 import { ReviewView, VIEW_TYPE_REVIEW } from './ui/view/ReviewView';
 import { StatsView, VIEW_TYPE_STATS } from './ui/view/StatsView';
+import { MindmapView, VIEW_TYPE_MINDMAP } from './ui/view/MindmapView';
 import { DataManager } from './core/DataManager';
 import { ExtractionEngine } from './core/ExtractionEngine';
 import { AnnotationManager } from './core/AnnotationManager';
@@ -92,6 +93,11 @@ export default class LearningSystemPlugin extends Plugin {
     this.registerView(
       VIEW_TYPE_STATS,
       (leaf) => new StatsView(leaf, this)
+    );
+
+    this.registerView(
+      VIEW_TYPE_MINDMAP,
+      (leaf) => new MindmapView(leaf, this)
     );
 
 
@@ -295,12 +301,30 @@ async saveCycleData() {
     this.addCommand({
       id: 'show-recently-deleted',
       name: 'Show recently deleted items',
-      callback: async () => { 
-       void this.openRecentlyDeletedModal();  
+      callback: async () => {
+       void this.openRecentlyDeletedModal();
       }
-    
+
     });
-    
+
+    this.addCommand({
+      id: 'open-mindmap',
+      name: 'Open mindmap',
+      callback: () => {
+        void this.activateMindmap();
+      }
+    });
+
+  }
+
+  async activateMindmap() {
+    const { workspace } = this.app;
+    let leaf = workspace.getLeavesOfType(VIEW_TYPE_MINDMAP)[0];
+    if (!leaf) {
+      leaf = workspace.getLeaf('tab');
+      await leaf.setViewState({ type: VIEW_TYPE_MINDMAP, active: true });
+    }
+    void workspace.revealLeaf(leaf);
   }
   async openRecentlyDeletedModal() {
     const modal = new RecentlyDeletedModal(this);

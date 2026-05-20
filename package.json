@@ -26,5 +26,8 @@
     "tslib": "2.4.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.1"
+  },
+  "dependencies": {
+    "mind-elixir": "^5.11.0"
   }
 }

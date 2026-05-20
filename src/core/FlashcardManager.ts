@@ -112,7 +112,6 @@ export class FlashcardManager {
     await this.loadFlashcards();
     await this.loadReviewLogs();
     await this.loadDeleteHistory();
-    await this.loadDeleteHistory();
   }
 
   // ==================== 统一创建入口 ====================
