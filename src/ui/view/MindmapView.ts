@@ -1,17 +1,23 @@
-import { ItemView, WorkspaceLeaf, Notice } from 'obsidian';
-import MindElixir, { type MindElixirInstance } from 'mind-elixir';
+import { ItemView, WorkspaceLeaf, Notice, TFile, type ViewStateResult } from 'obsidian';
+import MindElixir, { type MindElixirInstance, type MindElixirData } from 'mind-elixir';
 import mindElixirCss from 'mind-elixir/style.css';
 import type LearningSystemPlugin from '../../main';
-import { buildTreeFromFlashcards } from '../../core/MindmapTreeBuilder';
+import { buildTreeFromFlashcards, buildTreeFromMarkdown } from '../../core/MindmapTreeBuilder';
 
 export const VIEW_TYPE_MINDMAP = 'learning-system-mindmap';
 
 const STYLE_EL_ID = 'learning-system-mindmap-styles';
 
+interface MindmapViewState {
+  /** 指定来源文件路径时,按该文档大纲渲染;为空则渲染全部闪卡。 */
+  filePath?: string | null;
+}
+
 export class MindmapView extends ItemView {
   plugin: LearningSystemPlugin;
   private mind: MindElixirInstance | null = null;
   private container: HTMLElement | null = null;
+  private filePath: string | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: LearningSystemPlugin) {
     super(leaf);
@@ -23,6 +29,10 @@ export class MindmapView extends ItemView {
   }
 
   getDisplayText(): string {
+    if (this.filePath) {
+      const name = this.filePath.split('/').pop()?.replace(/\.md$/, '');
+      return `Mindmap: ${name}`;
+    }
     return 'Mindmap';
   }
 
@@ -30,8 +40,32 @@ export class MindmapView extends ItemView {
     return 'git-fork';
   }
 
+  getState(): Record<string, unknown> {
+    const state = super.getState() as Record<string, unknown>;
+    state.filePath = this.filePath;
+    return state;
+  }
+
+  async setState(state: MindmapViewState, result: ViewStateResult): Promise<void> {
+    this.filePath = state?.filePath ?? null;
+    await super.setState(state, result);
+    await this.renderMindmap();
+  }
+
   async onOpen() {
     this.injectStyles();
+    await this.renderMindmap();
+  }
+
+  /** 根据 this.filePath 渲染:有则按文档大纲,无则全部闪卡。 */
+  private async renderMindmap() {
+    this.injectStyles();
+
+    // 清理旧实例
+    if (this.mind) {
+      this.mind.destroy?.();
+      this.mind = null;
+    }
 
     const root = this.contentEl;
     root.empty();
@@ -41,10 +75,22 @@ export class MindmapView extends ItemView {
     container.style.height = '100%';
     this.container = container;
 
-    const cards = this.plugin.flashcardManager.getAllFlashcards();
-    if (cards.length === 0) {
-      container.setText('暂无闪卡,先去提取一些内容。');
-      return;
+    let data: MindElixirData;
+    if (this.filePath) {
+      const file = this.app.vault.getAbstractFileByPath(this.filePath);
+      if (!(file instanceof TFile)) {
+        container.setText(`找不到文件:${this.filePath}`);
+        return;
+      }
+      const text = await this.app.vault.cachedRead(file);
+      data = buildTreeFromMarkdown(file.name, text);
+    } else {
+      const cards = this.plugin.flashcardManager.getAllFlashcards();
+      if (cards.length === 0) {
+        container.setText('暂无闪卡,先去提取一些内容。');
+        return;
+      }
+      data = buildTreeFromFlashcards(cards);
     }
 
     const mind = new MindElixir({
@@ -64,10 +110,10 @@ export class MindmapView extends ItemView {
         ],
       },
     });
-    mind.init(buildTreeFromFlashcards(cards));
+    mind.init(data);
 
     // 编辑事件钩子。步骤3将在此把节点改动写回卡片/markdown;
-    // 当前编辑仅存在于内存中,重新打开会从闪卡重新生成。
+    // 当前编辑仅存在于内存中,重新打开会从来源重新生成。
     mind.bus.addListener('operation', (operation) => {
       console.debug('[learning-system] mindmap operation', operation);
     });

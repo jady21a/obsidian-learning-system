@@ -315,15 +315,37 @@ async saveCycleData() {
       }
     });
 
+    this.addCommand({
+      id: 'open-current-note-as-mindmap',
+      name: 'Open current note as mindmap',
+      checkCallback: (checking: boolean) => {
+        const file = this.app.workspace.getActiveFile();
+        const ok = !!file && file.extension === 'md';
+        if (ok && !checking) {
+          void this.activateMindmap(file!.path);
+        }
+        return ok;
+      }
+    });
+
   }
 
-  async activateMindmap() {
+  /**
+   * 打开 Mindmap 视图。
+   * @param filePath 传入则按该文档大纲渲染;不传则渲染全部闪卡。
+   */
+  async activateMindmap(filePath?: string) {
     const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(VIEW_TYPE_MINDMAP)[0];
+    // 指定文件时总是新开一个标签,避免覆盖已打开的全局/其它文件导图
+    let leaf = filePath ? null : workspace.getLeavesOfType(VIEW_TYPE_MINDMAP)[0];
     if (!leaf) {
       leaf = workspace.getLeaf('tab');
-      await leaf.setViewState({ type: VIEW_TYPE_MINDMAP, active: true });
     }
+    await leaf.setViewState({
+      type: VIEW_TYPE_MINDMAP,
+      active: true,
+      state: { filePath: filePath ?? null },
+    });
     void workspace.revealLeaf(leaf);
   }
   async openRecentlyDeletedModal() {

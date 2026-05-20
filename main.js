@@ -10755,6 +10755,67 @@ function buildTreeFromFlashcards(flashcards) {
   };
   return { nodeData };
 }
+function cleanOutlineText(text) {
+  let t2 = text.trim();
+  t2 = t2.replace(/\s+\^[\w-]+$/, "");
+  t2 = t2.replace(/^\[[ xX]\]\s+/, "");
+  return truncate(t2, 60);
+}
+function buildTreeFromMarkdown(fileName, markdown) {
+  let idCounter = 0;
+  const newId = () => `n${idCounter++}`;
+  const root = { topic: fileName.replace(/\.md$/, ""), id: "root", children: [] };
+  const headingStack = [{ level: 0, node: root }];
+  let listStack = [];
+  const lines = markdown.split(/\r?\n/);
+  let inFence = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    if (/^(```|~~~)/.test(trimmed)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence || trimmed.length === 0)
+      continue;
+    const heading = line.match(/^(#{1,6})\s+(.+?)\s*#*$/);
+    if (heading) {
+      const level = heading[1].length;
+      while (headingStack.length > 1 && headingStack[headingStack.length - 1].level >= level) {
+        headingStack.pop();
+      }
+      const parent = headingStack[headingStack.length - 1].node;
+      const node = {
+        topic: cleanOutlineText(heading[2]),
+        id: newId(),
+        children: [],
+        metadata: { line: i }
+      };
+      parent.children.push(node);
+      headingStack.push({ level, node });
+      listStack = [];
+      continue;
+    }
+    const list = line.match(/^(\s*)([-*+]|\d+[.)])\s+(.+)$/);
+    if (list) {
+      const indent = list[1].replace(/\t/g, "    ").length;
+      while (listStack.length > 0 && listStack[listStack.length - 1].indent >= indent) {
+        listStack.pop();
+      }
+      const parent = listStack.length > 0 ? listStack[listStack.length - 1].node : headingStack[headingStack.length - 1].node;
+      const node = {
+        topic: cleanOutlineText(list[3]),
+        id: newId(),
+        children: [],
+        metadata: { line: i }
+      };
+      parent.children.push(node);
+      listStack.push({ indent, node });
+      continue;
+    }
+  }
+  return { nodeData: root };
+}
 
 // src/ui/view/MindmapView.ts
 var VIEW_TYPE_MINDMAP = "learning-system-mindmap";
@@ -10764,29 +10825,68 @@ var MindmapView = class extends import_obsidian13.ItemView {
     super(leaf);
     this.mind = null;
     this.container = null;
+    this.filePath = null;
     this.plugin = plugin;
   }
   getViewType() {
     return VIEW_TYPE_MINDMAP;
   }
   getDisplayText() {
+    var _a;
+    if (this.filePath) {
+      const name = (_a = this.filePath.split("/").pop()) == null ? void 0 : _a.replace(/\.md$/, "");
+      return `Mindmap: ${name}`;
+    }
     return "Mindmap";
   }
   getIcon() {
     return "git-fork";
   }
+  getState() {
+    const state = super.getState();
+    state.filePath = this.filePath;
+    return state;
+  }
+  async setState(state, result) {
+    var _a;
+    this.filePath = (_a = state == null ? void 0 : state.filePath) != null ? _a : null;
+    await super.setState(state, result);
+    await this.renderMindmap();
+  }
   async onOpen() {
     this.injectStyles();
+    await this.renderMindmap();
+  }
+  /** 根据 this.filePath 渲染:有则按文档大纲,无则全部闪卡。 */
+  async renderMindmap() {
+    var _a, _b;
+    this.injectStyles();
+    if (this.mind) {
+      (_b = (_a = this.mind).destroy) == null ? void 0 : _b.call(_a);
+      this.mind = null;
+    }
     const root = this.contentEl;
     root.empty();
     const container = root.createDiv({ cls: "learning-system-mindmap-container" });
     container.style.width = "100%";
     container.style.height = "100%";
     this.container = container;
-    const cards = this.plugin.flashcardManager.getAllFlashcards();
-    if (cards.length === 0) {
-      container.setText("\u6682\u65E0\u95EA\u5361,\u5148\u53BB\u63D0\u53D6\u4E00\u4E9B\u5185\u5BB9\u3002");
-      return;
+    let data;
+    if (this.filePath) {
+      const file = this.app.vault.getAbstractFileByPath(this.filePath);
+      if (!(file instanceof import_obsidian13.TFile)) {
+        container.setText(`\u627E\u4E0D\u5230\u6587\u4EF6:${this.filePath}`);
+        return;
+      }
+      const text = await this.app.vault.cachedRead(file);
+      data = buildTreeFromMarkdown(file.name, text);
+    } else {
+      const cards = this.plugin.flashcardManager.getAllFlashcards();
+      if (cards.length === 0) {
+        container.setText("\u6682\u65E0\u95EA\u5361,\u5148\u53BB\u63D0\u53D6\u4E00\u4E9B\u5185\u5BB9\u3002");
+        return;
+      }
+      data = buildTreeFromFlashcards(cards);
     }
     const mind = new j({
       el: container,
@@ -10805,7 +10905,7 @@ var MindmapView = class extends import_obsidian13.ItemView {
         ]
       }
     });
-    mind.init(buildTreeFromFlashcards(cards));
+    mind.init(data);
     mind.bus.addListener("operation", (operation) => {
       console.debug("[learning-system] mindmap operation", operation);
     });
@@ -13250,14 +13350,34 @@ var LearningSystemPlugin = class extends import_obsidian17.Plugin {
         void this.activateMindmap();
       }
     });
+    this.addCommand({
+      id: "open-current-note-as-mindmap",
+      name: "Open current note as mindmap",
+      checkCallback: (checking) => {
+        const file = this.app.workspace.getActiveFile();
+        const ok = !!file && file.extension === "md";
+        if (ok && !checking) {
+          void this.activateMindmap(file.path);
+        }
+        return ok;
+      }
+    });
   }
-  async activateMindmap() {
+  /**
+   * 打开 Mindmap 视图。
+   * @param filePath 传入则按该文档大纲渲染;不传则渲染全部闪卡。
+   */
+  async activateMindmap(filePath) {
     const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(VIEW_TYPE_MINDMAP)[0];
+    let leaf = filePath ? null : workspace.getLeavesOfType(VIEW_TYPE_MINDMAP)[0];
     if (!leaf) {
       leaf = workspace.getLeaf("tab");
-      await leaf.setViewState({ type: VIEW_TYPE_MINDMAP, active: true });
     }
+    await leaf.setViewState({
+      type: VIEW_TYPE_MINDMAP,
+      active: true,
+      state: { filePath: filePath != null ? filePath : null }
+    });
     void workspace.revealLeaf(leaf);
   }
   async openRecentlyDeletedModal() {
