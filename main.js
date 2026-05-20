@@ -10791,11 +10791,103 @@ var MindmapView = class extends import_obsidian13.ItemView {
     const mind = new j({
       el: container,
       direction: j.SIDE,
-      editable: false,
-      contextMenu: false
+      editable: true,
+      toolBar: true,
+      allowUndo: true,
+      contextMenu: {
+        // Mind Elixir 的拖拽不支持把深层节点拖回一级(根的直接子节点),
+        // 这里用 moveNodeIn API 补一个右键菜单项实现「提升为一级节点」。
+        extend: [
+          {
+            name: "Promote to top level",
+            onclick: () => this.promoteToTopLevel()
+          }
+        ]
+      }
     });
     mind.init(buildTreeFromFlashcards(cards));
+    mind.bus.addListener("operation", (operation) => {
+      console.debug("[learning-system] mindmap operation", operation);
+    });
     this.mind = mind;
+    this.enableDragToRoot(container);
+  }
+  /**
+   * 让深层节点可以被「拖拽」到根节点变成一级节点。
+   *
+   * Mind Elixir 的落点校验要求目标节点有 parent,而根节点没有 parent,
+   * 因此根永远不是合法落点(拖不回一级)。这里在容器上加一个【捕获阶段】的
+   * pointerup 监听(早于库内部冒泡监听执行,此时 mind.dragged 尚未被清空):
+   * 若确实在拖拽(ghost 可见)且指针落在根节点包围盒内,就调用与右键相同的
+   * moveNodeIn(被拖节点, 根节点)。内部冒泡监听随后只做清理,不会重复移动。
+   */
+  enableDragToRoot(container) {
+    const handler = (ev) => {
+      const mind = this.mind;
+      if (!mind)
+        return;
+      const dragged = mind.dragged;
+      if (!dragged || dragged.length === 0)
+        return;
+      const ghost = container.querySelector(".mind-elixir-ghost");
+      if (!ghost || ghost.style.display === "none")
+        return;
+      const root = mind.findEle("root");
+      if (!root)
+        return;
+      const rect = root.getBoundingClientRect();
+      const overRoot = ev.clientX >= rect.left && ev.clientX <= rect.right && ev.clientY >= rect.top && ev.clientY <= rect.bottom;
+      if (!overRoot)
+        return;
+      const movable = dragged.filter(
+        (tpc) => {
+          var _a;
+          return tpc.nodeObj.id !== "root" && ((_a = tpc.nodeObj.parent) == null ? void 0 : _a.id) !== "root";
+        }
+      );
+      if (movable.length === 0)
+        return;
+      try {
+        mind.moveNodeIn(movable, root);
+      } catch (e) {
+        console.error("[learning-system] drag-to-root failed", e);
+      }
+    };
+    container.addEventListener("pointerup", handler, true);
+    this.register(() => container.removeEventListener("pointerup", handler, true));
+  }
+  /** 把当前选中的节点移动为根的直接子节点(一级节点)。 */
+  promoteToTopLevel() {
+    var _a;
+    const mind = this.mind;
+    if (!mind)
+      return;
+    const selected = ((_a = mind.currentNodes) == null ? void 0 : _a.length) ? mind.currentNodes : mind.currentNode ? [mind.currentNode] : [];
+    if (selected.length === 0) {
+      new import_obsidian13.Notice("\u8BF7\u5148\u9009\u4E2D\u8981\u63D0\u5347\u7684\u8282\u70B9");
+      return;
+    }
+    const root = mind.findEle("root");
+    if (!root) {
+      new import_obsidian13.Notice("\u672A\u627E\u5230\u6839\u8282\u70B9");
+      return;
+    }
+    const movable = selected.filter(
+      (tpc) => {
+        var _a2;
+        return tpc.nodeObj.id !== "root" && ((_a2 = tpc.nodeObj.parent) == null ? void 0 : _a2.id) !== "root";
+      }
+    );
+    if (movable.length === 0) {
+      new import_obsidian13.Notice("\u9009\u4E2D\u7684\u8282\u70B9\u5DF2\u662F\u4E00\u7EA7\u8282\u70B9");
+      return;
+    }
+    try {
+      mind.moveNodeIn(movable, root);
+    } catch (e) {
+      console.error("[learning-system] promoteToTopLevel failed", e);
+      new import_obsidian13.Notice("\u63D0\u5347\u5931\u8D25,\u89C1\u63A7\u5236\u53F0");
+    }
   }
   async onClose() {
     var _a, _b;
