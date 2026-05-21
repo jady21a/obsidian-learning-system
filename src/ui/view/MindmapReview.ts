@@ -26,6 +26,8 @@ export interface GroupAnswerTarget {
   path: string[];
   nodeText: string;
   deletions: { index: number; answer: string }[];
+  /** 与 deletions 同序:每个空的用户答案与是否正确。 */
+  blanks: { user: string; correct: boolean }[];
 }
 
 function injectStyles() {
@@ -66,33 +68,45 @@ function findByPath(root: NodeObj, path: string[]): NodeObj | null {
   return found;
 }
 
-/** 问题面:节点文本里每个空替换为一段等长横线(不是输入框,也不是 [...])。 */
-function buildBlankHtml(nodeText: string, deletions: { index: number; answer: string }[]): string {
+/** 问题面:节点文本里每个空替换为一段带编号的等长横线(编号对应下方输入框)。 */
+function buildBlankHtml(
+  nodeText: string,
+  deletions: { index: number; answer: string }[],
+  startNo: number
+): { html: string; used: number } {
   const sorted = [...deletions].sort((a, b) => a.index - b.index);
   let html = '';
   let last = 0;
+  let no = startNo;
   for (const d of sorted) {
     html += escapeHtml(nodeText.slice(last, d.index));
     const w = Math.max(2, d.answer.length);
-    html += `<span class="mm-cloze-blank" style="width:${w}ch"></span>`;
+    html += `<sup class="mm-blank-idx">${no}</sup><span class="mm-cloze-blank" style="width:${w}ch"></span>`;
     last = d.index + d.answer.length;
+    no++;
   }
   html += escapeHtml(nodeText.slice(last));
-  return html;
+  return { html, used: no - startNo };
 }
 
-/** 答案面:把被挖空的部分高亮显示出来。 */
-function buildAnswerHtml(t: GroupAnswerTarget): string {
-  const sorted = [...t.deletions].sort((a, b) => a.index - b.index);
+/** 答案面:每个空显示带编号的正确答案,正确绿色、错误红色。 */
+function buildAnswerHtml(t: GroupAnswerTarget, startNo: number): { html: string; used: number } {
+  const sorted = t.deletions
+    .map((d, i) => ({ ...d, i }))
+    .sort((a, b) => a.index - b.index);
   let html = '';
   let last = 0;
+  let no = startNo;
   for (const d of sorted) {
     html += escapeHtml(t.nodeText.slice(last, d.index));
-    html += `<span class="mm-cloze-answer">${escapeHtml(d.answer)}</span>`;
+    const blank = t.blanks[d.i] ?? { user: '', correct: false };
+    const cls = blank.correct ? 'mm-cloze-correct' : 'mm-cloze-wrong';
+    html += `<sup class="mm-blank-idx">${no}</sup><span class="${cls}">${escapeHtml(d.answer)}</span>`;
     last = d.index + d.answer.length;
+    no++;
   }
   html += escapeHtml(t.nodeText.slice(last));
-  return html;
+  return { html, used: no - startNo };
 }
 
 function newReadonlyMap(container: HTMLElement, nodeData: NodeObj) {
@@ -114,8 +128,8 @@ function newReadonlyMap(container: HTMLElement, nodeData: NodeObj) {
 }
 
 /**
- * 分组问题面:从源 .md 重建整棵导图,把每个到期挖空节点显示为等长横线。
- * 任一节点定位失败返回 false(调用方回退)。
+ * 分组问题面:从源 .md 重建整棵导图,把每个到期挖空节点显示为带编号的横线。
+ * 编号与下方输入框列表一一对应。任一节点定位失败返回 false(调用方回退)。
  */
 export async function renderMindmapGroupQuestion(
   app: App,
@@ -128,10 +142,13 @@ export async function renderMindmapGroupQuestion(
   const text = await app.vault.cachedRead(file);
   const { nodeData } = buildTreeFromMarkdown(file.name, text);
 
+  let no = 1;
   for (const t of targets) {
     const node = findByPath(nodeData, t.path);
     if (!node) return false;
-    node.dangerouslySetInnerHTML = buildBlankHtml(t.nodeText, t.deletions);
+    const r = buildBlankHtml(t.nodeText, t.deletions, no);
+    node.dangerouslySetInnerHTML = r.html;
+    no += r.used;
     node.style = { background: '#fff3cd', color: '#000', border: '2px dashed #e0a800' };
   }
 
@@ -139,7 +156,7 @@ export async function renderMindmapGroupQuestion(
   return true;
 }
 
-/** 分组答案面:每个挖空节点显示正确答案并按对错着色。 */
+/** 分组答案面:每个挖空节点显示带编号的正确答案并按对错着色。 */
 export async function renderMindmapGroupAnswer(
   app: App,
   container: HTMLElement,
@@ -151,11 +168,17 @@ export async function renderMindmapGroupAnswer(
   const text = await app.vault.cachedRead(file);
   const { nodeData } = buildTreeFromMarkdown(file.name, text);
 
+  let no = 1;
   for (const t of targets) {
     const node = findByPath(nodeData, t.path);
     if (!node) return false;
-    node.dangerouslySetInnerHTML = buildAnswerHtml(t);
-    node.style = { background: '#4caf50', color: '#fff' };
+    const r = buildAnswerHtml(t, no);
+    node.dangerouslySetInnerHTML = r.html;
+    no += r.used;
+    const allCorrect = t.blanks.every((b) => b.correct);
+    node.style = allCorrect
+      ? { background: '#4caf50', color: '#fff' }
+      : { background: '#f44336', color: '#fff' };
   }
 
   newReadonlyMap(container, nodeData);

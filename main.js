@@ -9070,30 +9070,37 @@ function findByPath(root, path) {
   }
   return found;
 }
-function buildBlankHtml(nodeText, deletions) {
+function buildBlankHtml(nodeText, deletions, startNo) {
   const sorted = [...deletions].sort((a, b) => a.index - b.index);
   let html = "";
   let last = 0;
+  let no2 = startNo;
   for (const d of sorted) {
     html += escapeHtml(nodeText.slice(last, d.index));
     const w = Math.max(2, d.answer.length);
-    html += `<span class="mm-cloze-blank" style="width:${w}ch"></span>`;
+    html += `<sup class="mm-blank-idx">${no2}</sup><span class="mm-cloze-blank" style="width:${w}ch"></span>`;
     last = d.index + d.answer.length;
+    no2++;
   }
   html += escapeHtml(nodeText.slice(last));
-  return html;
+  return { html, used: no2 - startNo };
 }
-function buildAnswerHtml(t2) {
-  const sorted = [...t2.deletions].sort((a, b) => a.index - b.index);
+function buildAnswerHtml(t2, startNo) {
+  var _a;
+  const sorted = t2.deletions.map((d, i) => ({ ...d, i })).sort((a, b) => a.index - b.index);
   let html = "";
   let last = 0;
+  let no2 = startNo;
   for (const d of sorted) {
     html += escapeHtml(t2.nodeText.slice(last, d.index));
-    html += `<span class="mm-cloze-answer">${escapeHtml(d.answer)}</span>`;
+    const blank = (_a = t2.blanks[d.i]) != null ? _a : { user: "", correct: false };
+    const cls = blank.correct ? "mm-cloze-correct" : "mm-cloze-wrong";
+    html += `<sup class="mm-blank-idx">${no2}</sup><span class="${cls}">${escapeHtml(d.answer)}</span>`;
     last = d.index + d.answer.length;
+    no2++;
   }
   html += escapeHtml(t2.nodeText.slice(last));
-  return html;
+  return { html, used: no2 - startNo };
 }
 function newReadonlyMap(container, nodeData) {
   injectStyles();
@@ -9118,11 +9125,14 @@ async function renderMindmapGroupQuestion(app, container, sourceFile, targets) {
     return false;
   const text = await app.vault.cachedRead(file);
   const { nodeData } = buildTreeFromMarkdown(file.name, text);
+  let no2 = 1;
   for (const t2 of targets) {
     const node = findByPath(nodeData, t2.path);
     if (!node)
       return false;
-    node.dangerouslySetInnerHTML = buildBlankHtml(t2.nodeText, t2.deletions);
+    const r = buildBlankHtml(t2.nodeText, t2.deletions, no2);
+    node.dangerouslySetInnerHTML = r.html;
+    no2 += r.used;
     node.style = { background: "#fff3cd", color: "#000", border: "2px dashed #e0a800" };
   }
   newReadonlyMap(container, nodeData);
@@ -9134,12 +9144,16 @@ async function renderMindmapGroupAnswer(app, container, sourceFile, targets) {
     return false;
   const text = await app.vault.cachedRead(file);
   const { nodeData } = buildTreeFromMarkdown(file.name, text);
+  let no2 = 1;
   for (const t2 of targets) {
     const node = findByPath(nodeData, t2.path);
     if (!node)
       return false;
-    node.dangerouslySetInnerHTML = buildAnswerHtml(t2);
-    node.style = { background: "#4caf50", color: "#fff" };
+    const r = buildAnswerHtml(t2, no2);
+    node.dangerouslySetInnerHTML = r.html;
+    no2 += r.used;
+    const allCorrect = t2.blanks.every((b) => b.correct);
+    node.style = allCorrect ? { background: "#4caf50", color: "#fff" } : { background: "#f44336", color: "#fff" };
   }
   newReadonlyMap(container, nodeData);
   return true;
@@ -9148,7 +9162,6 @@ async function renderMindmapGroupAnswer(app, container, sourceFile, targets) {
 // src/ui/view/ReviewView.ts
 var VIEW_TYPE_REVIEW = "learning-system-review";
 var ReviewView = class extends import_obsidian12.ItemView {
-  // 跟踪已复习的卡片
   constructor(leaf, plugin) {
     super(leaf);
     this.dueCards = [];
@@ -9156,6 +9169,12 @@ var ReviewView = class extends import_obsidian12.ItemView {
     this.currentCard = null;
     this.stateManager = new ReviewStateManager();
     this.reviewedCardIds = /* @__PURE__ */ new Set();
+    // 跟踪已复习的卡片
+    // mindmap 分组复习状态
+    this.mmInputs = null;
+    this.mmCaptured = null;
+    this.mmAnswerTargets = null;
+    this.mmGraded = false;
     // ============================================================================
     // 键盘处理
     // ============================================================================
@@ -9394,27 +9413,134 @@ var ReviewView = class extends import_obsidian12.ItemView {
     const deletions = mm.mode === "whole" ? [{ index: 0, answer: nodeText }] : [...mm.deletions].sort((a, b) => a.index - b.index);
     return { cardId: card.id, path: mm.path, nodeText, deletions };
   }
-  /** 该卡 → 答案面目标(展示被挖空内容)。 */
-  toAnswerTarget(card) {
-    var _a;
-    const mm = this.getMindmapMeta(card);
-    const nodeText = (_a = mm.path[mm.path.length - 1]) != null ? _a : "";
-    const deletions = mm.mode === "whole" ? [{ index: 0, answer: nodeText }] : [...mm.deletions].sort((a, b) => a.index - b.index);
-    return { path: mm.path, nodeText, deletions };
-  }
-  /** 翻面后在地图下方按「序号 + 路径 + 答案」列出被挖空内容,供自我对照。 */
-  renderMindmapAnswerList(listDiv, targets) {
+  /** 在地图下方按「序号 + 路径 + 输入框」建立答题列表,返回 cardId → 输入框数组。 */
+  buildMindmapInputs(listDiv, targets) {
     listDiv.empty();
+    const map = {};
     let n = 0;
     for (const t2 of targets) {
       const hint = t2.path.slice(0, -1).join(" / ") || "(\u9876\u5C42)";
+      const arr = [];
       for (const d of [...t2.deletions].sort((a, b) => a.index - b.index)) {
         n++;
         const row = listDiv.createDiv({ cls: "mm-blank-row" });
         row.createSpan({ cls: "mm-blank-no", text: `${n}.` });
         row.createSpan({ cls: "mm-blank-hint", text: hint });
-        row.createSpan({ cls: "mm-cloze-answer", text: d.answer });
+        const input = row.createEl("input", {
+          cls: "mm-cloze-input",
+          attr: { type: "text", placeholder: `${d.answer.length} \u5B57` }
+        });
+        arr.push(input);
       }
+      map[t2.cardId] = arr;
+    }
+    return map;
+  }
+  /** 翻面前把各输入框的值按 cardId 收集起来。 */
+  captureMindmapInputs() {
+    const cap = {};
+    if (this.mmInputs) {
+      for (const [cid, els] of Object.entries(this.mmInputs)) {
+        cap[cid] = els.map((e) => e.value);
+      }
+    }
+    this.mmCaptured = cap;
+  }
+  /** 评估整组(逐空自动评级写回调度),再以答案面重渲染导图 + 下方对比列表。 */
+  async gradeAndRenderMindmapGroup(group, mapDiv, listDiv) {
+    var _a;
+    if (!this.mmGraded) {
+      this.mmAnswerTargets = await this.gradeMindmapGroup(group);
+      this.mmGraded = true;
+    }
+    const targets = (_a = this.mmAnswerTargets) != null ? _a : [];
+    const ok = await renderMindmapGroupAnswer(this.app, mapDiv, group.sourceFile, targets);
+    if (!ok) {
+      mapDiv.empty();
+      mapDiv.createEl("p", { text: "\u6E90\u6587\u4EF6\u5DF2\u53D8\u5316,\u65E0\u6CD5\u91CD\u5EFA\u5BFC\u56FE\u3002", cls: "setting-item-description" });
+    }
+    this.renderMindmapComparison(listDiv, targets);
+  }
+  /** 翻面后在地图下方显示「序号 + 路径 + 正确答案(错误附你的答案)」对比列表。 */
+  renderMindmapComparison(listDiv, targets) {
+    var _a;
+    listDiv.empty();
+    let n = 0;
+    for (const t2 of targets) {
+      const hint = t2.path.slice(0, -1).join(" / ") || "(\u9876\u5C42)";
+      const sorted = [...t2.deletions].map((d, i) => ({ ...d, i })).sort((a, b) => a.index - b.index);
+      for (const d of sorted) {
+        n++;
+        const blank = (_a = t2.blanks[d.i]) != null ? _a : { user: "", correct: false };
+        const row = listDiv.createDiv({ cls: "mm-blank-row" });
+        row.createSpan({ cls: "mm-blank-no", text: `${n}.` });
+        row.createSpan({ cls: "mm-blank-hint", text: hint });
+        row.createSpan({ cls: blank.correct ? "mm-cloze-correct" : "mm-cloze-wrong", text: d.answer });
+        if (!blank.correct) {
+          row.createSpan({
+            cls: "mm-cloze-user",
+            text: blank.user ? `\u4F60\u7684: ${blank.user}` : "(\u672A\u586B)"
+          });
+        }
+        row.createSpan({ cls: "mm-cmp-mark", text: blank.correct ? " \u2713" : " \u2717" });
+      }
+    }
+  }
+  /** 逐空用 evaluateAnswer 自动评级并写回各卡调度,返回答案面渲染目标。 */
+  async gradeMindmapGroup(group) {
+    var _a, _b, _c, _d;
+    const targets = [];
+    const timeSpent = (Date.now() - this.stateManager.getState().startTime) / 1e3;
+    for (const card of group.cards) {
+      const mm = this.getMindmapMeta(card);
+      const nodeText = (_a = mm.path[mm.path.length - 1]) != null ? _a : "";
+      const deletions = mm.mode === "whole" ? [{ index: 0, answer: nodeText }] : [...mm.deletions].sort((a, b) => a.index - b.index);
+      const userArr = (_c = (_b = this.mmCaptured) == null ? void 0 : _b[card.id]) != null ? _c : [];
+      const blanks = deletions.map((d, k) => {
+        var _a2;
+        const user = ((_a2 = userArr[k]) != null ? _a2 : "").trim();
+        const ev = this.scheduler.evaluateAnswer(d.answer, user);
+        return { user, correct: ev.correctness !== "wrong" };
+      });
+      const correctArr = deletions.map((d) => d.answer);
+      const overall = correctArr.length === 1 ? this.scheduler.evaluateAnswer(correctArr[0], (_d = userArr[0]) != null ? _d : "") : this.scheduler.evaluateAnswer(correctArr, this.padArray(userArr, correctArr.length));
+      const ease = this.scheduler.suggestEase(overall.similarity);
+      const { updatedCard, reviewLog } = this.scheduler.schedule(card, ease, timeSpent, userArr);
+      await this.plugin.flashcardManager.updateCard(updatedCard);
+      await this.plugin.flashcardManager.logReview({
+        id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        cycle: this.plugin.analyticsEngine.getCurrentCycleNumber(),
+        ...reviewLog
+      });
+      await this.plugin.unlockSystem.onCardReviewed();
+      this.reviewedCardIds.add(card.id);
+      targets.push({ path: mm.path, nodeText, deletions, blanks });
+    }
+    return targets;
+  }
+  padArray(arr, len) {
+    return Array.from({ length: len }, (_, i) => {
+      var _a;
+      return (_a = arr[i]) != null ? _a : "";
+    });
+  }
+  /** 整组复习完成后推进到下一张未复习的卡。 */
+  async advancePastMindmapGroup() {
+    this.resetReviewState();
+    this.mmInputs = null;
+    this.mmCaptured = null;
+    this.mmAnswerTargets = null;
+    this.mmGraded = false;
+    const next = this.findNextUnreviewedCard(0);
+    if (next === -1) {
+      new import_obsidian12.Notice("\u2705 Review session complete!");
+      this.currentCard = null;
+      this.dueCards = [];
+      this.render();
+    } else {
+      this.currentCardIndex = next;
+      this.updateCurrentCard("next");
+      this.render();
     }
   }
   renderQuestionView(container) {
@@ -9427,22 +9553,31 @@ var ReviewView = class extends import_obsidian12.ItemView {
     if (group) {
       const targets = group.cards.map((c) => this.toQuestionTarget(c));
       const mapDiv = questionArea.createDiv({ cls: "mindmap-review-card" });
+      const listDiv = questionArea.createDiv({ cls: "mm-blank-list" });
+      this.mmCaptured = null;
+      this.mmAnswerTargets = null;
+      this.mmGraded = false;
       void renderMindmapGroupQuestion(this.app, mapDiv, group.sourceFile, targets).then((ok) => {
         if (!ok) {
           mapDiv.remove();
           questionArea.createEl("p", { text: "\u6E90\u6587\u4EF6\u5DF2\u53D8\u5316,\u65E0\u6CD5\u91CD\u5EFA\u5BFC\u56FE\u3002", cls: "setting-item-description" });
         }
       });
+      this.mmInputs = this.buildMindmapInputs(listDiv, targets);
       mapDiv.addEventListener("click", () => {
         if (!this.stateManager.getState().showAnswer) {
+          this.captureMindmapInputs();
           this.stateManager.setShowAnswer(true);
           this.render();
         }
       });
       const actionRow2 = container.createDiv({ cls: "action-row" });
-      this.renderNavigationButton(actionRow2, "prev");
-      this.renderShowAnswerButton(actionRow2);
-      this.renderNavigationButton(actionRow2, "next");
+      const showBtn = actionRow2.createEl("button", { text: "Show answer", cls: "mod-cta show-answer-btn" });
+      showBtn.addEventListener("click", () => {
+        this.captureMindmapInputs();
+        this.stateManager.setShowAnswer(true);
+        this.render();
+      });
       return;
     }
     const renderer = CardRendererFactory.getRenderer(this.currentCard.type);
@@ -9475,18 +9610,10 @@ var ReviewView = class extends import_obsidian12.ItemView {
       answerArea.createEl("h3", { text: "Answer" });
       const mapDiv = answerArea.createDiv({ cls: "mindmap-review-card" });
       const listDiv = answerArea.createDiv({ cls: "mm-blank-list mm-cmp-list" });
-      const targets = group.cards.map((c) => this.toAnswerTarget(c));
-      void renderMindmapGroupAnswer(this.app, mapDiv, group.sourceFile, targets).then((ok) => {
-        if (!ok) {
-          mapDiv.empty();
-          mapDiv.createEl("p", { text: "\u6E90\u6587\u4EF6\u5DF2\u53D8\u5316,\u65E0\u6CD5\u91CD\u5EFA\u5BFC\u56FE\u3002", cls: "setting-item-description" });
-        }
-      });
-      this.renderMindmapAnswerList(listDiv, targets);
       const actionRow2 = container.createDiv({ cls: "action-row" });
-      this.renderNavigationButton(actionRow2, "prev");
-      this.renderRatingButtons(actionRow2);
-      this.renderNavigationButton(actionRow2, "next");
+      const nextBtn = actionRow2.createEl("button", { text: "Next", cls: "mod-cta" });
+      nextBtn.addEventListener("click", () => void this.advancePastMindmapGroup());
+      void this.gradeAndRenderMindmapGroup(group, mapDiv, listDiv);
       return;
     }
     const isQuestionTable = TableRenderer.isTableFormat(this.currentCard.front);
@@ -9576,11 +9703,22 @@ var ReviewView = class extends import_obsidian12.ItemView {
     });
   }
   go(direction) {
-    var _a;
+    var _a, _b;
     const state = this.stateManager.getState();
+    const mmCard = !!this.currentCard && !!((_a = this.getMindmapMeta(this.currentCard)) == null ? void 0 : _a.sourceFile);
+    if (mmCard && direction === "next") {
+      if (!state.showAnswer) {
+        this.captureMindmapInputs();
+        this.stateManager.setShowAnswer(true);
+        this.render();
+      } else {
+        void this.advancePastMindmapGroup();
+      }
+      return;
+    }
     if (direction === "next") {
       if (!state.showAnswer) {
-        const hasCurrentInput = ((_a = this.currentCard) == null ? void 0 : _a.type) === "cloze" ? state.userAnswers.some((ans) => ans && ans.trim() !== "") : state.userAnswer.trim() !== "";
+        const hasCurrentInput = ((_b = this.currentCard) == null ? void 0 : _b.type) === "cloze" ? state.userAnswers.some((ans) => ans && ans.trim() !== "") : state.userAnswer.trim() !== "";
         if (!hasCurrentInput) {
           this.stateManager.reset();
         }
@@ -9627,34 +9765,6 @@ var ReviewView = class extends import_obsidian12.ItemView {
     if (!this.currentCard)
       return;
     const timeSpent = (Date.now() - this.stateManager.getState().startTime) / 1e3;
-    const group = this.getMindmapGroup(this.currentCard);
-    if (group) {
-      for (const card of group.cards) {
-        const { updatedCard: updatedCard2, reviewLog: reviewLog2 } = this.scheduler.schedule(card, ease, timeSpent, void 0);
-        await this.plugin.flashcardManager.updateCard(updatedCard2);
-        await this.plugin.flashcardManager.logReview({
-          id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-          cycle: this.plugin.analyticsEngine.getCurrentCycleNumber(),
-          ...reviewLog2
-        });
-        await this.plugin.unlockSystem.onCardReviewed();
-        this.reviewedCardIds.add(card.id);
-        this.stateManager.clearCache(card.id);
-      }
-      this.resetReviewState();
-      const next = this.findNextUnreviewedCard(0);
-      if (next === -1) {
-        new import_obsidian12.Notice("\u2705 Review session complete!");
-        this.currentCard = null;
-        this.dueCards = [];
-        this.render();
-      } else {
-        this.currentCardIndex = next;
-        this.updateCurrentCard("next");
-        this.render();
-      }
-      return;
-    }
     const userAnswer = this.currentCard.type === "cloze" ? this.stateManager.getState().userAnswers : this.currentCard.type === "qa" ? this.stateManager.getState().userAnswer : void 0;
     const { updatedCard, reviewLog } = this.scheduler.schedule(
       this.currentCard,

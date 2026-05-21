@@ -35,6 +35,11 @@ export class ReviewView extends ItemView {
   private currentCard: Flashcard | null = null;
   private stateManager: ReviewStateManager = new ReviewStateManager();
   private reviewedCardIds: Set<string> = new Set(); // 跟踪已复习的卡片
+  // mindmap 分组复习状态
+  private mmInputs: Record<string, HTMLInputElement[]> | null = null;
+  private mmCaptured: Record<string, string[]> | null = null;
+  private mmAnswerTargets: GroupAnswerTarget[] | null = null;
+  private mmGraded = false;
 
   constructor(leaf: WorkspaceLeaf, plugin: LearningSystemPlugin) {
     super(leaf);
@@ -283,28 +288,159 @@ export class ReviewView extends ItemView {
     return { cardId: card.id, path: mm.path, nodeText, deletions };
   }
 
-  /** 该卡 → 答案面目标(展示被挖空内容)。 */
-  private toAnswerTarget(card: Flashcard): GroupAnswerTarget {
-    const mm = this.getMindmapMeta(card)!;
-    const nodeText = mm.path[mm.path.length - 1] ?? '';
-    const deletions =
-      mm.mode === 'whole' ? [{ index: 0, answer: nodeText }] : [...mm.deletions].sort((a, b) => a.index - b.index);
-    return { path: mm.path, nodeText, deletions };
-  }
-
-  /** 翻面后在地图下方按「序号 + 路径 + 答案」列出被挖空内容,供自我对照。 */
-  private renderMindmapAnswerList(listDiv: HTMLElement, targets: GroupAnswerTarget[]) {
+  /** 在地图下方按「序号 + 路径 + 输入框」建立答题列表,返回 cardId → 输入框数组。 */
+  private buildMindmapInputs(
+    listDiv: HTMLElement,
+    targets: GroupQuestionTarget[]
+  ): Record<string, HTMLInputElement[]> {
     listDiv.empty();
+    const map: Record<string, HTMLInputElement[]> = {};
     let n = 0;
     for (const t of targets) {
       const hint = t.path.slice(0, -1).join(' / ') || '(顶层)';
+      const arr: HTMLInputElement[] = [];
       for (const d of [...t.deletions].sort((a, b) => a.index - b.index)) {
         n++;
         const row = listDiv.createDiv({ cls: 'mm-blank-row' });
         row.createSpan({ cls: 'mm-blank-no', text: `${n}.` });
         row.createSpan({ cls: 'mm-blank-hint', text: hint });
-        row.createSpan({ cls: 'mm-cloze-answer', text: d.answer });
+        const input = row.createEl('input', {
+          cls: 'mm-cloze-input',
+          attr: { type: 'text', placeholder: `${d.answer.length} 字` },
+        });
+        arr.push(input);
       }
+      map[t.cardId] = arr;
+    }
+    return map;
+  }
+
+  /** 翻面前把各输入框的值按 cardId 收集起来。 */
+  private captureMindmapInputs() {
+    const cap: Record<string, string[]> = {};
+    if (this.mmInputs) {
+      for (const [cid, els] of Object.entries(this.mmInputs)) {
+        cap[cid] = els.map((e) => e.value);
+      }
+    }
+    this.mmCaptured = cap;
+  }
+
+  /** 评估整组(逐空自动评级写回调度),再以答案面重渲染导图 + 下方对比列表。 */
+  private async gradeAndRenderMindmapGroup(
+    group: { sourceFile: string; cards: Flashcard[] },
+    mapDiv: HTMLElement,
+    listDiv: HTMLElement
+  ) {
+    if (!this.mmGraded) {
+      this.mmAnswerTargets = await this.gradeMindmapGroup(group);
+      this.mmGraded = true;
+    }
+    const targets = this.mmAnswerTargets ?? [];
+    const ok = await renderMindmapGroupAnswer(this.app, mapDiv, group.sourceFile, targets);
+    if (!ok) {
+      mapDiv.empty();
+      mapDiv.createEl('p', { text: '源文件已变化,无法重建导图。', cls: 'setting-item-description' });
+    }
+    this.renderMindmapComparison(listDiv, targets);
+  }
+
+  /** 翻面后在地图下方显示「序号 + 路径 + 正确答案(错误附你的答案)」对比列表。 */
+  private renderMindmapComparison(listDiv: HTMLElement, targets: GroupAnswerTarget[]) {
+    listDiv.empty();
+    let n = 0;
+    for (const t of targets) {
+      const hint = t.path.slice(0, -1).join(' / ') || '(顶层)';
+      const sorted = [...t.deletions]
+        .map((d, i) => ({ ...d, i }))
+        .sort((a, b) => a.index - b.index);
+      for (const d of sorted) {
+        n++;
+        const blank = t.blanks[d.i] ?? { user: '', correct: false };
+        const row = listDiv.createDiv({ cls: 'mm-blank-row' });
+        row.createSpan({ cls: 'mm-blank-no', text: `${n}.` });
+        row.createSpan({ cls: 'mm-blank-hint', text: hint });
+        row.createSpan({ cls: blank.correct ? 'mm-cloze-correct' : 'mm-cloze-wrong', text: d.answer });
+        if (!blank.correct) {
+          row.createSpan({
+            cls: 'mm-cloze-user',
+            text: blank.user ? `你的: ${blank.user}` : '(未填)',
+          });
+        }
+        row.createSpan({ cls: 'mm-cmp-mark', text: blank.correct ? ' ✓' : ' ✗' });
+      }
+    }
+  }
+
+  /** 逐空用 evaluateAnswer 自动评级并写回各卡调度,返回答案面渲染目标。 */
+  private async gradeMindmapGroup(group: {
+    sourceFile: string;
+    cards: Flashcard[];
+  }): Promise<GroupAnswerTarget[]> {
+    const targets: GroupAnswerTarget[] = [];
+    const timeSpent = (Date.now() - this.stateManager.getState().startTime) / 1000;
+
+    for (const card of group.cards) {
+      const mm = this.getMindmapMeta(card)!;
+      const nodeText = mm.path[mm.path.length - 1] ?? '';
+      const deletions =
+        mm.mode === 'whole'
+          ? [{ index: 0, answer: nodeText }]
+          : [...mm.deletions].sort((a, b) => a.index - b.index);
+      const userArr = this.mmCaptured?.[card.id] ?? [];
+
+      // 逐空判定对错(用于着色)
+      const blanks = deletions.map((d, k) => {
+        const user = (userArr[k] ?? '').trim();
+        const ev = this.scheduler.evaluateAnswer(d.answer, user);
+        return { user, correct: ev.correctness !== 'wrong' };
+      });
+
+      // 整卡评估 → 评级 → 写回调度
+      const correctArr = deletions.map((d) => d.answer);
+      const overall =
+        correctArr.length === 1
+          ? this.scheduler.evaluateAnswer(correctArr[0], userArr[0] ?? '')
+          : this.scheduler.evaluateAnswer(correctArr, this.padArray(userArr, correctArr.length));
+      const ease = this.scheduler.suggestEase(overall.similarity);
+
+      const { updatedCard, reviewLog } = this.scheduler.schedule(card, ease, timeSpent, userArr);
+      await this.plugin.flashcardManager.updateCard(updatedCard);
+      await this.plugin.flashcardManager.logReview({
+        id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        cycle: this.plugin.analyticsEngine.getCurrentCycleNumber(),
+        ...reviewLog,
+      });
+      await this.plugin.unlockSystem.onCardReviewed();
+      this.reviewedCardIds.add(card.id);
+
+      targets.push({ path: mm.path, nodeText, deletions, blanks });
+    }
+    return targets;
+  }
+
+  private padArray(arr: string[], len: number): string[] {
+    return Array.from({ length: len }, (_, i) => arr[i] ?? '');
+  }
+
+  /** 整组复习完成后推进到下一张未复习的卡。 */
+  private async advancePastMindmapGroup() {
+    this.resetReviewState();
+    this.mmInputs = null;
+    this.mmCaptured = null;
+    this.mmAnswerTargets = null;
+    this.mmGraded = false;
+
+    const next = this.findNextUnreviewedCard(0);
+    if (next === -1) {
+      new Notice('✅ Review session complete!');
+      this.currentCard = null;
+      this.dueCards = [];
+      this.render();
+    } else {
+      this.currentCardIndex = next;
+      this.updateCurrentCard('next');
+      this.render();
     }
   }
 
@@ -320,29 +456,39 @@ export class ReviewView extends ItemView {
 
     const group = this.getMindmapGroup(this.currentCard);
     if (group) {
-      // mindmap 分组:同源文件的所有到期挖空汇总到一张卡,挖空显示为等长横线
+      // mindmap 分组:同源文件的所有到期挖空汇总到一张卡;
+      // 地图里挖空显示为带编号的横线,下方是对应编号的输入框列表
       const targets = group.cards.map((c) => this.toQuestionTarget(c));
       const mapDiv = questionArea.createDiv({ cls: 'mindmap-review-card' });
+      const listDiv = questionArea.createDiv({ cls: 'mm-blank-list' });
+      this.mmCaptured = null;
+      this.mmAnswerTargets = null;
+      this.mmGraded = false;
       void renderMindmapGroupQuestion(this.app, mapDiv, group.sourceFile, targets).then((ok) => {
         if (!ok) {
           mapDiv.remove();
           questionArea.createEl('p', { text: '源文件已变化,无法重建导图。', cls: 'setting-item-description' });
         }
       });
+      this.mmInputs = this.buildMindmapInputs(listDiv, targets);
 
-      // 点击地图即翻面(与 Tab / 按钮统一)
+      // 点击地图即翻面(先收集输入)
       mapDiv.addEventListener('click', () => {
         if (!this.stateManager.getState().showAnswer) {
+          this.captureMindmapInputs();
           this.stateManager.setShowAnswer(true);
           this.render();
         }
       });
 
-      // 标准操作行:翻页 + Show answer(Tab / Enter 与其他卡统一)
+      // Show answer 按钮(Tab/箭头由 go() 统一处理:也会先收集输入再翻面)
       const actionRow = container.createDiv({ cls: 'action-row' });
-      this.renderNavigationButton(actionRow, 'prev');
-      this.renderShowAnswerButton(actionRow);
-      this.renderNavigationButton(actionRow, 'next');
+      const showBtn = actionRow.createEl('button', { text: 'Show answer', cls: 'mod-cta show-answer-btn' });
+      showBtn.addEventListener('click', () => {
+        this.captureMindmapInputs();
+        this.stateManager.setShowAnswer(true);
+        this.render();
+      });
       return;
     }
 
@@ -380,20 +526,10 @@ export class ReviewView extends ItemView {
       answerArea.createEl('h3', { text: 'Answer' });
       const mapDiv = answerArea.createDiv({ cls: 'mindmap-review-card' });
       const listDiv = answerArea.createDiv({ cls: 'mm-blank-list mm-cmp-list' });
-      const targets = group.cards.map((c) => this.toAnswerTarget(c));
-      void renderMindmapGroupAnswer(this.app, mapDiv, group.sourceFile, targets).then((ok) => {
-        if (!ok) {
-          mapDiv.empty();
-          mapDiv.createEl('p', { text: '源文件已变化,无法重建导图。', cls: 'setting-item-description' });
-        }
-      });
-      this.renderMindmapAnswerList(listDiv, targets);
-
-      // 标准评级行(与其他卡统一:Tab / 1-4 生效,评级套用到整组)
       const actionRow = container.createDiv({ cls: 'action-row' });
-      this.renderNavigationButton(actionRow, 'prev');
-      this.renderRatingButtons(actionRow);
-      this.renderNavigationButton(actionRow, 'next');
+      const nextBtn = actionRow.createEl('button', { text: 'Next', cls: 'mod-cta' });
+      nextBtn.addEventListener('click', () => void this.advancePastMindmapGroup());
+      void this.gradeAndRenderMindmapGroup(group, mapDiv, listDiv);
       return;
     }
 
@@ -515,6 +651,19 @@ export class ReviewView extends ItemView {
   private go(direction: 'prev' | 'next') {
     const state = this.stateManager.getState();
 
+    // mindmap 分组卡:正面→捕获输入并翻面;背面→推进过整组
+    const mmCard = !!this.currentCard && !!this.getMindmapMeta(this.currentCard)?.sourceFile;
+    if (mmCard && direction === 'next') {
+      if (!state.showAnswer) {
+        this.captureMindmapInputs();
+        this.stateManager.setShowAnswer(true);
+        this.render();
+      } else {
+        void this.advancePastMindmapGroup();
+      }
+      return;
+    }
+
     if (direction === 'next') {
       if (!state.showAnswer) {
         // 正面 → 背面
@@ -583,40 +732,10 @@ export class ReviewView extends ItemView {
   // ============================================================================
   private async submitReview(ease: ReviewEase) {
     if (!this.currentCard) return;
-
+  
     const timeSpent = (Date.now() - this.stateManager.getState().startTime) / 1000;
-
-    // mindmap 分组:同一评级套用到该 mindmap 的所有到期挖空卡
-    const group = this.getMindmapGroup(this.currentCard);
-    if (group) {
-      for (const card of group.cards) {
-        const { updatedCard, reviewLog } = this.scheduler.schedule(card, ease, timeSpent, undefined);
-        await this.plugin.flashcardManager.updateCard(updatedCard);
-        await this.plugin.flashcardManager.logReview({
-          id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-          cycle: this.plugin.analyticsEngine.getCurrentCycleNumber(),
-          ...reviewLog,
-        });
-        await this.plugin.unlockSystem.onCardReviewed();
-        this.reviewedCardIds.add(card.id);
-        this.stateManager.clearCache(card.id);
-      }
-      this.resetReviewState();
-      const next = this.findNextUnreviewedCard(0);
-      if (next === -1) {
-        new Notice('✅ Review session complete!');
-        this.currentCard = null;
-        this.dueCards = [];
-        this.render();
-      } else {
-        this.currentCardIndex = next;
-        this.updateCurrentCard('next');
-        this.render();
-      }
-      return;
-    }
-
-    const userAnswer = this.currentCard.type === 'cloze'
+  
+    const userAnswer = this.currentCard.type === 'cloze' 
       ? this.stateManager.getState().userAnswers 
       : this.currentCard.type === 'qa'
       ? this.stateManager.getState().userAnswer
