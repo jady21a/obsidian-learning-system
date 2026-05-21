@@ -3231,3 +3231,15 @@ color: var(--text-muted);
   text-decoration: line-through;
   opacity: 0.85;
 }
+/* 问题面:挖空显示为等长横线 */
+.mm-cloze-blank {
+  display: inline-block;
+  border-bottom: 2px solid currentColor;
+  min-width: 2ch;
+  vertical-align: bottom;
+}
+/* 答案面:被挖空内容高亮 */
+.mm-cloze-answer {
+  font-weight: 700;
+  text-decoration: underline;
+}
