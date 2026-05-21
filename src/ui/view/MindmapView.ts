@@ -6,7 +6,11 @@ import {
   buildTreeFromFlashcards,
   buildTreeFromMarkdown,
   serializeOutline,
+  type OutlineNodeMeta,
 } from '../../core/MindmapTreeBuilder';
+import type { NodeObj } from 'mind-elixir';
+import type { ContentUnit } from '../../core/DataManager';
+import { ClozeBlankModal, type ClozeResult } from './ClozeBlankModal';
 
 export const VIEW_TYPE_MINDMAP = 'learning-system-mindmap';
 
@@ -31,6 +35,12 @@ const WRITE_BACK_OPS = new Set<string>([
 interface MindmapViewState {
   /** 指定来源文件路径时,按该文档大纲渲染;为空则渲染全部闪卡。 */
   filePath?: string | null;
+  /** 指定一段文本时,按该文本大纲渲染为「临时导图」(不回写任何文件)。 */
+  inlineText?: string | null;
+  /** 临时导图的来源文件(用于卡片回链),可为空。 */
+  sourceFile?: string | null;
+  /** 临时导图标题。 */
+  title?: string | null;
 }
 
 export class MindmapView extends ItemView {
@@ -38,6 +48,9 @@ export class MindmapView extends ItemView {
   private mind: MindElixirInstance | null = null;
   private container: HTMLElement | null = null;
   private filePath: string | null = null;
+  private inlineText: string | null = null;
+  private sourceFile: string | null = null;
+  private title: string | null = null;
   private modifyWatcherRegistered = false;
   private refreshTimer: number | null = null;
   /** 主标题是否已定位到左侧(每次重新渲染重置)。 */
@@ -55,6 +68,7 @@ export class MindmapView extends ItemView {
   }
 
   getDisplayText(): string {
+    if (this.inlineText != null) return `Mindmap: ${this.title || '选区'}`;
     if (this.filePath) {
       const name = this.filePath.split('/').pop()?.replace(/\.md$/, '');
       return `Mindmap: ${name}`;
@@ -69,11 +83,17 @@ export class MindmapView extends ItemView {
   getState(): Record<string, unknown> {
     const state = super.getState() as Record<string, unknown>;
     state.filePath = this.filePath;
+    state.inlineText = this.inlineText;
+    state.sourceFile = this.sourceFile;
+    state.title = this.title;
     return state;
   }
 
   async setState(state: MindmapViewState, result: ViewStateResult): Promise<void> {
     this.filePath = state?.filePath ?? null;
+    this.inlineText = state?.inlineText ?? null;
+    this.sourceFile = state?.sourceFile ?? null;
+    this.title = state?.title ?? null;
     await super.setState(state, result);
     await this.renderMindmap();
   }
@@ -153,7 +173,10 @@ export class MindmapView extends ItemView {
     this.container = container;
 
     let data: MindElixirData;
-    if (this.filePath) {
+    if (this.inlineText != null) {
+      // 临时导图:从选区文本解析,不回写任何文件
+      data = buildTreeFromMarkdown(this.title || '选区', this.inlineText);
+    } else if (this.filePath) {
       const file = this.app.vault.getAbstractFileByPath(this.filePath);
       if (!(file instanceof TFile)) {
         container.setText(`找不到文件:${this.filePath}`);
@@ -183,6 +206,14 @@ export class MindmapView extends ItemView {
           {
             name: 'Promote to top level',
             onclick: () => this.promoteToTopLevel(),
+          },
+          {
+            name: '挖空整个节点(cloze)',
+            onclick: () => this.clozeWholeNode(),
+          },
+          {
+            name: '挖空选中词(cloze)',
+            onclick: () => this.clozeWords(),
           },
         ],
       },
@@ -348,6 +379,138 @@ export class MindmapView extends ItemView {
       console.error('[learning-system] promoteToTopLevel failed', e);
       new Notice('提升失败,见控制台');
     }
+  }
+
+  // ==================== 节点挖空(cloze)====================
+
+  /** 当前选中的节点(Topic 元素)。 */
+  private currentTopic() {
+    return this.mind?.currentNode ?? null;
+  }
+
+  /** 节点的纯文本(优先用解析时保留的原始 text,否则从标签剥掉显示符号)。 */
+  private nodeCleanText(obj: NodeObj): string {
+    const meta = obj.metadata as OutlineNodeMeta | undefined;
+    if (meta?.text) return meta.text;
+    let t = obj.topic;
+    t = t.replace(/^(#{1,6}|[IVXLCDMivxlcdm]+|[-*+]|\d+[.)]|!!)\s+/, '');
+    t = t.replace(/^\[[ xX]\]\s+/, '');
+    return t.trim();
+  }
+
+  /** 从根到父节点(不含根、不含自身)的纯文本数组。 */
+  private parentPathArray(obj: NodeObj): string[] {
+    const parts: string[] = [];
+    let p = obj.parent;
+    while (p && p.id !== 'root') {
+      parts.unshift(this.nodeCleanText(p));
+      p = p.parent;
+    }
+    return parts;
+  }
+
+  /** 从父节点到根(不含根)的纯文本路径,作为挖空线索。 */
+  private parentPath(obj: NodeObj): string {
+    return this.parentPathArray(obj).join(' / ');
+  }
+
+  /** 挖空整个节点:节点文本作为答案,父路径作为线索。 */
+  private clozeWholeNode() {
+    const topic = this.currentTopic();
+    if (!topic) {
+      new Notice('请先选中一个节点');
+      return;
+    }
+    const text = this.nodeCleanText(topic.nodeObj);
+    if (!text) {
+      new Notice('该节点没有可挖空的文本');
+      return;
+    }
+    const path = this.parentPath(topic.nodeObj);
+    const original = path ? `${path} → ${text}` : text;
+    const deletions = [{ index: original.length - text.length, answer: text }];
+    void this.createClozeFromNode({ original, deletions, topic, mode: 'whole', nodeText: text });
+  }
+
+  /** 挖空选中词:弹窗让用户用 == 标记要挖空的词。 */
+  private clozeWords() {
+    const topic = this.currentTopic();
+    if (!topic) {
+      new Notice('请先选中一个节点');
+      return;
+    }
+    const text = this.nodeCleanText(topic.nodeObj);
+    new ClozeBlankModal(this.app, text, (result: ClozeResult) => {
+      void this.createClozeFromNode({
+        original: result.original,
+        deletions: result.deletions,
+        topic,
+        mode: 'words',
+        nodeText: text,
+      });
+    }).open();
+  }
+
+  /** 创建 cloze 卡(先建 ContentUnit 再建卡),并给节点加视觉标记。 */
+  private async createClozeFromNode(opts: {
+    original: string;
+    deletions: { index: number; answer: string }[];
+    topic: { nodeObj: NodeObj };
+    mode: 'whole' | 'words';
+    nodeText: string;
+  }) {
+    const { original, deletions, topic, mode, nodeText } = opts;
+    try {
+      const now = Date.now();
+      const id = `mm-cloze-${now}-${Math.random().toString(36).slice(2, 7)}`;
+      // 来源文件:临时导图用 sourceFile,文档导图用 filePath
+      const srcFile = this.sourceFile ?? this.filePath ?? null;
+      const base = srcFile ? srcFile.split('/').pop()!.replace(/\.md$/, '') : '';
+      // 复习时重建导图所需的定位信息:源文件 + 根到该节点的纯文本路径 + 模式
+      const path = [...this.parentPathArray(topic.nodeObj), nodeText];
+      const unit: ContentUnit = {
+        id,
+        type: 'cloze',
+        content: original,
+        fullContext: original,
+        source: {
+          file: srcFile || '(mindmap)',
+          position: { start: 0, end: 0, line: 0 },
+          anchorLink: srcFile ? `[[${base}]]` : '',
+        },
+        extractRule: { ruleId: 'mindmap-cloze', ruleName: 'Mindmap Cloze', extractedBy: 'manual' },
+        metadata: {
+          createdAt: now,
+          updatedAt: now,
+          tags: [],
+          customData: {
+            mindmap: {
+              sourceFile: srcFile,
+              path,
+              mode,
+              deletions: mode === 'words' ? deletions : [],
+            },
+          },
+        },
+        flashcardIds: [],
+      };
+      await this.plugin.dataManager.saveContentUnit(unit);
+      await this.plugin.flashcardManager.createClozeCard(id, original, deletions);
+      this.markNodeCloze(topic);
+      new Notice('已加入间隔记忆(cloze)');
+    } catch (e) {
+      console.error('[learning-system] create cloze failed', e);
+      new Notice('创建挖空卡失败,见控制台');
+    }
+  }
+
+  /** 给节点加 cloze 标签作为视觉标记。 */
+  private markNodeCloze(topic: { nodeObj: NodeObj }) {
+    if (!this.mind) return;
+    const obj = topic.nodeObj;
+    const tags = Array.isArray(obj.tags) ? obj.tags.map((t) => String(t)) : [];
+    if (!tags.includes('cloze')) tags.push('cloze');
+    this.mind.reshapeNode(topic as never, { tags });
   }
 
   async onClose() {

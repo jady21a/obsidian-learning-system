@@ -140,6 +140,22 @@ this.registerEvent(
   this.app.workspace.on('editor-menu', (menu, editor, view) => {
     if (view instanceof MarkdownView && view.file) {
       this.extractionEngine.registerContextMenu(menu, editor, view.file);
+      const selection = editor.getSelection();
+      if (selection && selection.trim().length > 0) {
+        const file = view.file;
+        menu.addItem((item) =>
+          item
+            .setTitle('Generate mindmap from selection')
+            .setIcon('git-fork')
+            .onClick(() => {
+              void this.activateMindmap({
+                inlineText: selection,
+                sourceFile: file.path,
+                title: `${file.basename}(选区)`,
+              });
+            })
+        );
+      }
     }
   })
 );
@@ -322,7 +338,25 @@ async saveCycleData() {
         const file = this.app.workspace.getActiveFile();
         const ok = !!file && file.extension === 'md';
         if (ok && !checking) {
-          void this.activateMindmap(file!.path);
+          void this.activateMindmap({ filePath: file!.path });
+        }
+        return ok;
+      }
+    });
+
+    this.addCommand({
+      id: 'generate-mindmap-from-selection',
+      name: 'Generate mindmap from selection',
+      editorCheckCallback: (checking, editor, ctx) => {
+        const selection = editor.getSelection();
+        const ok = !!selection && selection.trim().length > 0;
+        if (ok && !checking) {
+          const file = ctx.file;
+          void this.activateMindmap({
+            inlineText: selection,
+            sourceFile: file?.path ?? null,
+            title: file ? `${file.basename}(选区)` : '选区',
+          });
         }
         return ok;
       }
@@ -330,21 +364,26 @@ async saveCycleData() {
 
   }
 
-  /**
-   * 打开 Mindmap 视图。
-   * @param filePath 传入则按该文档大纲渲染;不传则渲染全部闪卡。
-   */
-  async activateMindmap(filePath?: string) {
+  /** 打开 Mindmap 视图。 */
+  async activateMindmap(
+    opts: { filePath?: string | null; inlineText?: string | null; sourceFile?: string | null; title?: string | null } = {}
+  ) {
     const { workspace } = this.app;
-    // 指定文件时总是新开一个标签,避免覆盖已打开的全局/其它文件导图
-    let leaf = filePath ? null : workspace.getLeavesOfType(VIEW_TYPE_MINDMAP)[0];
+    // 指定文件/选区时总是新开一个标签,避免覆盖已打开的全局导图
+    const dedicated = opts.filePath || opts.inlineText;
+    let leaf = dedicated ? null : workspace.getLeavesOfType(VIEW_TYPE_MINDMAP)[0];
     if (!leaf) {
       leaf = workspace.getLeaf('tab');
     }
     await leaf.setViewState({
       type: VIEW_TYPE_MINDMAP,
       active: true,
-      state: { filePath: filePath ?? null },
+      state: {
+        filePath: opts.filePath ?? null,
+        inlineText: opts.inlineText ?? null,
+        sourceFile: opts.sourceFile ?? null,
+        title: opts.title ?? null,
+      },
     });
     void workspace.revealLeaf(leaf);
   }

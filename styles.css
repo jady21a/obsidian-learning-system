@@ -3174,3 +3174,60 @@ color: var(--text-muted);
       grid-template-columns: 1fr;
     }
   }
+
+/* ===== Mindmap 复习卡片 ===== */
+.mindmap-review-card {
+  width: 100%;
+  margin: 8px 0;
+}
+.mm-review-map {
+  width: 100%;
+  height: 320px;
+}
+.mm-blank-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mm-blank-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mm-blank-no {
+  font-weight: 600;
+  min-width: 1.8em;
+}
+.mm-blank-hint {
+  color: var(--text-muted);
+  font-size: 0.85em;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mm-cloze-input {
+  border: none;
+  border-bottom: 2px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+  min-width: 4ch;
+  flex: 1;
+  padding: 2px 4px;
+}
+.mm-cloze-correct {
+  color: #1a7f37;
+  font-weight: 600;
+}
+.mm-cloze-wrong {
+  color: #b00020;
+  font-weight: 600;
+}
+.mm-cloze-user {
+  font-style: italic;
+  text-decoration: line-through;
+  opacity: 0.85;
+}
