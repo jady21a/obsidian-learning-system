@@ -40,6 +40,8 @@ export class MindmapView extends ItemView {
   private filePath: string | null = null;
   private modifyWatcherRegistered = false;
   private refreshTimer: number | null = null;
+  /** 主标题是否已定位到左侧(每次重新渲染重置)。 */
+  private rootAligned = false;
   /** 记录我们自己写回的内容,用于在 modify 事件中识别并跳过自写入,避免回环。 */
   private lastWrittenContent: string | null = null;
 
@@ -170,7 +172,7 @@ export class MindmapView extends ItemView {
 
     const mind = new MindElixir({
       el: container,
-      direction: MindElixir.SIDE,
+      direction: MindElixir.RIGHT, // 单侧向右展开,呈树形图
       editable: true,
       toolBar: true,
       allowUndo: true,
@@ -198,6 +200,44 @@ export class MindmapView extends ItemView {
     this.mind = mind;
     this.enableDragToRoot(container);
     this.patchUndoRedo(mind);
+    this.patchToCenterLeft(mind);
+
+    // 布局完成后把主标题定位到左侧(默认 toCenter 会居中)
+    this.rootAligned = false;
+    window.requestAnimationFrame(() => this.alignRootLeft());
+  }
+
+  /**
+   * 覆盖 toCenter:让右下角「定位」按钮(及 F1、切换方向)都把主标题定位到左侧,
+   * 而不是居中。先执行原居中,再把根平移到左侧。
+   */
+  private patchToCenterLeft(mind: MindElixirInstance) {
+    const orig = mind.toCenter.bind(mind);
+    mind.toCenter = () => {
+      orig();
+      this.rootAligned = false;
+      this.alignRootLeft();
+    };
+  }
+
+  /** 把主标题(根节点)平移到容器左侧;只成功定位一次,不干扰后续手动平移。 */
+  private alignRootLeft() {
+    if (this.rootAligned || !this.mind || !this.container) return;
+    const root = this.mind.findEle('root');
+    if (!root) return;
+    const r = root.getBoundingClientRect();
+    const c = this.container.getBoundingClientRect();
+    if (r.width === 0 || c.width === 0) return; // 尚未布局,等下次(onResize)
+
+    const margin = 100;
+    const dx = c.left + margin - r.left;
+    if (Math.abs(dx) > 1) this.mind.move(dx, 0);
+    this.rootAligned = true;
+  }
+
+  onResize() {
+    // 视图首次可见/尺寸确定后兜底定位
+    this.alignRootLeft();
   }
 
   /**

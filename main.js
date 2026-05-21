@@ -10763,8 +10763,28 @@ function displayText(text) {
 }
 var BLOCK_ID_RE = /(\s+\^[\w-]+)\s*$/;
 var CHECKBOX_RE = /^\[[ xX]\]\s+/;
+var IMPORTANT_RE = /^!! {0,5}(\S.*)$/;
+function clampLevel(level) {
+  return Math.min(6, Math.max(1, level || 1));
+}
+var ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+function toRoman(level) {
+  return ROMAN[Math.min(10, Math.max(1, level))] || "I";
+}
+function romanToLevel(s) {
+  const i = ROMAN.indexOf(s.toUpperCase());
+  return i > 0 ? i : 0;
+}
+function bakeTopic(meta) {
+  const body = displayText(meta.text);
+  if (meta.kind === "heading")
+    return toRoman(clampLevel(meta.level)) + " " + body;
+  if (meta.kind === "important")
+    return "!! " + body;
+  return (meta.marker || "-") + " " + meta.checkbox + body;
+}
 function buildTreeFromMarkdown(fileName, markdown) {
-  var _a, _b, _c, _d, _e2, _f;
+  var _a, _b, _c, _d, _e2, _f, _g, _h;
   let idCounter = 0;
   const newId = () => `n${idCounter++}`;
   const eol = markdown.includes("\r\n") ? "\r\n" : "\n";
@@ -10825,9 +10845,32 @@ function buildTreeFromMarkdown(fileName, markdown) {
         text,
         trailing: []
       };
-      const node = { topic: displayText(text), id: newId(), children: [], metadata: meta };
+      const node = { topic: bakeTopic(meta), id: newId(), children: [], metadata: meta };
       parent.children.push(node);
       headingStack.push({ level, node });
+      listStack = [];
+      lastNode = node;
+      continue;
+    }
+    const important = line.match(IMPORTANT_RE);
+    if (important) {
+      let text = important[1];
+      const blockId = (_d = (_c = text.match(BLOCK_ID_RE)) == null ? void 0 : _c[1]) != null ? _d : "";
+      if (blockId)
+        text = text.slice(0, text.length - blockId.length);
+      const parent = headingStack[headingStack.length - 1].node;
+      const meta = {
+        line: i,
+        kind: "important",
+        level: 0,
+        marker: "",
+        checkbox: "",
+        blockId,
+        text,
+        trailing: []
+      };
+      const node = { topic: bakeTopic(meta), id: newId(), children: [], metadata: meta };
+      parent.children.push(node);
       listStack = [];
       lastNode = node;
       continue;
@@ -10841,10 +10884,10 @@ function buildTreeFromMarkdown(fileName, markdown) {
       }
       const indent = indentStr.replace(/\t/g, "    ").length;
       let text = list[3];
-      const blockId = (_d = (_c = text.match(BLOCK_ID_RE)) == null ? void 0 : _c[1]) != null ? _d : "";
+      const blockId = (_f = (_e2 = text.match(BLOCK_ID_RE)) == null ? void 0 : _e2[1]) != null ? _f : "";
       if (blockId)
         text = text.slice(0, text.length - blockId.length);
-      const checkbox = (_f = (_e2 = text.match(CHECKBOX_RE)) == null ? void 0 : _e2[0]) != null ? _f : "";
+      const checkbox = (_h = (_g = text.match(CHECKBOX_RE)) == null ? void 0 : _g[0]) != null ? _h : "";
       if (checkbox)
         text = text.slice(checkbox.length);
       while (listStack.length > 0 && listStack[listStack.length - 1].indent >= indent) {
@@ -10861,7 +10904,7 @@ function buildTreeFromMarkdown(fileName, markdown) {
         text,
         trailing: []
       };
-      const node = { topic: displayText(text), id: newId(), children: [], metadata: meta };
+      const node = { topic: bakeTopic(meta), id: newId(), children: [], metadata: meta };
       parent.children.push(node);
       listStack.push({ indent, node });
       lastNode = node;
@@ -10874,26 +10917,50 @@ function buildTreeFromMarkdown(fileName, markdown) {
 function renderOutlineLine(node, listDepth, indentUnit, seenBlockIds) {
   var _a, _b;
   const meta = node.metadata;
-  let text;
-  if (meta && node.topic === displayText(meta.text))
-    text = meta.text;
-  else
-    text = node.topic;
-  let blockId = (_a = meta == null ? void 0 : meta.blockId) != null ? _a : "";
-  if (blockId) {
-    const id = blockId.trim();
-    if (seenBlockIds.has(id))
-      blockId = "";
-    else
-      seenBlockIds.add(id);
+  const useBlockId = () => {
+    var _a2;
+    let blockId2 = (_a2 = meta == null ? void 0 : meta.blockId) != null ? _a2 : "";
+    if (blockId2) {
+      const id = blockId2.trim();
+      if (seenBlockIds.has(id))
+        blockId2 = "";
+      else
+        seenBlockIds.add(id);
+    }
+    return blockId2;
+  };
+  if (meta && node.topic === bakeTopic(meta)) {
+    const blockId2 = useBlockId();
+    if (meta.kind === "heading") {
+      return "#".repeat(clampLevel(meta.level)) + " " + meta.text + blockId2;
+    }
+    if (meta.kind === "important") {
+      return indentUnit.repeat(listDepth) + "!! " + meta.text + blockId2;
+    }
+    return indentUnit.repeat(listDepth) + (meta.marker || "-") + " " + meta.checkbox + meta.text + blockId2;
+  }
+  const blockId = useBlockId();
+  const topic = node.topic;
+  const h = topic.match(/^(#{1,6})\s+(.*)$/);
+  if (h)
+    return "#".repeat(h[1].length) + " " + h[2] + blockId;
+  const imp = topic.match(IMPORTANT_RE);
+  if (imp)
+    return indentUnit.repeat(listDepth) + "!! " + imp[1] + blockId;
+  const l = topic.match(/^([-*+]|\d+[.)])\s+(\[[ xX]\]\s+)?(.*)$/);
+  if (l) {
+    return indentUnit.repeat(listDepth) + l[1] + " " + ((_a = l[2]) != null ? _a : "") + l[3] + blockId;
   }
   if ((meta == null ? void 0 : meta.kind) === "heading") {
-    const level = Math.min(6, Math.max(1, meta.level || 1));
-    return "#".repeat(level) + " " + text + blockId;
+    const r = topic.match(/^([IVXLCDMivxlcdm]+)\s+(.*)$/);
+    const lvl = r ? romanToLevel(r[1]) : 0;
+    if (lvl)
+      return "#".repeat(clampLevel(lvl)) + " " + r[2] + blockId;
+    return "#".repeat(clampLevel(meta.level)) + " " + topic + blockId;
   }
-  const marker = (meta == null ? void 0 : meta.marker) || "-";
-  const checkbox = (_b = meta == null ? void 0 : meta.checkbox) != null ? _b : "";
-  return indentUnit.repeat(listDepth) + marker + " " + checkbox + text + blockId;
+  if ((meta == null ? void 0 : meta.kind) === "important")
+    return indentUnit.repeat(listDepth) + "!! " + topic + blockId;
+  return indentUnit.repeat(listDepth) + ((meta == null ? void 0 : meta.marker) || "-") + " " + ((_b = meta == null ? void 0 : meta.checkbox) != null ? _b : "") + topic + blockId;
 }
 function serializeOutline(root) {
   var _a;
@@ -10944,6 +11011,8 @@ var MindmapView = class extends import_obsidian13.ItemView {
     this.filePath = null;
     this.modifyWatcherRegistered = false;
     this.refreshTimer = null;
+    /** 主标题是否已定位到左侧(每次重新渲染重置)。 */
+    this.rootAligned = false;
     /** 记录我们自己写回的内容,用于在 modify 事件中识别并跳过自写入,避免回环。 */
     this.lastWrittenContent = null;
     this.plugin = plugin;
@@ -11060,7 +11129,8 @@ var MindmapView = class extends import_obsidian13.ItemView {
     }
     const mind = new j({
       el: container,
-      direction: j.SIDE,
+      direction: j.RIGHT,
+      // 单侧向右展开,呈树形图
       editable: true,
       toolBar: true,
       allowUndo: true,
@@ -11085,6 +11155,41 @@ var MindmapView = class extends import_obsidian13.ItemView {
     this.mind = mind;
     this.enableDragToRoot(container);
     this.patchUndoRedo(mind);
+    this.patchToCenterLeft(mind);
+    this.rootAligned = false;
+    window.requestAnimationFrame(() => this.alignRootLeft());
+  }
+  /**
+   * 覆盖 toCenter:让右下角「定位」按钮(及 F1、切换方向)都把主标题定位到左侧,
+   * 而不是居中。先执行原居中,再把根平移到左侧。
+   */
+  patchToCenterLeft(mind) {
+    const orig = mind.toCenter.bind(mind);
+    mind.toCenter = () => {
+      orig();
+      this.rootAligned = false;
+      this.alignRootLeft();
+    };
+  }
+  /** 把主标题(根节点)平移到容器左侧;只成功定位一次,不干扰后续手动平移。 */
+  alignRootLeft() {
+    if (this.rootAligned || !this.mind || !this.container)
+      return;
+    const root = this.mind.findEle("root");
+    if (!root)
+      return;
+    const r = root.getBoundingClientRect();
+    const c = this.container.getBoundingClientRect();
+    if (r.width === 0 || c.width === 0)
+      return;
+    const margin = 100;
+    const dx = c.left + margin - r.left;
+    if (Math.abs(dx) > 1)
+      this.mind.move(dx, 0);
+    this.rootAligned = true;
+  }
+  onResize() {
+    this.alignRootLeft();
   }
   /**
    * 让撤销/重做(Ctrl+Z / Ctrl+Y)也写回原文。

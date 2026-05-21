@@ -66,9 +66,9 @@ export function buildTreeFromFlashcards(flashcards: Flashcard[]): MindElixirData
  */
 export interface OutlineNodeMeta {
   line: number; // 解析时的源行号(参考用;序列化不依赖它)
-  kind: 'heading' | 'list';
-  level: number; // heading: 1-6;list: 未用
-  marker: string; // list 标记,如 '-' '*' '1.';heading 为 ''
+  kind: 'heading' | 'list' | 'important';
+  level: number; // heading: 1-6;list/important: 未用
+  marker: string; // list 标记,如 '-' '*' '1.';heading/important 为 ''
   checkbox: string; // 任务复选框前缀,如 '[ ] ' / '[x] ';无则 ''
   blockId: string; // 行尾 block id(含前导空格),如 ' ^abc';无则 ''
   text: string; // 原始文本(去掉前缀/复选框/blockId,未折叠空白、未截断)
@@ -94,6 +94,37 @@ function displayText(text: string): string {
 
 const BLOCK_ID_RE = /(\s+\^[\w-]+)\s*$/;
 const CHECKBOX_RE = /^\[[ xX]\]\s+/;
+/** 行首「重要句」标记:!! 后跟 0~5 个空格,再接非空字符。 */
+const IMPORTANT_RE = /^!! {0,5}(\S.*)$/;
+
+function clampLevel(level: number): number {
+  return Math.min(6, Math.max(1, level || 1));
+}
+
+const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+/** 标题级别 → 罗马数字(仅用于导图标签显示)。 */
+function toRoman(level: number): string {
+  return ROMAN[Math.min(10, Math.max(1, level))] || 'I';
+}
+/** 罗马数字 → 级别(0 表示不是合法罗马数字)。 */
+function romanToLevel(s: string): number {
+  const i = ROMAN.indexOf(s.toUpperCase());
+  return i > 0 ? i : 0;
+}
+
+/**
+ * 节点显示文本:把结构标识一并显示在标签里。
+ * - 标题:用罗马数字 I/II/III…(文件里仍是 #,罗马数字只用于导图显示)
+ * - 列表:显示原标记 - / * / 1.(含 [ ] 复选框)
+ * - 重要句:显示 !!
+ * 解析时用它给 node.topic 赋值;序列化时用它判断节点是否被改动过。
+ */
+function bakeTopic(meta: OutlineNodeMeta): string {
+  const body = displayText(meta.text);
+  if (meta.kind === 'heading') return toRoman(clampLevel(meta.level)) + ' ' + body;
+  if (meta.kind === 'important') return '!! ' + body;
+  return (meta.marker || '-') + ' ' + meta.checkbox + body;
+}
 
 /**
  * 把一篇 markdown 文档的大纲(标题 + 列表)解析为 Mind Elixir 树(无损)。
@@ -170,10 +201,35 @@ export function buildTreeFromMarkdown(fileName: string, markdown: string): MindE
         text,
         trailing: [],
       };
-      const node: NodeObj = { topic: displayText(text), id: newId(), children: [], metadata: meta };
+      const node: NodeObj = { topic: bakeTopic(meta), id: newId(), children: [], metadata: meta };
       parent.children!.push(node);
       headingStack.push({ level, node });
       listStack = [];
+      lastNode = node;
+      continue;
+    }
+
+    // 重要句:行首 !! (后跟 0~5 个空格)
+    const important = line.match(IMPORTANT_RE);
+    if (important) {
+      let text = important[1];
+      const blockId = text.match(BLOCK_ID_RE)?.[1] ?? '';
+      if (blockId) text = text.slice(0, text.length - blockId.length);
+
+      const parent = headingStack[headingStack.length - 1].node;
+      const meta: OutlineNodeMeta = {
+        line: i,
+        kind: 'important',
+        level: 0,
+        marker: '',
+        checkbox: '',
+        blockId,
+        text,
+        trailing: [],
+      };
+      const node: NodeObj = { topic: bakeTopic(meta), id: newId(), children: [], metadata: meta };
+      parent.children!.push(node);
+      listStack = []; // 重要句在 section 层,打断当前列表上下文
       lastNode = node;
       continue;
     }
@@ -211,7 +267,7 @@ export function buildTreeFromMarkdown(fileName: string, markdown: string): MindE
         text,
         trailing: [],
       };
-      const node: NodeObj = { topic: displayText(text), id: newId(), children: [], metadata: meta };
+      const node: NodeObj = { topic: bakeTopic(meta), id: newId(), children: [], metadata: meta };
       parent.children!.push(node);
       listStack.push({ indent, node });
       lastNode = node;
@@ -234,27 +290,56 @@ function renderOutlineLine(
 ): string {
   const meta = node.metadata as OutlineNodeMeta | undefined;
 
-  // 文本:未改动用原始 text(无损),改动过用用户输入的 topic
-  let text: string;
-  if (meta && node.topic === displayText(meta.text)) text = meta.text;
-  else text = node.topic;
-
   // blockId 去重(防止复制节点产生重复 block id)
-  let blockId = meta?.blockId ?? '';
-  if (blockId) {
-    const id = blockId.trim();
-    if (seenBlockIds.has(id)) blockId = '';
-    else seenBlockIds.add(id);
+  const useBlockId = () => {
+    let blockId = meta?.blockId ?? '';
+    if (blockId) {
+      const id = blockId.trim();
+      if (seenBlockIds.has(id)) blockId = '';
+      else seenBlockIds.add(id);
+    }
+    return blockId;
+  };
+
+  // 未改动:节点标签等于按 meta 烘焙出的标签 → 用原始 text 无损还原
+  if (meta && node.topic === bakeTopic(meta)) {
+    const blockId = useBlockId();
+    if (meta.kind === 'heading') {
+      return '#'.repeat(clampLevel(meta.level)) + ' ' + meta.text + blockId;
+    }
+    if (meta.kind === 'important') {
+      return indentUnit.repeat(listDepth) + '!! ' + meta.text + blockId;
+    }
+    return indentUnit.repeat(listDepth) + (meta.marker || '-') + ' ' + meta.checkbox + meta.text + blockId;
   }
 
+  // 改动过(或新建):解析标签里的符号决定类型(在标签里改 #/-/!! 即可改类型)
+  const blockId = useBlockId();
+  const topic = node.topic;
+
+  // 显式 # 前缀:升/保持为标题(任何节点都可用 # 改成标题)
+  const h = topic.match(/^(#{1,6})\s+(.*)$/);
+  if (h) return '#'.repeat(h[1].length) + ' ' + h[2] + blockId;
+
+  const imp = topic.match(IMPORTANT_RE);
+  if (imp) return indentUnit.repeat(listDepth) + '!! ' + imp[1] + blockId;
+
+  const l = topic.match(/^([-*+]|\d+[.)])\s+(\[[ xX]\]\s+)?(.*)$/);
+  if (l) {
+    return indentUnit.repeat(listDepth) + l[1] + ' ' + (l[2] ?? '') + l[3] + blockId;
+  }
+
+  // 标题节点显示为罗马数字:编辑后标签仍以罗马数字开头则按其级别还原(可改级别)
   if (meta?.kind === 'heading') {
-    const level = Math.min(6, Math.max(1, meta.level || 1));
-    return '#'.repeat(level) + ' ' + text + blockId;
+    const r = topic.match(/^([IVXLCDMivxlcdm]+)\s+(.*)$/);
+    const lvl = r ? romanToLevel(r[1]) : 0;
+    if (lvl) return '#'.repeat(clampLevel(lvl)) + ' ' + r![2] + blockId;
+    return '#'.repeat(clampLevel(meta.level)) + ' ' + topic + blockId;
   }
 
-  const marker = meta?.marker || '-';
-  const checkbox = meta?.checkbox ?? '';
-  return indentUnit.repeat(listDepth) + marker + ' ' + checkbox + text + blockId;
+  // 其它:按原类型保留,只换文本(避免误改结构);新节点默认列表项
+  if (meta?.kind === 'important') return indentUnit.repeat(listDepth) + '!! ' + topic + blockId;
+  return indentUnit.repeat(listDepth) + (meta?.marker || '-') + ' ' + (meta?.checkbox ?? '') + topic + blockId;
 }
 
 /**
