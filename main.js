@@ -9070,6 +9070,33 @@ function findByPath(root, path) {
   }
   return found;
 }
+function blockIdToken(s) {
+  if (!s)
+    return null;
+  const m = s.match(/\^([\w-]+)/);
+  return m ? m[1] : null;
+}
+function findByBlockId(root, id) {
+  var _a;
+  const stack = [...(_a = root.children) != null ? _a : []];
+  while (stack.length) {
+    const n = stack.shift();
+    const meta = n.metadata;
+    if (blockIdToken(meta == null ? void 0 : meta.blockId) === id)
+      return n;
+    if (n.children)
+      stack.push(...n.children);
+  }
+  return null;
+}
+function locate(root, target) {
+  if (target.blockId) {
+    const byId = findByBlockId(root, target.blockId);
+    if (byId)
+      return byId;
+  }
+  return findByPath(root, target.path);
+}
 function buildBlankHtml(nodeText, deletions, startNo) {
   const sorted = [...deletions].sort((a, b) => a.index - b.index);
   let html = "";
@@ -9127,7 +9154,7 @@ async function renderMindmapGroupQuestion(app, container, sourceFile, targets) {
   const { nodeData } = buildTreeFromMarkdown(file.name, text);
   let no2 = 1;
   for (const t2 of targets) {
-    const node = findByPath(nodeData, t2.path);
+    const node = locate(nodeData, t2);
     if (!node)
       return false;
     const r = buildBlankHtml(t2.nodeText, t2.deletions, no2);
@@ -9146,7 +9173,7 @@ async function renderMindmapGroupAnswer(app, container, sourceFile, targets) {
   const { nodeData } = buildTreeFromMarkdown(file.name, text);
   let no2 = 1;
   for (const t2 of targets) {
-    const node = findByPath(nodeData, t2.path);
+    const node = locate(nodeData, t2);
     if (!node)
       return false;
     const r = buildAnswerHtml(t2, no2);
@@ -9411,7 +9438,7 @@ var ReviewView = class extends import_obsidian12.ItemView {
     const mm = this.getMindmapMeta(card);
     const nodeText = (_a = mm.path[mm.path.length - 1]) != null ? _a : "";
     const deletions = mm.mode === "whole" ? [{ index: 0, answer: nodeText }] : [...mm.deletions].sort((a, b) => a.index - b.index);
-    return { cardId: card.id, path: mm.path, nodeText, deletions };
+    return { cardId: card.id, blockId: mm.blockId, path: mm.path, nodeText, deletions };
   }
   /** 在地图下方按「序号 + 路径 + 输入框」建立答题列表,返回 cardId → 输入框数组。 */
   buildMindmapInputs(listDiv, targets) {
@@ -9514,7 +9541,7 @@ var ReviewView = class extends import_obsidian12.ItemView {
       });
       await this.plugin.unlockSystem.onCardReviewed();
       this.reviewedCardIds.add(card.id);
-      targets.push({ path: mm.path, nodeText, deletions, blanks });
+      targets.push({ blockId: mm.blockId, path: mm.path, nodeText, deletions, blanks });
     }
     return targets;
   }
@@ -11530,6 +11557,7 @@ var MindmapView = class extends import_obsidian15.ItemView {
     let data;
     if (this.inlineText != null) {
       data = buildTreeFromMarkdown(this.title || "\u9009\u533A", this.inlineText);
+      this.markClozedNodes(data.nodeData, this.sourceFile);
     } else if (this.filePath) {
       const file = this.app.vault.getAbstractFileByPath(this.filePath);
       if (!(file instanceof import_obsidian15.TFile)) {
@@ -11538,6 +11566,7 @@ var MindmapView = class extends import_obsidian15.ItemView {
       }
       const text = await this.app.vault.cachedRead(file);
       data = buildTreeFromMarkdown(file.name, text);
+      this.markClozedNodes(data.nodeData, this.filePath);
     } else {
       const cards = this.plugin.flashcardManager.getAllFlashcards();
       if (cards.length === 0) {
@@ -11736,6 +11765,82 @@ var MindmapView = class extends import_obsidian15.ItemView {
     t2 = t2.replace(/^\[[ xX]\]\s+/, "");
     return t2.trim();
   }
+  /** 按纯文本路径在树里定位节点。 */
+  findNodeByPath(root, path) {
+    var _a, _b;
+    let children = (_a = root.children) != null ? _a : [];
+    let found = null;
+    for (const seg of path) {
+      const next = children.find((n) => this.nodeCleanText(n) === seg);
+      if (!next)
+        return null;
+      found = next;
+      children = (_b = next.children) != null ? _b : [];
+    }
+    return found;
+  }
+  /** 从 meta.blockId(形如 ' ^abc')提取裸 id。 */
+  blockIdToken(s) {
+    if (!s)
+      return null;
+    const m = s.match(/\^([\w-]+)/);
+    return m ? m[1] : null;
+  }
+  /** 按 block id 在树里定位节点(深度优先)。 */
+  findNodeByBlockId(root, id) {
+    var _a;
+    const stack = [...(_a = root.children) != null ? _a : []];
+    while (stack.length) {
+      const n = stack.shift();
+      const meta = n.metadata;
+      if (this.blockIdToken(meta == null ? void 0 : meta.blockId) === id)
+        return n;
+      if (n.children)
+        stack.push(...n.children);
+    }
+    return null;
+  }
+  /**
+   * 确保节点源行有 ^id 锚点(仅文件模式)。已有则复用,没有则生成并写回源文件。
+   * 返回裸 id;临时导图(无文件)返回 null。
+   */
+  async ensureBlockId(obj) {
+    if (!this.filePath)
+      return null;
+    const meta = obj.metadata;
+    if (!meta)
+      return null;
+    let id = this.blockIdToken(meta.blockId);
+    if (!id) {
+      id = `mm${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+      meta.blockId = " ^" + id;
+      await this.writeBackStructure();
+    }
+    return id;
+  }
+  /** 给已有挖空卡(同源文件)的节点打上「cloze」标记(优先按 blockId 定位)。 */
+  markClozedNodes(root, sourceFile) {
+    var _a, _b, _c;
+    if (!sourceFile)
+      return;
+    for (const card of this.plugin.flashcardManager.getAllFlashcards()) {
+      const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+      if (!unit || ((_a = unit.extractRule) == null ? void 0 : _a.ruleId) !== "mindmap-cloze")
+        continue;
+      const mm = (_c = (_b = unit.metadata) == null ? void 0 : _b.customData) == null ? void 0 : _c.mindmap;
+      if (!mm || mm.sourceFile !== sourceFile)
+        continue;
+      let node = mm.blockId ? this.findNodeByBlockId(root, mm.blockId) : null;
+      if (!node && mm.path)
+        node = this.findNodeByPath(root, mm.path);
+      if (!node)
+        continue;
+      const tags = Array.isArray(node.tags) ? node.tags.map((t2) => String(t2)) : [];
+      if (!tags.includes("cloze"))
+        tags.push("cloze");
+      node.tags = tags;
+    }
+  }
   /** 从根到父节点(不含根、不含自身)的纯文本数组。 */
   parentPathArray(obj) {
     const parts = [];
@@ -11794,6 +11899,7 @@ var MindmapView = class extends import_obsidian15.ItemView {
       const id = `mm-cloze-${now}-${Math.random().toString(36).slice(2, 7)}`;
       const srcFile = (_b = (_a = this.sourceFile) != null ? _a : this.filePath) != null ? _b : null;
       const base = srcFile ? srcFile.split("/").pop().replace(/\.md$/, "") : "";
+      const blockId = await this.ensureBlockId(topic.nodeObj);
       const path = [...this.parentPathArray(topic.nodeObj), nodeText];
       const unit = {
         id,
@@ -11813,6 +11919,7 @@ var MindmapView = class extends import_obsidian15.ItemView {
           customData: {
             mindmap: {
               sourceFile: srcFile,
+              blockId,
               path,
               mode,
               deletions: mode === "words" ? deletions : []

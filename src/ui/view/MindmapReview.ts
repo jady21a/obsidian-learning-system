@@ -9,6 +9,8 @@ const STYLE_EL_ID = 'learning-system-mindmap-styles';
 /** 存在卡片来源 customData.mindmap 上的复习定位信息。 */
 export interface MindmapCardMeta {
   sourceFile: string | null;
+  /** 锚点:节点源行的 block id(优先用它定位,移动/改名后仍有效)。 */
+  blockId?: string | null;
   path: string[];
   mode: 'whole' | 'words';
   deletions: { index: number; answer: string }[];
@@ -16,6 +18,7 @@ export interface MindmapCardMeta {
 
 export interface GroupQuestionTarget {
   cardId: string;
+  blockId?: string | null;
   path: string[];
   nodeText: string;
   /** 相对 nodeText 的挖空区间(整节点模式为整段)。 */
@@ -23,6 +26,7 @@ export interface GroupQuestionTarget {
 }
 
 export interface GroupAnswerTarget {
+  blockId?: string | null;
   path: string[];
   nodeText: string;
   deletions: { index: number; answer: string }[];
@@ -66,6 +70,34 @@ function findByPath(root: NodeObj, path: string[]): NodeObj | null {
     children = next.children ?? [];
   }
   return found;
+}
+
+/** 从 meta.blockId(形如 ' ^abc')提取裸 id。 */
+function blockIdToken(s?: string | null): string | null {
+  if (!s) return null;
+  const m = s.match(/\^([\w-]+)/);
+  return m ? m[1] : null;
+}
+
+/** 按 block id 在树里定位节点(深度优先)。 */
+function findByBlockId(root: NodeObj, id: string): NodeObj | null {
+  const stack: NodeObj[] = [...(root.children ?? [])];
+  while (stack.length) {
+    const n = stack.shift()!;
+    const meta = n.metadata as OutlineNodeMeta | undefined;
+    if (blockIdToken(meta?.blockId) === id) return n;
+    if (n.children) stack.push(...n.children);
+  }
+  return null;
+}
+
+/** 优先用 block id 定位,回退到纯文本路径。 */
+function locate(root: NodeObj, target: { blockId?: string | null; path: string[] }): NodeObj | null {
+  if (target.blockId) {
+    const byId = findByBlockId(root, target.blockId);
+    if (byId) return byId;
+  }
+  return findByPath(root, target.path);
 }
 
 /** 问题面:节点文本里每个空替换为一段带编号的等长横线(编号对应下方输入框)。 */
@@ -144,7 +176,7 @@ export async function renderMindmapGroupQuestion(
 
   let no = 1;
   for (const t of targets) {
-    const node = findByPath(nodeData, t.path);
+    const node = locate(nodeData, t);
     if (!node) return false;
     const r = buildBlankHtml(t.nodeText, t.deletions, no);
     node.dangerouslySetInnerHTML = r.html;
@@ -170,7 +202,7 @@ export async function renderMindmapGroupAnswer(
 
   let no = 1;
   for (const t of targets) {
-    const node = findByPath(nodeData, t.path);
+    const node = locate(nodeData, t);
     if (!node) return false;
     const r = buildAnswerHtml(t, no);
     node.dangerouslySetInnerHTML = r.html;

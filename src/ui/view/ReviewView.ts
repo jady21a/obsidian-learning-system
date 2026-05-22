@@ -285,7 +285,7 @@ export class ReviewView extends ItemView {
     const nodeText = mm.path[mm.path.length - 1] ?? '';
     const deletions =
       mm.mode === 'whole' ? [{ index: 0, answer: nodeText }] : [...mm.deletions].sort((a, b) => a.index - b.index);
-    return { cardId: card.id, path: mm.path, nodeText, deletions };
+    return { cardId: card.id, blockId: mm.blockId, path: mm.path, nodeText, deletions };
   }
 
   /** 在地图下方按「序号 + 路径 + 输入框」建立答题列表,返回 cardId → 输入框数组。 */
@@ -414,7 +414,7 @@ export class ReviewView extends ItemView {
       await this.plugin.unlockSystem.onCardReviewed();
       this.reviewedCardIds.add(card.id);
 
-      targets.push({ path: mm.path, nodeText, deletions, blanks });
+      targets.push({ blockId: mm.blockId, path: mm.path, nodeText, deletions, blanks });
     }
     return targets;
   }

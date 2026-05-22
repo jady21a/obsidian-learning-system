@@ -176,6 +176,7 @@ export class MindmapView extends ItemView {
     if (this.inlineText != null) {
       // 临时导图:从选区文本解析,不回写任何文件
       data = buildTreeFromMarkdown(this.title || '选区', this.inlineText);
+      this.markClozedNodes(data.nodeData, this.sourceFile);
     } else if (this.filePath) {
       const file = this.app.vault.getAbstractFileByPath(this.filePath);
       if (!(file instanceof TFile)) {
@@ -184,6 +185,7 @@ export class MindmapView extends ItemView {
       }
       const text = await this.app.vault.cachedRead(file);
       data = buildTreeFromMarkdown(file.name, text);
+      this.markClozedNodes(data.nodeData, this.filePath);
     } else {
       const cards = this.plugin.flashcardManager.getAllFlashcards();
       if (cards.length === 0) {
@@ -398,6 +400,74 @@ export class MindmapView extends ItemView {
     return t.trim();
   }
 
+  /** 按纯文本路径在树里定位节点。 */
+  private findNodeByPath(root: NodeObj, path: string[]): NodeObj | null {
+    let children = root.children ?? [];
+    let found: NodeObj | null = null;
+    for (const seg of path) {
+      const next = children.find((n) => this.nodeCleanText(n) === seg);
+      if (!next) return null;
+      found = next;
+      children = next.children ?? [];
+    }
+    return found;
+  }
+
+  /** 从 meta.blockId(形如 ' ^abc')提取裸 id。 */
+  private blockIdToken(s?: string | null): string | null {
+    if (!s) return null;
+    const m = s.match(/\^([\w-]+)/);
+    return m ? m[1] : null;
+  }
+
+  /** 按 block id 在树里定位节点(深度优先)。 */
+  private findNodeByBlockId(root: NodeObj, id: string): NodeObj | null {
+    const stack: NodeObj[] = [...(root.children ?? [])];
+    while (stack.length) {
+      const n = stack.shift()!;
+      const meta = n.metadata as OutlineNodeMeta | undefined;
+      if (this.blockIdToken(meta?.blockId) === id) return n;
+      if (n.children) stack.push(...n.children);
+    }
+    return null;
+  }
+
+  /**
+   * 确保节点源行有 ^id 锚点(仅文件模式)。已有则复用,没有则生成并写回源文件。
+   * 返回裸 id;临时导图(无文件)返回 null。
+   */
+  private async ensureBlockId(obj: NodeObj): Promise<string | null> {
+    if (!this.filePath) return null;
+    const meta = obj.metadata as OutlineNodeMeta | undefined;
+    if (!meta) return null;
+    let id = this.blockIdToken(meta.blockId);
+    if (!id) {
+      id = `mm${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+      meta.blockId = ' ^' + id;
+      await this.writeBackStructure(); // 把 ^id 写回源文件
+    }
+    return id;
+  }
+
+  /** 给已有挖空卡(同源文件)的节点打上「cloze」标记(优先按 blockId 定位)。 */
+  private markClozedNodes(root: NodeObj, sourceFile: string | null) {
+    if (!sourceFile) return;
+    for (const card of this.plugin.flashcardManager.getAllFlashcards()) {
+      const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+      if (!unit || unit.extractRule?.ruleId !== 'mindmap-cloze') continue;
+      const mm = unit.metadata?.customData?.mindmap as
+        | { sourceFile?: string; blockId?: string | null; path?: string[] }
+        | undefined;
+      if (!mm || mm.sourceFile !== sourceFile) continue;
+      let node = mm.blockId ? this.findNodeByBlockId(root, mm.blockId) : null;
+      if (!node && mm.path) node = this.findNodeByPath(root, mm.path);
+      if (!node) continue;
+      const tags = Array.isArray(node.tags) ? node.tags.map((t) => String(t)) : [];
+      if (!tags.includes('cloze')) tags.push('cloze');
+      node.tags = tags;
+    }
+  }
+
   /** 从根到父节点(不含根、不含自身)的纯文本数组。 */
   private parentPathArray(obj: NodeObj): string[] {
     const parts: string[] = [];
@@ -466,7 +536,9 @@ export class MindmapView extends ItemView {
       // 来源文件:临时导图用 sourceFile,文档导图用 filePath
       const srcFile = this.sourceFile ?? this.filePath ?? null;
       const base = srcFile ? srcFile.split('/').pop()!.replace(/\.md$/, '') : '';
-      // 复习时重建导图所需的定位信息:源文件 + 根到该节点的纯文本路径 + 模式
+      // 锚点:文件模式下确保该节点源行有 ^id(没有就生成并写回),移动/改名后仍可定位
+      const blockId = await this.ensureBlockId(topic.nodeObj);
+      // 复习/标记定位信息:源文件 + blockId(优先)+ 纯文本路径(兜底)+ 模式
       const path = [...this.parentPathArray(topic.nodeObj), nodeText];
       const unit: ContentUnit = {
         id,
@@ -486,6 +558,7 @@ export class MindmapView extends ItemView {
           customData: {
             mindmap: {
               sourceFile: srcFile,
+              blockId,
               path,
               mode,
               deletions: mode === 'words' ? deletions : [],
