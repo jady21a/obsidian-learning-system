@@ -73,12 +73,23 @@
 
 
 ## 安装方式
-本插件已发布至 **Obsidian 社区插件市场**。
-1. 打开 Obsidian 设置（Settings）
-2. 进入 **Community Plugins → Browse**
-3. 搜索 **Learning System**
-4. 安装并启用插件
-或者，你也可以从  [GitHub Releases](https://github.com/jady21a/obsidian-learning-system/releases)  下载插件，并解压到以下目录：`.obsidian/plugins/learning-system/`
+
+**社区插件市场**(审核通过后):设置 → **Community Plugins → Browse** → 搜索 **Learning System** → 安装并启用。
+
+**手动安装**(现在即可):从 [GitHub Releases](https://github.com/jady21a/obsidian-learning-system/releases) 下载 `manifest.json`、`main.js`、`styles.css`,放到 `.obsidian/plugins/learning-system/`,再到设置里启用。
+
+> 社区市场上架正在审核中;在此之前请用上面的手动安装(或 BRAT)。
+
+---
+
+## 实验性功能:思维导图
+
+内置一个**默认关闭**的「思维导图」功能。可在
+**设置 → Learning System → Experimental → Mindmap** 开启。开启后可把笔记或选区
+打开成可编辑的思维导图,并以思维导图形式复习挖空卡。
+
+> 注意:从思维导图挖空会向笔记写入 block id(`^id`)。该功能仍在迭代,
+> 想要稳定工作流可保持关闭。
 
 ---
 

@@ -21,7 +21,9 @@ interface LearningSystemSettings {
   autoScan: boolean;
   defaultDeck: string;
   cycleData?: CycleInfo;
-  language?: 'en' | 'zh-CN'; 
+  language?: 'en' | 'zh-CN';
+  /** 实验性:思维导图(默认关闭)。开启后才注册导图命令/右键/复习呈现。 */
+  experimentalMindmap: boolean;
 }
 interface ObsidianVaultWithConfig {
   getConfig(key: string): string | undefined;
@@ -30,7 +32,8 @@ const DEFAULT_SETTINGS: LearningSystemSettings = {
   extractionEnabled: true,
   autoScan: false,
   defaultDeck: 'Default',
-  cycleData: undefined
+  cycleData: undefined,
+  experimentalMindmap: false
     // language: 'en'
 };
 
@@ -141,7 +144,7 @@ this.registerEvent(
     if (view instanceof MarkdownView && view.file) {
       this.extractionEngine.registerContextMenu(menu, editor, view.file);
       const selection = editor.getSelection();
-      if (selection && selection.trim().length > 0) {
+      if (this.settings.experimentalMindmap && selection && selection.trim().length > 0) {
         const file = view.file;
         menu.addItem((item) =>
           item
@@ -323,44 +326,47 @@ async saveCycleData() {
 
     });
 
-    this.addCommand({
-      id: 'open-mindmap',
-      name: 'Open mindmap',
-      callback: () => {
-        void this.activateMindmap();
-      }
-    });
-
-    this.addCommand({
-      id: 'open-current-note-as-mindmap',
-      name: 'Open current note as mindmap',
-      checkCallback: (checking: boolean) => {
-        const file = this.app.workspace.getActiveFile();
-        const ok = !!file && file.extension === 'md';
-        if (ok && !checking) {
-          void this.activateMindmap({ filePath: file!.path });
+    // 实验性:思维导图相关命令仅在开启后注册
+    if (this.settings.experimentalMindmap) {
+      this.addCommand({
+        id: 'open-mindmap',
+        name: 'Open mindmap',
+        callback: () => {
+          void this.activateMindmap();
         }
-        return ok;
-      }
-    });
+      });
 
-    this.addCommand({
-      id: 'generate-mindmap-from-selection',
-      name: 'Generate mindmap from selection',
-      editorCheckCallback: (checking, editor, ctx) => {
-        const selection = editor.getSelection();
-        const ok = !!selection && selection.trim().length > 0;
-        if (ok && !checking) {
-          const file = ctx.file;
-          void this.activateMindmap({
-            inlineText: selection,
-            sourceFile: file?.path ?? null,
-            title: file ? `${file.basename}(选区)` : '选区',
-          });
+      this.addCommand({
+        id: 'open-current-note-as-mindmap',
+        name: 'Open current note as mindmap',
+        checkCallback: (checking: boolean) => {
+          const file = this.app.workspace.getActiveFile();
+          const ok = !!file && file.extension === 'md';
+          if (ok && !checking) {
+            void this.activateMindmap({ filePath: file!.path });
+          }
+          return ok;
         }
-        return ok;
-      }
-    });
+      });
+
+      this.addCommand({
+        id: 'generate-mindmap-from-selection',
+        name: 'Generate mindmap from selection',
+        editorCheckCallback: (checking, editor, ctx) => {
+          const selection = editor.getSelection();
+          const ok = !!selection && selection.trim().length > 0;
+          if (ok && !checking) {
+            const file = ctx.file;
+            void this.activateMindmap({
+              inlineText: selection,
+              sourceFile: file?.path ?? null,
+              title: file ? `${file.basename}(选区)` : '选区',
+            });
+          }
+          return ok;
+        }
+      });
+    }
 
   }
 

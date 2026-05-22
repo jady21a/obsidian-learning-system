@@ -324,6 +324,16 @@ var SettingsTab = class extends import_obsidian.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
+    new import_obsidian.Setting(containerEl).setName("Experimental").setHeading();
+    new import_obsidian.Setting(containerEl).setName("Mindmap (experimental)").setDesc(
+      "Open notes/selections as an editable mindmap and review cloze cards as a mindmap. Note: creating clozes writes block ids (^id) into your notes. Reload Obsidian after toggling. / \u5B9E\u9A8C\u6027\u601D\u7EF4\u5BFC\u56FE:\u6316\u7A7A\u4F1A\u5411\u7B14\u8BB0\u5199\u5165 ^id;\u5207\u6362\u540E\u8BF7\u91CD\u8F7D Obsidian\u3002"
+    ).addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.experimentalMindmap).onChange(async (value) => {
+        this.plugin.settings.experimentalMindmap = value;
+        await this.plugin.saveSettings();
+        new import_obsidian.Notice("Reload Obsidian to apply / \u8BF7\u91CD\u8F7D Obsidian \u4EE5\u751F\u6548");
+      })
+    );
     new import_obsidian.Setting(containerEl).setName("General").setHeading();
     new import_obsidian.Setting(containerEl).setName("Enable extraction").setDesc("Enable automatic content extraction").addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.extractionEnabled).onChange(async (value) => {
@@ -9410,6 +9420,8 @@ var ReviewView = class extends import_obsidian12.ItemView {
   /** 若该卡来自 mindmap 挖空,返回复习用的定位信息;否则 null。 */
   getMindmapMeta(card) {
     var _a, _b, _c;
+    if (!this.plugin.settings.experimentalMindmap)
+      return null;
     if (card.type !== "cloze")
       return null;
     const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
@@ -14098,7 +14110,8 @@ var DEFAULT_SETTINGS = {
   extractionEnabled: true,
   autoScan: false,
   defaultDeck: "Default",
-  cycleData: void 0
+  cycleData: void 0,
+  experimentalMindmap: false
   // language: 'en'
 };
 var LearningSystemPlugin = class extends import_obsidian19.Plugin {
@@ -14170,7 +14183,7 @@ var LearningSystemPlugin = class extends import_obsidian19.Plugin {
         if (view instanceof import_obsidian19.MarkdownView && view.file) {
           this.extractionEngine.registerContextMenu(menu, editor, view.file);
           const selection = editor.getSelection();
-          if (selection && selection.trim().length > 0) {
+          if (this.settings.experimentalMindmap && selection && selection.trim().length > 0) {
             const file = view.file;
             menu.addItem(
               (item) => item.setTitle("Generate mindmap from selection").setIcon("git-fork").onClick(() => {
@@ -14318,43 +14331,45 @@ var LearningSystemPlugin = class extends import_obsidian19.Plugin {
         void this.openRecentlyDeletedModal();
       }
     });
-    this.addCommand({
-      id: "open-mindmap",
-      name: "Open mindmap",
-      callback: () => {
-        void this.activateMindmap();
-      }
-    });
-    this.addCommand({
-      id: "open-current-note-as-mindmap",
-      name: "Open current note as mindmap",
-      checkCallback: (checking) => {
-        const file = this.app.workspace.getActiveFile();
-        const ok = !!file && file.extension === "md";
-        if (ok && !checking) {
-          void this.activateMindmap({ filePath: file.path });
+    if (this.settings.experimentalMindmap) {
+      this.addCommand({
+        id: "open-mindmap",
+        name: "Open mindmap",
+        callback: () => {
+          void this.activateMindmap();
         }
-        return ok;
-      }
-    });
-    this.addCommand({
-      id: "generate-mindmap-from-selection",
-      name: "Generate mindmap from selection",
-      editorCheckCallback: (checking, editor, ctx) => {
-        var _a;
-        const selection = editor.getSelection();
-        const ok = !!selection && selection.trim().length > 0;
-        if (ok && !checking) {
-          const file = ctx.file;
-          void this.activateMindmap({
-            inlineText: selection,
-            sourceFile: (_a = file == null ? void 0 : file.path) != null ? _a : null,
-            title: file ? `${file.basename}(\u9009\u533A)` : "\u9009\u533A"
-          });
+      });
+      this.addCommand({
+        id: "open-current-note-as-mindmap",
+        name: "Open current note as mindmap",
+        checkCallback: (checking) => {
+          const file = this.app.workspace.getActiveFile();
+          const ok = !!file && file.extension === "md";
+          if (ok && !checking) {
+            void this.activateMindmap({ filePath: file.path });
+          }
+          return ok;
         }
-        return ok;
-      }
-    });
+      });
+      this.addCommand({
+        id: "generate-mindmap-from-selection",
+        name: "Generate mindmap from selection",
+        editorCheckCallback: (checking, editor, ctx) => {
+          var _a;
+          const selection = editor.getSelection();
+          const ok = !!selection && selection.trim().length > 0;
+          if (ok && !checking) {
+            const file = ctx.file;
+            void this.activateMindmap({
+              inlineText: selection,
+              sourceFile: (_a = file == null ? void 0 : file.path) != null ? _a : null,
+              title: file ? `${file.basename}(\u9009\u533A)` : "\u9009\u533A"
+            });
+          }
+          return ok;
+        }
+      });
+    }
   }
   /** 打开 Mindmap 视图。 */
   async activateMindmap(opts = {}) {

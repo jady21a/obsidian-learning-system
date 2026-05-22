@@ -260,6 +260,7 @@ export class ReviewView extends ItemView {
 
   /** 若该卡来自 mindmap 挖空,返回复习用的定位信息;否则 null。 */
   private getMindmapMeta(card: Flashcard): MindmapCardMeta | null {
+    if (!this.plugin.settings.experimentalMindmap) return null;
     if (card.type !== 'cloze') return null;
     const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
     if (!unit || unit.extractRule?.ruleId !== 'mindmap-cloze') return null;

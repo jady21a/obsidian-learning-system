@@ -15,6 +15,25 @@ export class SettingsTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
+    new Setting(containerEl).setName('Experimental').setHeading();
+
+    new Setting(containerEl)
+      .setName('Mindmap (experimental)')
+      .setDesc(
+        'Open notes/selections as an editable mindmap and review cloze cards as a mindmap. ' +
+          'Note: creating clozes writes block ids (^id) into your notes. ' +
+          'Reload Obsidian after toggling. / 实验性思维导图:挖空会向笔记写入 ^id;切换后请重载 Obsidian。'
+      )
+      .addToggle(toggle =>
+        toggle
+          .setValue(this.plugin.settings.experimentalMindmap)
+          .onChange(async value => {
+            this.plugin.settings.experimentalMindmap = value;
+            await this.plugin.saveSettings();
+            new Notice('Reload Obsidian to apply / 请重载 Obsidian 以生效');
+          })
+      );
+
     new Setting(containerEl).setName('General').setHeading();
 
     new Setting(containerEl)

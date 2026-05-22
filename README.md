@@ -88,14 +88,22 @@ A gamified **level system** to guide your learning journey:
 
 ## Installation
 
-This plugin is available in the **Obsidian Community Plugins** directory.
+**Community Plugins** (once approved): Settings → **Community Plugins → Browse** → search **Learning System** → Install and enable.
 
-1. Open Obsidian **Settings**
-2. Go to **Community Plugins → Browse**
-3. Search for **Learning System**
-4. Install and enable the plugin
+**Manual install** (available now): download `manifest.json`, `main.js`, and `styles.css` from [GitHub Releases](https://github.com/jady21a/obsidian-learning-system/releases) and place them in `.obsidian/plugins/learning-system/`, then enable in Settings → Community Plugins.
 
-Alternatively, download the plugin from  [GitHub Releases](https://github.com/jady21a/obsidian-learning-system/releases)  and extract it to:`.obsidian/plugins/learning-system/`
+> Community-directory listing is pending review. Until then, use the manual install above (or BRAT).
+
+---
+
+## Experimental: Mindmap
+
+An opt-in **Mindmap** feature is included but **disabled by default**. Enable it in
+**Settings → Learning System → Experimental → Mindmap**. It lets you open a note or
+selection as an editable mindmap and review cloze cards in mindmap form.
+
+> Note: creating clozes from a mindmap writes block ids (`^id`) into your notes.
+> The feature is still evolving — keep it off if you prefer a stable workflow.
 
 ---
 
