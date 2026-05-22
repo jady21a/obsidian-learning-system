@@ -10,7 +10,7 @@ import { ExtractionEngine } from './core/ExtractionEngine';
 import { AnnotationManager } from './core/AnnotationManager';
 import { FlashcardManager } from './core/FlashcardManager';
 import { AnalyticsEngine,CycleInfo } from './core/AnalyticsEngine';
-import { UnlockSystem } from './core/UnlockSystem';
+import { UnlockSystem, LevelInfoModal } from './core/UnlockSystem';
 import { ViewState } from './ui/stats/ViewState';
 import { t } from './i18n/translations'
 import { RecentlyDeletedModal } from './ui/view/RecentlyDeletedView';
@@ -324,6 +324,20 @@ async saveCycleData() {
        void this.openRecentlyDeletedModal();
       }
 
+    });
+
+    // 里程碑:按需打开成就面板(不在侧边栏常显)
+    this.addCommand({
+      id: 'show-milestones',
+      name: 'Show milestones',
+      callback: () => {
+        new LevelInfoModal(
+          this.app,
+          this.unlockSystem.getProgress(),
+          this.unlockSystem,
+          this.settings.language
+        ).open();
+      }
     });
 
     // 实验性:思维导图相关命令仅在开启后注册

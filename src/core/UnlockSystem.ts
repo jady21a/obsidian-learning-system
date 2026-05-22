@@ -27,6 +27,18 @@ export interface UnlockProgress {
     level: UserLevel;
     unlockedAt: number;
   }[];
+  /** 已弹过祝贺通知的成就 id,避免重复祝贺。 */
+  celebratedAchievements: string[];
+}
+
+/** 一条成就(里程碑)的定义。current/target 用于显示进度与达成判定。 */
+export interface Achievement {
+  id: string;
+  icon: string;
+  title: string;
+  current: number;
+  target: number;
+  done: boolean;
 }
 
 export class UnlockSystem {
@@ -138,64 +150,71 @@ async onNoteScanned() {
     }
   }
 
-  // ==================== 功能权限检查 ====================
+  // ==================== 功能门禁(已取消) ====================
 
   /**
-   * 检查功能是否解锁
+   * 尝试使用功能。
+   *
+   * ⭐ 已取消「等级门禁」:所有功能始终可用,不再因等级未达标而拦截。
+   * 等级/成就系统改为纯粹的「里程碑」展示(见 getAchievements / LevelInfoModal),
+   * 达成里程碑会弹祝贺通知,但不再锁任何功能。
+   * 保留本方法签名,避免改动所有调用点。
    */
-  isFeatureUnlocked(feature: string): boolean {
-    const level = this.progress.currentLevel;
-    
-    const featureMap: Record<string, UserLevel> = {
-      // Lv1
-      'extract-single': 1,
-      'sidebar-basic': 1,
-      
-      // Lv2
-      'extract-batch': 2,
-      'annotation': 2,
-      'filter-by-type': 2,
-      'scan-file': 2,
-      
-      // Lv3
-      'scan-vault': 3,
-      'review-page': 3,
-      'review-reminder': 3,
-      'extract-table': 3,
-      
-      // Lv4
-      'stats-page': 4,
-      
-      // Lv5
-      'advanced-analytics': 5,
-      'community': 5
-    };
-
-    const requiredLevel = featureMap[feature] || 1;
-    return level >= requiredLevel;
+  tryUseFeature(_feature: string, _featureName: string): boolean {
+    return true;
   }
 
-  /**
-   * 尝试使用功能(如果未解锁则提示)
-   */
-  tryUseFeature(feature: string, featureName: string): boolean {
-    if (this.isFeatureUnlocked(feature)) {
-      return true;
+  // ==================== 里程碑(成就)系统 ====================
+
+  /** 把插件的各项功能/目标列成里程碑;current/target 由累计统计推导。 */
+  getAchievements(): Achievement[] {
+    const s = this.progress.stats;
+    const zh = this.language === 'zh-CN';
+    const lbl = (en: string, cn: string) => (zh ? cn : en);
+
+    const defs: { id: string; icon: string; title: string; current: number; target: number }[] = [
+      // 入门:做一次即达成,给即时正反馈
+      { id: 'first-extract', icon: '🌱', title: lbl('First Extraction', '首次提取内容'), current: s.cardsExtracted, target: 1 },
+      { id: 'visit-stats', icon: '📊', title: lbl('Visit Statistics Page', '访问统计页面'), current: s.statsPageVisited ? 1 : 0, target: 1 },
+      // 进阶:三种提取方式各练几次(提取是高频低成本操作,数量略高)
+      { id: 'extract-text', icon: '📄', title: lbl('Extract as Text ×5', '提取为文本 ×5'), current: s.notesExtractedAsText, target: 5 },
+      { id: 'extract-qa', icon: '❓', title: lbl('Extract as Q&A ×5', '提取为问答 ×5'), current: s.notesExtractedAsQA, target: 5 },
+      { id: 'extract-cloze', icon: '⬛', title: lbl('Extract as Cloze ×5', '提取为挖空 ×5'), current: s.notesExtractedAsCloze, target: 5 },
+      { id: 'scan-notes-10', icon: '🔍', title: lbl('Scan 10 Notes', '扫描 10 篇笔记'), current: s.notesScanned, target: 10 },
+      // 熟练:成体量的积累(批注成本较高,数量适中)
+      { id: 'collector-30', icon: '📦', title: lbl('Extract 30 Cards', '累计提取 30 张卡'), current: s.cardsExtracted, target: 30 },
+      { id: 'annotate-10', icon: '📝', title: lbl('Add 10 Annotations', '完成 10 条批注'), current: s.annotationsCompleted, target: 10 },
+      { id: 'scan-tables-5', icon: '📋', title: lbl('Scan 5 Tables', '扫描 5 个表格'), current: s.tablesScanned, target: 5 },
+      { id: 'streak-7', icon: '🔥', title: lbl('7-Day Streak', '连续学习 7 天'), current: s.consecutiveDays, target: 7 },
+      // 精通:长期复习与坚持
+      { id: 'review-50', icon: '🔄', title: lbl('Review 50 Cards', '复习 50 张卡'), current: s.cardsReviewed, target: 50 },
+      { id: 'days-21', icon: '📅', title: lbl('21 Active Days', '累计学习 21 天'), current: s.totalDays, target: 21 },
+      // 大师
+      { id: 'review-150', icon: '🎯', title: lbl('Review 150 Cards', '复习 150 张卡'), current: s.cardsReviewed, target: 150 },
+    ];
+
+    return defs.map((d) => ({
+      ...d,
+      current: Math.min(d.current, d.target),
+      done: d.current >= d.target,
+    }));
+  }
+
+  /** 检测「本次新达成」的里程碑并弹祝贺通知(每个只祝贺一次)。 */
+  private async checkAchievements() {
+    const zh = this.language === 'zh-CN';
+    let changed = false;
+    for (const a of this.getAchievements()) {
+      if (a.done && !this.progress.celebratedAchievements.includes(a.id)) {
+        this.progress.celebratedAchievements.push(a.id);
+        changed = true;
+        const msg = zh
+          ? `🎉 里程碑达成:${a.icon} ${a.title}`
+          : `🎉 Milestone reached: ${a.icon} ${a.title}`;
+        new Notice(msg, 8000);
+      }
     }
-  
-    const requiredLevel = this.getFeatureRequiredLevel(feature);
-    const nextSteps = this.getNextStepsForLevel(this.progress.currentLevel);
-    
-    // 传递语言参数
-    new UnlockNoticeModal(
-      this.app, 
-      featureName, 
-      requiredLevel, 
-      nextSteps,
-      this.language
-    ).open();
-    
-    return false;
+    if (changed) await this.saveProgress();
   }
 
   // ==================== 等级检查和升级 ====================
@@ -218,6 +237,9 @@ async onNoteScanned() {
     if (newLevel > oldLevel) {
       await this.levelUp(newLevel);
     }
+
+    // 等级之外,逐项里程碑也独立祝贺
+    await this.checkAchievements();
   }
 
   private canUpgradeToLevel2(): boolean {
@@ -300,46 +322,6 @@ async onNoteScanned() {
   getProgress(): UnlockProgress {
     return this.progress;
   }
-  getNextStepsForLevel(level: UserLevel): string {
-    const stats = this.progress.stats;
-    const lang = this.language;
-    
-    switch (level) {
-      case 1:
-        return t('unlock.nextSteps.level1', lang, { 
-          text: stats.notesExtractedAsText,
-          qa: stats.notesExtractedAsQA,
-          cloze: stats.notesExtractedAsCloze
-        });
-      case 2:
-        return t('unlock.nextSteps.level2', lang, { 
-          annotations: stats.annotationsCompleted,
-          scanned: stats.notesScanned
-        });
-      case 3:
-        return t('unlock.nextSteps.level3', lang, { 
-          reviewed: stats.cardsReviewed,
-          tables: stats.tablesScanned
-        });
-      case 4:
-        return t('unlock.nextSteps.level4', lang, {
-          reviewed: stats.cardsReviewed,
-          total: stats.totalDays,
-          visited: stats.statsPageVisited ? '✓' : '✗'
-        });
-      case 5:
-        return t('unlock.nextSteps.level5', lang);
-      default:
-        return '';
-    }
-  }
-  private getFeatureRequiredLevel(feature: string): UserLevel {
-    if (['extract-single', 'sidebar-basic'].includes(feature)) return 1;
-    if (['extract-batch', 'annotation', 'filter-by-type'].includes(feature)) return 2;
-    if (['scan-vault', 'scan-file', 'review-page', 'review-reminder', 'extract-table'].includes(feature)) return 3;
-    if (feature === 'stats-page') return 4;
-    return 5;
-  }
 
   // ==================== 数据持久化 ====================
 
@@ -353,7 +335,9 @@ async onNoteScanned() {
         
         // 恢复 Set
         saved.unlockedFeatures = new Set(saved.unlockedFeatures || []);
-        
+        // 兼容旧存档:补默认字段
+        saved.celebratedAchievements = saved.celebratedAchievements || [];
+
         this.progress = saved;
       } else {
         this.progress = this.createDefaultProgress();
@@ -403,152 +387,70 @@ async onNoteScanned() {
       milestones: [{
         level: 1,
         unlockedAt: Date.now(),
-      }]
+      }],
+      celebratedAchievements: []
     };
   }
 }
 
-class UnlockNoticeModal extends Modal {
-  constructor(
-    app: App,
-    private featureName: string,
-    private requiredLevel: number,
-    private nextSteps: string,
-    private language: Language = 'en'
-  ) {
-    super(app);
-  }
-  
-  onOpen() {
-    const { contentEl } = this;
-    contentEl.empty();
-  
-    contentEl.createEl('h2', { text: t('unlock.modal.title', this.language) });
-    contentEl.createEl('p', {
-      text: t('unlock.modal.requireLevel', this.language, {
-        feature: this.featureName,
-        level: this.requiredLevel,
-      }),
-    });
-    contentEl.createEl('h3', { text: t('unlock.modal.currentProgress', this.language) });
-  
-    const container = contentEl.createDiv({ cls: 'unlock-modal-steps' });
-    container.innerHTML = this.nextSteps.replace(/\n/g, '<br>');
-  
-    contentEl.createDiv({ cls: 'unlock-modal-divider' });
-  }
-  
-  onClose() {
-    const { contentEl } = this;
-    contentEl.empty();
-  }
-}
+/**
+ * 里程碑(成就)面板:把插件的各项功能/目标列成清单,
+ * 已达成的打勾祝贺,未达成的显示进度。点侧边栏等级徽章打开。
+ */
 export class LevelInfoModal extends Modal {
   constructor(
     app: App,
     private progress: UnlockProgress,
     private unlockSystem: UnlockSystem,
-    private language: Language = 'en' 
+    private language: Language = 'en'
   ) {
     super(app);
   }
-  
+
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass('level-info-modal');
-    
-    const level = this.progress.currentLevel;
-    const levelName = t(`unlock.level.${level}`, this.language);
-    
-    contentEl.createEl('h2', { 
-      text: t('unlock.levelInfo.title', this.language, {
-        level: level,
-        name: levelName
-      })
+
+    const zh = this.language === 'zh-CN';
+    const achievements = this.unlockSystem.getAchievements();
+    const doneCount = achievements.filter((a) => a.done).length;
+
+    // 标题
+    contentEl.createEl('h2', {
+      text: zh ? '🏆 里程碑' : '🏆 Milestones',
     });
-    
-    // 进度信息
-    const progressSection = contentEl.createDiv({ cls: 'progress-section' });
-    
-    const progressBox = progressSection.createDiv({ cls: 'progress-box' });
-    const progressText = this.unlockSystem.getNextStepsForLevel(this.progress.currentLevel);
-    progressBox.innerHTML = progressText.replace(/\n/g, '<br>');
-    
-    // 统计信息
-    const statsSection = contentEl.createDiv({ cls: 'stats-section' });
-    statsSection.createEl('h4', { text: t('unlock.levelInfo.cumulativeStats', this.language) });
-    
-    const statsGrid = statsSection.createDiv({ cls: 'stats-grid' });
-    
-    const stats = [
-      { 
-        icon: '📦', 
-        label: t('unlock.stat.cardsExtracted', this.language), 
-        value: this.progress.stats.cardsExtracted 
-      },
-      { 
-        icon: '📝', 
-        label: t('unlock.stat.annotationsCompleted', this.language), 
-        value: this.progress.stats.annotationsCompleted 
-      },
-      { 
-        icon: '🔄', 
-        label: t('unlock.stat.cardsReviewed', this.language), 
-        value: this.progress.stats.cardsReviewed 
-      },
-      { 
-        icon: '📋', 
-        label: t('unlock.stat.tablesScanned', this.language), 
-        value: this.progress.stats.tablesScanned 
-      },
-      { 
-        icon: '🔥', 
-        label: t('unlock.stat.consecutiveDays', this.language), 
-        value: this.progress.stats.consecutiveDays 
-      },
-      { 
-        icon: '📅', 
-        label: t('unlock.stat.totalDays', this.language), 
-        value: this.progress.stats.totalDays 
-      }
-    ];
-    
-    stats.forEach(stat => {
-      const item = statsGrid.createDiv({ cls: 'stat-item' });
-      item.innerHTML = `
-        <span class="stat-icon">${stat.icon}</span>
-        <span class="stat-label">${stat.label}</span>
-        <span class="stat-value">${stat.value}</span>
-      `;
+    contentEl.createEl('p', {
+      cls: 'milestone-summary',
+      text: zh
+        ? `已达成 ${doneCount} / ${achievements.length} 项`
+        : `${doneCount} / ${achievements.length} reached`,
     });
-    
-    // 里程碑
-    if (this.progress.milestones.length > 0) {
-      const milestonesSection = contentEl.createDiv({ cls: 'milestones-section' });
-      milestonesSection.createEl('h4', { 
-        text: t('unlock.levelInfo.milestones', this.language)
+
+    // 成就清单
+    const list = contentEl.createDiv({ cls: 'achievements-list' });
+    for (const a of achievements) {
+      const item = list.createDiv({ cls: 'achievement-item' });
+      if (a.done) item.addClass('achievement-done');
+
+      item.createSpan({ cls: 'achievement-icon', text: a.icon });
+
+      const body = item.createDiv({ cls: 'achievement-body' });
+      body.createDiv({ cls: 'achievement-title', text: a.title });
+      body.createDiv({
+        cls: 'achievement-progress',
+        text: a.done
+          ? (zh ? '已达成' : 'Completed')
+          : `${a.current} / ${a.target}`,
       });
-      
-      const milestonesList = milestonesSection.createDiv({ cls: 'milestones-list' });
-      
-      this.progress.milestones
-        .slice()
-        .reverse()
-        .forEach((milestone) => {
-          const item = milestonesList.createDiv({ cls: 'milestone-item' });
-          const date = new Date(milestone.unlockedAt).toLocaleDateString(
-            this.language === 'zh-CN' ? 'zh-CN' : 'en-US'
-          );
-          const message = t(`unlock.levelUp.${milestone.level}`, this.language);
-      
-          item.innerHTML = `
-            <div class="milestone-message">${date} ${message}</div>
-          `;
-        });
+
+      item.createSpan({
+        cls: 'achievement-mark',
+        text: a.done ? '✓' : '',
+      });
     }
   }
-  
+
   onClose() {
     const { contentEl } = this;
     contentEl.empty();

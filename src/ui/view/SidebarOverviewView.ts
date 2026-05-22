@@ -23,7 +23,6 @@ import {
   FlashcardMenuCallbacks 
 } from '../components/ContextMenuBuilder';
 import { BatchCreateModal } from '../components/modals/BatchCreateModal';
-import { LevelInfoModal ,UnlockProgress} from '../../core/UnlockSystem'
 import { setCssProps } from '../utils/setCssProps';
 
 
@@ -45,7 +44,6 @@ export class SidebarOverviewView extends ItemView {
 
   private _forceMainMode: boolean;
 
-  private isOpeningEditor: boolean = false;
   private savingAnnotations: Set<string> = new Set();
 
   constructor(leaf: WorkspaceLeaf, plugin: LearningSystemPlugin, forceMainMode = false) {
@@ -185,15 +183,7 @@ export class SidebarOverviewView extends ItemView {
         if (!this.plugin.unlockSystem.tryUseFeature('annotation', 'Annotation')) {
           return;
         }
-        
-        // ⭐ 设置锁
-        this.isOpeningEditor = true;
-        
         this.annotationEditor.toggle(card, unit);
-        
-        setTimeout(() => {
-          this.isOpeningEditor = false;
-        }, 500); 
       },
       onQuickFlashcard: (unit) => this.quickGenerateFlashcard(unit),
       onShowContextMenu: (event, unit) => this.showContextMenu(event, unit),
@@ -270,7 +260,10 @@ const annotationCallbacks: AnnotationEditorCallbacks = {
     this.registerEvent(
       this.app.workspace.on('active-leaf-change', () => {
         const activeFile = this.app.workspace.getActiveFile();
-        if (activeFile && this.state.displayMode === 'sidebar') {
+        // ⭐ 仅当选中文件真的变化时才刷新。否则点进 sidebar(active leaf 变化但
+        //    文件未变)会无谓重建列表,销毁正在右键操作的卡片 → 首击失效。
+        if (activeFile && this.state.displayMode === 'sidebar'
+            && activeFile.path !== this.state.selectedFile) {
           this.state.selectedFile = activeFile.path;
           this.refresh();
         }
@@ -278,7 +271,8 @@ const annotationCallbacks: AnnotationEditorCallbacks = {
     );
     this.registerEvent(
       this.app.workspace.on('file-open', (file) => {
-        if (file && this.state.displayMode === 'sidebar') {
+        if (file && this.state.displayMode === 'sidebar'
+            && file.path !== this.state.selectedFile) {
           this.state.selectedFile = file.path;
           this.refresh();
         }
@@ -315,7 +309,7 @@ const annotationCallbacks: AnnotationEditorCallbacks = {
   refresh(): void {
   
   const hasActiveEditors = document.querySelector('.inline-annotation-editor') !== null;
-  if (hasActiveEditors || this.isOpeningEditor) {
+  if (hasActiveEditors) {
     return;
   }
     if (this.state.isRendering) {
@@ -400,40 +394,10 @@ private renderSidebarMode(container: HTMLElement): void {
   const centerActions = statsRow.createDiv({ cls: 'stats-center' });
   this.batchActions.renderActionButtons(centerActions, 'sidebar');
   
-// 显示等级徽章（Lv1-Lv4 始终显示，Lv5 显示30分钟后隐藏）
-const progress = this.plugin.unlockSystem.getProgress();
-const shouldShowFullBadge = this.shouldShowFullLevelBadge(progress);
+// 里程碑不在侧边栏常显:仅在达成时弹祝贺通知,或通过命令「查看里程碑」按需打开。
 
-if (shouldShowFullBadge) {
-  const levelBadge = container.createDiv({ cls: 'level-badge' });
-
-  const levelName = this.t(`level.${progress.currentLevel}`);
-
-  levelBadge.textContent = `Lv${progress.currentLevel}:  ${levelName}`;
-  setCssProps(levelBadge, { 'font-size': '1em' });
-
-  const progressText = container.createDiv({ cls: 'progress-text' });
-  progressText.innerHTML = this.plugin.unlockSystem.getNextStepsForLevel(progress.currentLevel).replace(/\n/g, '<br>');
-  setCssProps(progressText, { 'font-size': '0.93em' });
-  
-  // 添加第一条分隔线
-  const divider = container.createDiv({ cls: 'level-divider' });
-  setCssProps(divider, {
-    width: 'calc(100% - 24px)',
-    height: '1px',
-    'background-color': 'var(--background-modifier-border)',
-    margin: '12px auto'
-  });
-}
-
-// 6. 创建右侧容器(等级徽章 + 复习检查按钮)
+// 6. 创建右侧容器(复习检查按钮)
 const rightActions = statsRow.createDiv({ cls: 'stats-right' });
-
-// ⭐ Lv5 且30分钟后显示小徽章（复用上面的 progress 变量）
-if (!shouldShowFullBadge && progress.currentLevel === 5) {
-  this.renderLevelBadge(rightActions, progress);
-}
-
 this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
   
   // 7. 创建内容列表容器
@@ -757,11 +721,7 @@ private handleSearchChange(query: string): void {
 
 // 添加新方法:只刷新内容列表
 private refreshContentOnly(): void {
-  // ⭐ 如果正在打开编辑器，跳过刷新
-  if (this.isOpeningEditor) {
-    return;
-  }
-  
+  // ⭐ 编辑器打开时跳过刷新(DOM 守卫)
   const hasActiveEditors = document.querySelector('.inline-annotation-editor') !== null;
   if (hasActiveEditors) {
     return;
@@ -1098,8 +1058,11 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
   if (!this.plugin.unlockSystem.tryUseFeature('annotation', 'Annotation')) {
     return;
   }
-      const card = event.target as HTMLElement;
-      const cardEl = card.closest('.compact-card, .grid-card') as HTMLElement;
+      // ⭐ 按 unit.id 重新取「当前存活」的卡片,而非用闭包里可能已被列表重建
+      //    销毁的旧节点(否则编辑器会插进游离节点 → 首击失效)。
+      const cardEl = this.containerEl.querySelector(
+        `[data-unit-id="${unit.id}"]`
+      ) as HTMLElement | null;
       if (cardEl) {
         this.annotationEditor.toggle(cardEl, unit);
       }
@@ -1351,47 +1314,6 @@ private checkGroupHasNotes(mode: GroupMode): boolean {
   
   }
 
-// ==================== 等级徽章显示 ====================
-
-/**
- * 判断是否显示完整的等级徽章
- * Lv1-4: 始终显示
- * Lv5: 达成后30分钟内显示，之后隐藏
- */
-private shouldShowFullLevelBadge(progress: UnlockProgress): boolean {
-  if (progress.currentLevel < 5) {
-    return true;
-  }
-  
-  // Lv5: 检查是否在30分钟内
-  const lv5UnlockedTime = progress.levelUnlockedAt[5];
-  if (!lv5UnlockedTime) {
-    return false;
-  }
-  
-  const now = Date.now();
-  const thirtyMinutes = 30 * 60 * 1000;
-  return (now - lv5UnlockedTime) < thirtyMinutes;
-}
-
-/**
- * 渲染小型等级徽章（Lv5专用）
- */
-private renderLevelBadge(container: HTMLElement, progress: UnlockProgress): void {
-  const levelBadge = container.createDiv({ cls: 'level-badge-icon' });
-  
-
-  const levelName = this.t(`level.${progress.currentLevel}`);
-  levelBadge.textContent = `Lv${progress.currentLevel}`;
-  levelBadge.title = `${this.t('level.current')}: ${levelName} - ${this.t('level.clickDetails')}`;
-  
-  // 点击显示等级详情
-  levelBadge.addEventListener('mousedown', (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    new LevelInfoModal(this.app, progress, this.plugin.unlockSystem).open();
-  });
-}
   // ==================== 复习检查 ====================
 // 每日提醒复习
 // 手动触发复习提醒检查

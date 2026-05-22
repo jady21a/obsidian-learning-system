@@ -11,10 +11,6 @@ export interface AnnotationEditorCallbacks {
 export class AnnotationEditor {
   private callbacks: AnnotationEditorCallbacks;
   private activeEditors: Map<string, HTMLElement> = new Map();
-  private toggleLock: Map<string, number> = new Map();
-
-  private isOpening: boolean = false;
-
 
   constructor(callbacks: AnnotationEditorCallbacks) {
     this.callbacks = callbacks;
@@ -22,29 +18,14 @@ export class AnnotationEditor {
 
 /**
  * 切换内联批注编辑器
+ *
+ * 同步打开:编辑器元素同步插入 DOM,使 `.inline-annotation-editor` 立即存在,
+ * 从而 refresh() 的 DOM 守卫能立刻挡住重渲——不再需要任何 boolean 锁/防抖。
  */
 toggle(cardEl: HTMLElement, unit: ContentUnit): void {
-  if (this.isOpening) {
-    return;
-  }
-
-  const now = Date.now();
-  const lastToggle = this.toggleLock.get(unit.id) || 0;
-  
-  // ⭐ 修改：只对同一个 unit 进行防抖，不同 unit 可以立即切换
-  if (now - lastToggle < 200) {
-    return;
-  }
-
-  this.toggleLock.set(unit.id, now);
-  
-
-  // ⭐ 使用更严格的检查
+  // 已在编辑该卡 → 关闭(切换语义)
   const existingEditor = cardEl.querySelector('.inline-annotation-editor');
-  const isCurrentEditing = !!existingEditor;
-  
-  
-  if (isCurrentEditing) {
+  if (existingEditor) {
     this.close(cardEl, unit);
     return;
   }
@@ -56,13 +37,9 @@ toggle(cardEl: HTMLElement, unit: ContentUnit): void {
     oldPreviews.forEach(el => el.remove());
   }
 
-  // ⭐ 修改：先关闭其他编辑器，再异步打开新编辑器
+  // 先关闭其他编辑器,再同步打开新编辑器
   this.closeAllOthers(unit.id);
-  
-  // ⭐ 使用 requestAnimationFrame 确保关闭操作完成后再打开
-  requestAnimationFrame(() => {
-    this.open(cardEl, unit);
-  });
+  this.open(cardEl, unit);
 }
 
 /**
@@ -87,9 +64,6 @@ private closeAllOthers(currentUnitId: string): void {
  * 打开编辑器
  */
 private open(cardEl: HTMLElement, unit: ContentUnit): void {
-  this.isOpening = true;
-  
-  
   cardEl.setAttribute('data-editing', 'true');
   
   const annotationContent = this.callbacks.getAnnotationContent(unit.id);
@@ -122,12 +96,6 @@ private open(cardEl: HTMLElement, unit: ContentUnit): void {
   });
 
   this.activeEditors.set(unit.id, editor);
-  
-  
-  setTimeout(() => {
-    this.isOpening = false;
-  }, 200);
-  
 }
   /**
    * 关闭编辑器
@@ -185,26 +153,7 @@ private createEditor(unitId: string, defaultValue: string): HTMLElement {
   
   editor.appendChild(textarea);
   editor.appendChild(hint);
-    // ⭐ 监控样式被修改
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach(mutation => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-          console.error('🚨 [Editor] Style was modified!', {
-            oldValue: mutation.oldValue,
-            newValue: editor.getAttribute('style'),
-            stack: new Error().stack
-          });
-        }
-      });
-    });
-    
-    observer.observe(editor, {
-      attributes: true,
-      attributeOldValue: true,
-      attributeFilter: ['style']
-    });
 
-  
   // 绑定其他事件
   this.bindEditorEvents(textarea, unitId);
 

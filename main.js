@@ -1280,7 +1280,7 @@ var QuickFlashcardCreator = class {
 };
 
 // src/ui/view/SidebarOverviewView.ts
-var import_obsidian9 = require("obsidian");
+var import_obsidian8 = require("obsidian");
 
 // src/ui/stats/ViewState.ts
 var ViewState = class {
@@ -2503,26 +2503,17 @@ var ContentList = class {
 var AnnotationEditor = class {
   constructor(callbacks) {
     this.activeEditors = /* @__PURE__ */ new Map();
-    this.toggleLock = /* @__PURE__ */ new Map();
-    this.isOpening = false;
     this.callbacks = callbacks;
   }
   /**
    * 切换内联批注编辑器
+   *
+   * 同步打开:编辑器元素同步插入 DOM,使 `.inline-annotation-editor` 立即存在,
+   * 从而 refresh() 的 DOM 守卫能立刻挡住重渲——不再需要任何 boolean 锁/防抖。
    */
   toggle(cardEl, unit) {
-    if (this.isOpening) {
-      return;
-    }
-    const now = Date.now();
-    const lastToggle = this.toggleLock.get(unit.id) || 0;
-    if (now - lastToggle < 200) {
-      return;
-    }
-    this.toggleLock.set(unit.id, now);
     const existingEditor = cardEl.querySelector(".inline-annotation-editor");
-    const isCurrentEditing = !!existingEditor;
-    if (isCurrentEditing) {
+    if (existingEditor) {
       this.close(cardEl, unit);
       return;
     }
@@ -2532,9 +2523,7 @@ var AnnotationEditor = class {
       oldPreviews.forEach((el) => el.remove());
     }
     this.closeAllOthers(unit.id);
-    requestAnimationFrame(() => {
-      this.open(cardEl, unit);
-    });
+    this.open(cardEl, unit);
   }
   /**
    * 关闭除指定 unitId 外的所有编辑器
@@ -2555,7 +2544,6 @@ var AnnotationEditor = class {
    * 打开编辑器
    */
   open(cardEl, unit) {
-    this.isOpening = true;
     cardEl.setAttribute("data-editing", "true");
     const annotationContent = this.callbacks.getAnnotationContent(unit.id);
     const content = cardEl.querySelector(".card-content, .grid-card-content");
@@ -2578,9 +2566,6 @@ var AnnotationEditor = class {
       });
     });
     this.activeEditors.set(unit.id, editor);
-    setTimeout(() => {
-      this.isOpening = false;
-    }, 200);
   }
   /**
    * 关闭编辑器
@@ -2623,22 +2608,6 @@ var AnnotationEditor = class {
     hint.textContent = "Shift + Enter to insert a new line";
     editor.appendChild(textarea);
     editor.appendChild(hint);
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === "attributes" && mutation.attributeName === "style") {
-          console.error("\u{1F6A8} [Editor] Style was modified!", {
-            oldValue: mutation.oldValue,
-            newValue: editor.getAttribute("style"),
-            stack: new Error().stack
-          });
-        }
-      });
-    });
-    observer.observe(editor, {
-      attributes: true,
-      attributeOldValue: true,
-      attributeFilter: ["style"]
-    });
     this.bindEditorEvents(textarea, unitId);
     return editor;
   }
@@ -3309,438 +3278,13 @@ var BatchCreateModal = class extends import_obsidian7.Modal {
   }
 };
 
-// src/core/UnlockSystem.ts
-var import_obsidian8 = require("obsidian");
-var UnlockSystem = class {
-  constructor(app, plugin) {
-    this.app = app;
-    this.plugin = plugin;
-    this.dataPath = `${this.app.vault.configDir}/plugins/learning-system/data/unlock-progress.json`;
-  }
-  get language() {
-    return this.plugin.settings.language || "en";
-  }
-  async initialize() {
-    await this.loadProgress();
-    this.updateDailyStreak();
-  }
-  // ==================== 核心检查点 ====================
-  /**
-   * 🎯 卡片提取完成时调用
-   */
-  async onCardExtracted() {
-    this.progress.stats.cardsExtracted++;
-    await this.checkLevelUp();
-    await this.saveProgress();
-  }
-  /**
-   * 🎯 提取为text时调用
-   */
-  async onNoteExtractedAsText() {
-    this.progress.stats.notesExtractedAsText++;
-    await this.checkLevelUp();
-    await this.saveProgress();
-  }
-  /**
-   * 🎯 提取为QA时调用
-   */
-  async onNoteExtractedAsQA() {
-    this.progress.stats.notesExtractedAsQA++;
-    await this.checkLevelUp();
-    await this.saveProgress();
-  }
-  /**
-   * 🎯 提取为cloze时调用
-   */
-  async onNoteExtractedAsCloze() {
-    this.progress.stats.notesExtractedAsCloze++;
-    await this.checkLevelUp();
-    await this.saveProgress();
-  }
-  /**
-   * 🎯 scan提取笔记时调用
-   */
-  async onNoteScanned() {
-    this.progress.stats.notesScanned++;
-    await this.checkLevelUp();
-    await this.saveProgress();
-  }
-  /**
-   * 🎯 批注完成时调用
-   */
-  async onAnnotationCompleted() {
-    const before = this.progress.stats.annotationsCompleted;
-    this.progress.stats.annotationsCompleted++;
-    await this.checkLevelUp();
-    await this.saveProgress();
-  }
-  /**
-   * 🎯 卡片复习完成时调用
-   */
-  async onCardReviewed() {
-    this.progress.stats.cardsReviewed++;
-    this.updateDailyStreak();
-    await this.checkLevelUp();
-    await this.saveProgress();
-  }
-  /**
-   * 🎯 扫描表格时调用
-   */
-  async onTableScanned() {
-    this.progress.stats.tablesScanned++;
-    await this.checkLevelUp();
-    await this.saveProgress();
-  }
-  /**
-   * 🎯 访问统计页面时调用
-   */
-  async onStatsPageVisited() {
-    if (!this.progress.stats.statsPageVisited) {
-      this.progress.stats.statsPageVisited = true;
-      await this.checkLevelUp();
-      await this.saveProgress();
-    }
-  }
-  // ==================== 功能权限检查 ====================
-  /**
-   * 检查功能是否解锁
-   */
-  isFeatureUnlocked(feature) {
-    const level = this.progress.currentLevel;
-    const featureMap = {
-      // Lv1
-      "extract-single": 1,
-      "sidebar-basic": 1,
-      // Lv2
-      "extract-batch": 2,
-      "annotation": 2,
-      "filter-by-type": 2,
-      "scan-file": 2,
-      // Lv3
-      "scan-vault": 3,
-      "review-page": 3,
-      "review-reminder": 3,
-      "extract-table": 3,
-      // Lv4
-      "stats-page": 4,
-      // Lv5
-      "advanced-analytics": 5,
-      "community": 5
-    };
-    const requiredLevel = featureMap[feature] || 1;
-    return level >= requiredLevel;
-  }
-  /**
-   * 尝试使用功能(如果未解锁则提示)
-   */
-  tryUseFeature(feature, featureName) {
-    if (this.isFeatureUnlocked(feature)) {
-      return true;
-    }
-    const requiredLevel = this.getFeatureRequiredLevel(feature);
-    const nextSteps = this.getNextStepsForLevel(this.progress.currentLevel);
-    new UnlockNoticeModal(
-      this.app,
-      featureName,
-      requiredLevel,
-      nextSteps,
-      this.language
-    ).open();
-    return false;
-  }
-  // ==================== 等级检查和升级 ====================
-  async checkLevelUp() {
-    const oldLevel = this.progress.currentLevel;
-    let newLevel = oldLevel;
-    if (oldLevel === 1 && this.canUpgradeToLevel2()) {
-      newLevel = 2;
-    } else if (oldLevel === 2 && this.canUpgradeToLevel3()) {
-      newLevel = 3;
-    } else if (oldLevel === 3 && this.canUpgradeToLevel4()) {
-      newLevel = 4;
-    } else if (oldLevel === 4 && this.canUpgradeToLevel5()) {
-      newLevel = 5;
-    }
-    if (newLevel > oldLevel) {
-      await this.levelUp(newLevel);
-    }
-  }
-  canUpgradeToLevel2() {
-    const { notesExtractedAsText, notesExtractedAsQA, notesExtractedAsCloze } = this.progress.stats;
-    return notesExtractedAsText >= 2 && notesExtractedAsQA >= 2 && notesExtractedAsCloze >= 2;
-  }
-  canUpgradeToLevel3() {
-    return this.progress.stats.annotationsCompleted >= 3 && this.progress.stats.notesScanned >= 5;
-  }
-  canUpgradeToLevel4() {
-    return this.progress.stats.cardsReviewed >= 30 && this.progress.stats.tablesScanned >= 2;
-  }
-  canUpgradeToLevel5() {
-    return this.progress.stats.cardsReviewed >= 70 && this.progress.stats.totalDays >= 21 && this.progress.stats.statsPageVisited;
-  }
-  async levelUp(newLevel) {
-    this.progress.currentLevel = newLevel;
-    this.progress.levelUnlockedAt[newLevel] = Date.now();
-    const message = t(`unlock.levelUp.${newLevel}`, this.language);
-    const milestone = {
-      level: newLevel,
-      unlockedAt: Date.now()
-    };
-    this.progress.milestones.push(milestone);
-    new import_obsidian8.Notice(message, 1e4);
-    await this.saveProgress();
-  }
-  // ==================== 日常连续天数 ====================
-  updateDailyStreak() {
-    const today = new Date().toISOString().split("T")[0];
-    const lastActive = this.progress.stats.lastActiveDate;
-    if (lastActive !== today) {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split("T")[0];
-      if (lastActive === yesterdayStr) {
-        this.progress.stats.consecutiveDays++;
-      } else if (!lastActive) {
-        this.progress.stats.consecutiveDays = 1;
-      } else {
-        this.progress.stats.consecutiveDays = 1;
-      }
-      this.progress.stats.totalDays++;
-      this.progress.stats.lastActiveDate = today;
-    }
-  }
-  // ==================== 辅助方法 ====================
-  getCurrentLevel() {
-    return this.progress.currentLevel;
-  }
-  getProgress() {
-    return this.progress;
-  }
-  getNextStepsForLevel(level) {
-    const stats = this.progress.stats;
-    const lang = this.language;
-    switch (level) {
-      case 1:
-        return t("unlock.nextSteps.level1", lang, {
-          text: stats.notesExtractedAsText,
-          qa: stats.notesExtractedAsQA,
-          cloze: stats.notesExtractedAsCloze
-        });
-      case 2:
-        return t("unlock.nextSteps.level2", lang, {
-          annotations: stats.annotationsCompleted,
-          scanned: stats.notesScanned
-        });
-      case 3:
-        return t("unlock.nextSteps.level3", lang, {
-          reviewed: stats.cardsReviewed,
-          tables: stats.tablesScanned
-        });
-      case 4:
-        return t("unlock.nextSteps.level4", lang, {
-          reviewed: stats.cardsReviewed,
-          total: stats.totalDays,
-          visited: stats.statsPageVisited ? "\u2713" : "\u2717"
-        });
-      case 5:
-        return t("unlock.nextSteps.level5", lang);
-      default:
-        return "";
-    }
-  }
-  getFeatureRequiredLevel(feature) {
-    if (["extract-single", "sidebar-basic"].includes(feature))
-      return 1;
-    if (["extract-batch", "annotation", "filter-by-type"].includes(feature))
-      return 2;
-    if (["scan-vault", "scan-file", "review-page", "review-reminder", "extract-table"].includes(feature))
-      return 3;
-    if (feature === "stats-page")
-      return 4;
-    return 5;
-  }
-  // ==================== 数据持久化 ====================
-  async loadProgress() {
-    try {
-      const adapter = this.app.vault.adapter;
-      if (await adapter.exists(this.dataPath)) {
-        const data = await adapter.read(this.dataPath);
-        const saved = JSON.parse(data);
-        saved.unlockedFeatures = new Set(saved.unlockedFeatures || []);
-        this.progress = saved;
-      } else {
-        this.progress = this.createDefaultProgress();
-      }
-    } catch (error) {
-      console.error("Error loading unlock progress:", error);
-      this.progress = this.createDefaultProgress();
-    }
-  }
-  async saveProgress() {
-    try {
-      const adapter = this.app.vault.adapter;
-      const toSave = {
-        ...this.progress,
-        unlockedFeatures: Array.from(this.progress.unlockedFeatures)
-      };
-      const data = JSON.stringify(toSave, null, 2);
-      await adapter.write(this.dataPath, data);
-    } catch (error) {
-      console.error("Error saving unlock progress:", error);
-    }
-  }
-  createDefaultProgress() {
-    return {
-      currentLevel: 1,
-      stats: {
-        cardsExtracted: 0,
-        notesExtractedAsText: 0,
-        notesExtractedAsQA: 0,
-        notesExtractedAsCloze: 0,
-        annotationsCompleted: 0,
-        notesScanned: 0,
-        cardsReviewed: 0,
-        tablesScanned: 0,
-        consecutiveDays: 0,
-        totalDays: 0,
-        statsPageVisited: false,
-        lastActiveDate: ""
-      },
-      unlockedFeatures: /* @__PURE__ */ new Set(["extract-single", "sidebar-basic"]),
-      levelUnlockedAt: { 1: Date.now() },
-      milestones: [{
-        level: 1,
-        unlockedAt: Date.now()
-      }]
-    };
-  }
-};
-var UnlockNoticeModal = class extends import_obsidian8.Modal {
-  constructor(app, featureName, requiredLevel, nextSteps, language = "en") {
-    super(app);
-    this.featureName = featureName;
-    this.requiredLevel = requiredLevel;
-    this.nextSteps = nextSteps;
-    this.language = language;
-  }
-  onOpen() {
-    const { contentEl } = this;
-    contentEl.empty();
-    contentEl.createEl("h2", { text: t("unlock.modal.title", this.language) });
-    contentEl.createEl("p", {
-      text: t("unlock.modal.requireLevel", this.language, {
-        feature: this.featureName,
-        level: this.requiredLevel
-      })
-    });
-    contentEl.createEl("h3", { text: t("unlock.modal.currentProgress", this.language) });
-    const container = contentEl.createDiv({ cls: "unlock-modal-steps" });
-    container.innerHTML = this.nextSteps.replace(/\n/g, "<br>");
-    contentEl.createDiv({ cls: "unlock-modal-divider" });
-  }
-  onClose() {
-    const { contentEl } = this;
-    contentEl.empty();
-  }
-};
-var LevelInfoModal = class extends import_obsidian8.Modal {
-  constructor(app, progress, unlockSystem, language = "en") {
-    super(app);
-    this.progress = progress;
-    this.unlockSystem = unlockSystem;
-    this.language = language;
-  }
-  onOpen() {
-    const { contentEl } = this;
-    contentEl.empty();
-    contentEl.addClass("level-info-modal");
-    const level = this.progress.currentLevel;
-    const levelName = t(`unlock.level.${level}`, this.language);
-    contentEl.createEl("h2", {
-      text: t("unlock.levelInfo.title", this.language, {
-        level,
-        name: levelName
-      })
-    });
-    const progressSection = contentEl.createDiv({ cls: "progress-section" });
-    const progressBox = progressSection.createDiv({ cls: "progress-box" });
-    const progressText = this.unlockSystem.getNextStepsForLevel(this.progress.currentLevel);
-    progressBox.innerHTML = progressText.replace(/\n/g, "<br>");
-    const statsSection = contentEl.createDiv({ cls: "stats-section" });
-    statsSection.createEl("h4", { text: t("unlock.levelInfo.cumulativeStats", this.language) });
-    const statsGrid = statsSection.createDiv({ cls: "stats-grid" });
-    const stats = [
-      {
-        icon: "\u{1F4E6}",
-        label: t("unlock.stat.cardsExtracted", this.language),
-        value: this.progress.stats.cardsExtracted
-      },
-      {
-        icon: "\u{1F4DD}",
-        label: t("unlock.stat.annotationsCompleted", this.language),
-        value: this.progress.stats.annotationsCompleted
-      },
-      {
-        icon: "\u{1F504}",
-        label: t("unlock.stat.cardsReviewed", this.language),
-        value: this.progress.stats.cardsReviewed
-      },
-      {
-        icon: "\u{1F4CB}",
-        label: t("unlock.stat.tablesScanned", this.language),
-        value: this.progress.stats.tablesScanned
-      },
-      {
-        icon: "\u{1F525}",
-        label: t("unlock.stat.consecutiveDays", this.language),
-        value: this.progress.stats.consecutiveDays
-      },
-      {
-        icon: "\u{1F4C5}",
-        label: t("unlock.stat.totalDays", this.language),
-        value: this.progress.stats.totalDays
-      }
-    ];
-    stats.forEach((stat) => {
-      const item = statsGrid.createDiv({ cls: "stat-item" });
-      item.innerHTML = `
-        <span class="stat-icon">${stat.icon}</span>
-        <span class="stat-label">${stat.label}</span>
-        <span class="stat-value">${stat.value}</span>
-      `;
-    });
-    if (this.progress.milestones.length > 0) {
-      const milestonesSection = contentEl.createDiv({ cls: "milestones-section" });
-      milestonesSection.createEl("h4", {
-        text: t("unlock.levelInfo.milestones", this.language)
-      });
-      const milestonesList = milestonesSection.createDiv({ cls: "milestones-list" });
-      this.progress.milestones.slice().reverse().forEach((milestone) => {
-        const item = milestonesList.createDiv({ cls: "milestone-item" });
-        const date = new Date(milestone.unlockedAt).toLocaleDateString(
-          this.language === "zh-CN" ? "zh-CN" : "en-US"
-        );
-        const message = t(`unlock.levelUp.${milestone.level}`, this.language);
-        item.innerHTML = `
-            <div class="milestone-message">${date} ${message}</div>
-          `;
-      });
-    }
-  }
-  onClose() {
-    const { contentEl } = this;
-    contentEl.empty();
-  }
-};
-
 // src/ui/view/SidebarOverviewView.ts
 init_setCssProps();
 var VIEW_TYPE_SIDEBAR_OVERVIEW = "learning-system-sidebar-overview";
 var VIEW_TYPE_MAIN_OVERVIEW = "learning-system-main-overview";
-var SidebarOverviewView = class extends import_obsidian9.ItemView {
+var SidebarOverviewView = class extends import_obsidian8.ItemView {
   constructor(leaf, plugin, forceMainMode = false) {
     super(leaf);
-    this.isOpeningEditor = false;
     this.savingAnnotations = /* @__PURE__ */ new Set();
     this.plugin = plugin;
     this._forceMainMode = forceMainMode;
@@ -3833,11 +3377,7 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
         if (!this.plugin.unlockSystem.tryUseFeature("annotation", "Annotation")) {
           return;
         }
-        this.isOpeningEditor = true;
         this.annotationEditor.toggle(card, unit);
-        setTimeout(() => {
-          this.isOpeningEditor = false;
-        }, 500);
       },
       onQuickFlashcard: (unit) => this.quickGenerateFlashcard(unit),
       onShowContextMenu: (event, unit) => this.showContextMenu(event, unit),
@@ -3898,7 +3438,7 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", () => {
         const activeFile = this.app.workspace.getActiveFile();
-        if (activeFile && this.state.displayMode === "sidebar") {
+        if (activeFile && this.state.displayMode === "sidebar" && activeFile.path !== this.state.selectedFile) {
           this.state.selectedFile = activeFile.path;
           this.refresh();
         }
@@ -3906,7 +3446,7 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
     );
     this.registerEvent(
       this.app.workspace.on("file-open", (file) => {
-        if (file && this.state.displayMode === "sidebar") {
+        if (file && this.state.displayMode === "sidebar" && file.path !== this.state.selectedFile) {
           this.state.selectedFile = file.path;
           this.refresh();
         }
@@ -3931,7 +3471,7 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
   // ==================== 渲染方法 ====================
   refresh() {
     const hasActiveEditors = document.querySelector(".inline-annotation-editor") !== null;
-    if (hasActiveEditors || this.isOpeningEditor) {
+    if (hasActiveEditors) {
       return;
     }
     if (this.state.isRendering) {
@@ -3988,28 +3528,7 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
     this.batchActions.renderSelectAllButton(leftActions, items, "sidebar");
     const centerActions = statsRow.createDiv({ cls: "stats-center" });
     this.batchActions.renderActionButtons(centerActions, "sidebar");
-    const progress = this.plugin.unlockSystem.getProgress();
-    const shouldShowFullBadge = this.shouldShowFullLevelBadge(progress);
-    if (shouldShowFullBadge) {
-      const levelBadge = container.createDiv({ cls: "level-badge" });
-      const levelName = this.t(`level.${progress.currentLevel}`);
-      levelBadge.textContent = `Lv${progress.currentLevel}:  ${levelName}`;
-      setCssProps(levelBadge, { "font-size": "1em" });
-      const progressText = container.createDiv({ cls: "progress-text" });
-      progressText.innerHTML = this.plugin.unlockSystem.getNextStepsForLevel(progress.currentLevel).replace(/\n/g, "<br>");
-      setCssProps(progressText, { "font-size": "0.93em" });
-      const divider = container.createDiv({ cls: "level-divider" });
-      setCssProps(divider, {
-        width: "calc(100% - 24px)",
-        height: "1px",
-        "background-color": "var(--background-modifier-border)",
-        margin: "12px auto"
-      });
-    }
     const rightActions = statsRow.createDiv({ cls: "stats-right" });
-    if (!shouldShowFullBadge && progress.currentLevel === 5) {
-      this.renderLevelBadge(rightActions, progress);
-    }
     this.batchActions.renderReviewCheckButton(rightActions, "sidebar");
     const contentListEl = container.createDiv({ cls: "sidebar-content-list" });
     this.contentList.renderCompactList(contentListEl, currentFileUnits);
@@ -4246,9 +3765,6 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
   }
   // 添加新方法:只刷新内容列表
   refreshContentOnly() {
-    if (this.isOpeningEditor) {
-      return;
-    }
     const hasActiveEditors = document.querySelector(".inline-annotation-editor") !== null;
     if (hasActiveEditors) {
       return;
@@ -4319,14 +3835,14 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
     if (this.state.viewType === "cards") {
       const cards = visible.cards || [];
       if (cards.length === 0) {
-        new import_obsidian9.Notice(this.t("notice.noSelection"));
+        new import_obsidian8.Notice(this.t("notice.noSelection"));
         return;
       }
       this.state.selectAllCards(cards);
     } else {
       const units = visible.units || [];
       if (units.length === 0) {
-        new import_obsidian9.Notice(this.t("notice.noSelection"));
+        new import_obsidian8.Notice(this.t("notice.noSelection"));
         return;
       }
       this.state.selectAllUnits(units);
@@ -4344,14 +3860,14 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
   }
   handleBatchCreate() {
     if (this.state.selectedUnitIds.size === 0) {
-      new import_obsidian9.Notice(this.t("notice.noSelection"));
+      new import_obsidian8.Notice(this.t("notice.noSelection"));
       return;
     }
     void this.batchCreateFlashcards();
   }
   handleBatchDelete() {
     if (this.state.getSelectedCount() === 0) {
-      new import_obsidian9.Notice(this.t("notice.noSelection"));
+      new import_obsidian8.Notice(this.t("notice.noSelection"));
       return;
     }
     if (this.state.viewType === "cards") {
@@ -4450,8 +3966,8 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
         return;
       }
       const file = this.app.vault.getAbstractFileByPath(card.sourceFile);
-      if (!(file instanceof import_obsidian9.TFile)) {
-        new import_obsidian9.Notice(this.t("notice.fileNotFound"));
+      if (!(file instanceof import_obsidian8.TFile)) {
+        new import_obsidian8.Notice(this.t("notice.fileNotFound"));
         return;
       }
       const leaf = this.app.workspace.getLeaf(false);
@@ -4461,7 +3977,7 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
         if (blockIdMatch) {
           const blockId = blockIdMatch[0].substring(1);
           await new Promise((resolve) => setTimeout(resolve, 100));
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian9.MarkdownView);
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian8.MarkdownView);
           if (view && view.editor) {
             const editor = view.editor;
             const content = editor.getValue();
@@ -4476,10 +3992,10 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
           }
         }
       }
-      new import_obsidian9.Notice(this.t("notice.jumpedToSource"));
+      new import_obsidian8.Notice(this.t("notice.jumpedToSource"));
     } catch (error) {
       console.error("Error jumping to flashcard source:", error);
-      new import_obsidian9.Notice(this.t("notice.jumpFailed"));
+      new import_obsidian8.Notice(this.t("notice.jumpFailed"));
     }
   }
   async saveAnnotation(unitId, content) {
@@ -4499,8 +4015,9 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
         if (!this.plugin.unlockSystem.tryUseFeature("annotation", "Annotation")) {
           return;
         }
-        const card = event.target;
-        const cardEl = card.closest(".compact-card, .grid-card");
+        const cardEl = this.containerEl.querySelector(
+          `[data-unit-id="${unit2.id}"]`
+        );
         if (cardEl) {
           this.annotationEditor.toggle(cardEl, unit2);
         }
@@ -4511,7 +4028,7 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
         if (card) {
           new EditFlashcardModal(this.app, this.plugin, card).open();
         } else {
-          new import_obsidian9.Notice(this.t("notice.flashcardNotFound"));
+          new import_obsidian8.Notice(this.t("notice.flashcardNotFound"));
         }
       },
       onQuickGenerate: (unit2) => this.quickGenerateFlashcard(unit2),
@@ -4526,7 +4043,7 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
       },
       onDelete: async (unit2) => {
         await this.plugin.dataManager.deleteContentUnit(unit2.id, "user-deleted");
-        new import_obsidian9.Notice(this.t("notice.movedToTrash"));
+        new import_obsidian8.Notice(this.t("notice.movedToTrash"));
         this.refresh();
       }
     };
@@ -4546,11 +4063,11 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
       },
       onViewStats: (card2) => {
         const statsText = ContextMenuBuilder.formatFlashcardStats(card2);
-        new import_obsidian9.Notice(statsText, 1e4);
+        new import_obsidian8.Notice(statsText, 1e4);
       },
       onDelete: async (card2) => {
         await this.plugin.flashcardManager.deleteCard(card2.id, "user-deleted");
-        new import_obsidian9.Notice(this.t("notice.movedToTrash"));
+        new import_obsidian8.Notice(this.t("notice.movedToTrash"));
         this.refresh();
       }
     };
@@ -4564,7 +4081,7 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
   async batchCreateFlashcards() {
     const units = Array.from(this.state.selectedUnitIds).map((id) => this.plugin.dataManager.getContentUnit(id)).filter((u) => u !== void 0 && u.flashcardIds.length === 0);
     if (units.length === 0) {
-      new import_obsidian9.Notice(this.t("notice.alreadyHasFlashcards"));
+      new import_obsidian8.Notice(this.t("notice.alreadyHasFlashcards"));
       return;
     }
     const quickCreator = new QuickFlashcardCreator(this.plugin);
@@ -4600,7 +4117,7 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
       this.state.selectedUnitIds
     );
     this.state.clearSelection();
-    new import_obsidian9.Notice(this.t("notice.batchDeleted", { success, failed: failed > 0 ? failed : 0 }));
+    new import_obsidian8.Notice(this.t("notice.batchDeleted", { success, failed: failed > 0 ? failed : 0 }));
     this.refresh();
   }
   async batchDeleteFlashcards() {
@@ -4621,7 +4138,7 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
       }
     }
     this.state.clearSelection();
-    new import_obsidian9.Notice(this.t("notice.batchDeleted", { success, failed: failed > 0 ? failed : 0 }));
+    new import_obsidian8.Notice(this.t("notice.batchDeleted", { success, failed: failed > 0 ? failed : 0 }));
     this.refresh();
   }
   // ==================== 工具方法 ====================
@@ -4693,38 +4210,6 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
       year: "numeric",
       month: "2-digit",
       day: "2-digit"
-    });
-  }
-  // ==================== 等级徽章显示 ====================
-  /**
-   * 判断是否显示完整的等级徽章
-   * Lv1-4: 始终显示
-   * Lv5: 达成后30分钟内显示，之后隐藏
-   */
-  shouldShowFullLevelBadge(progress) {
-    if (progress.currentLevel < 5) {
-      return true;
-    }
-    const lv5UnlockedTime = progress.levelUnlockedAt[5];
-    if (!lv5UnlockedTime) {
-      return false;
-    }
-    const now = Date.now();
-    const thirtyMinutes = 30 * 60 * 1e3;
-    return now - lv5UnlockedTime < thirtyMinutes;
-  }
-  /**
-   * 渲染小型等级徽章（Lv5专用）
-   */
-  renderLevelBadge(container, progress) {
-    const levelBadge = container.createDiv({ cls: "level-badge-icon" });
-    const levelName = this.t(`level.${progress.currentLevel}`);
-    levelBadge.textContent = `Lv${progress.currentLevel}`;
-    levelBadge.title = `${this.t("level.current")}: ${levelName} - ${this.t("level.clickDetails")}`;
-    levelBadge.addEventListener("mousedown", (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      new LevelInfoModal(this.app, progress, this.plugin.unlockSystem).open();
     });
   }
   // ==================== 复习检查 ====================
@@ -4885,7 +4370,7 @@ var SidebarOverviewView = class extends import_obsidian9.ItemView {
 };
 
 // src/ui/view/ReviewView.ts
-var import_obsidian12 = require("obsidian");
+var import_obsidian11 = require("obsidian");
 
 // src/core/CardScheduler.ts
 var CardScheduler = class {
@@ -5165,8 +4650,8 @@ var CardScheduler = class {
 };
 
 // src/ui/components/modals/FlashcardEditModal.ts
-var import_obsidian10 = require("obsidian");
-var FlashcardEditModal = class extends import_obsidian10.Modal {
+var import_obsidian9 = require("obsidian");
+var FlashcardEditModal = class extends import_obsidian9.Modal {
   constructor(app, plugin, card, onSubmit) {
     super(app);
     this.plugin = plugin;
@@ -5850,7 +5335,7 @@ CardRendererFactory.renderers = /* @__PURE__ */ new Map([
 init_setCssProps();
 
 // src/ui/view/MindmapReview.ts
-var import_obsidian11 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 
 // node_modules/mind-elixir/dist/MindElixir.js
 var be = {
@@ -9158,7 +8643,7 @@ function newReadonlyMap(container, nodeData) {
 }
 async function renderMindmapGroupQuestion(app, container, sourceFile, targets) {
   const file = app.vault.getAbstractFileByPath(sourceFile);
-  if (!(file instanceof import_obsidian11.TFile))
+  if (!(file instanceof import_obsidian10.TFile))
     return false;
   const text = await app.vault.cachedRead(file);
   const { nodeData } = buildTreeFromMarkdown(file.name, text);
@@ -9177,7 +8662,7 @@ async function renderMindmapGroupQuestion(app, container, sourceFile, targets) {
 }
 async function renderMindmapGroupAnswer(app, container, sourceFile, targets) {
   const file = app.vault.getAbstractFileByPath(sourceFile);
-  if (!(file instanceof import_obsidian11.TFile))
+  if (!(file instanceof import_obsidian10.TFile))
     return false;
   const text = await app.vault.cachedRead(file);
   const { nodeData } = buildTreeFromMarkdown(file.name, text);
@@ -9198,7 +8683,7 @@ async function renderMindmapGroupAnswer(app, container, sourceFile, targets) {
 
 // src/ui/view/ReviewView.ts
 var VIEW_TYPE_REVIEW = "learning-system-review";
-var ReviewView = class extends import_obsidian12.ItemView {
+var ReviewView = class extends import_obsidian11.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.dueCards = [];
@@ -9378,7 +8863,7 @@ var ReviewView = class extends import_obsidian12.ItemView {
             const deckName = this.currentCard.deck;
             if (confirm(t("confirm.resetDeckStats", this.language, { deck: deckName }))) {
               await this.plugin.analyticsEngine.clearDeckStats(deckName);
-              new import_obsidian12.Notice(t("notice.deckStatsReset", this.language, { deck: deckName }));
+              new import_obsidian11.Notice(t("notice.deckStatsReset", this.language, { deck: deckName }));
               await this.loadDueCards();
               this.render();
             }
@@ -9572,7 +9057,7 @@ var ReviewView = class extends import_obsidian12.ItemView {
     this.mmGraded = false;
     const next = this.findNextUnreviewedCard(0);
     if (next === -1) {
-      new import_obsidian12.Notice("\u2705 Review session complete!");
+      new import_obsidian11.Notice("\u2705 Review session complete!");
       this.currentCard = null;
       this.dueCards = [];
       this.render();
@@ -9772,7 +9257,7 @@ var ReviewView = class extends import_obsidian12.ItemView {
           this.resetReviewState();
           this.updateCurrentCard("next");
         } else {
-          new import_obsidian12.Notice("Already at last card");
+          new import_obsidian11.Notice("Already at last card");
         }
       }
     }
@@ -9791,7 +9276,7 @@ var ReviewView = class extends import_obsidian12.ItemView {
           this.updateCurrentCard("prev");
           this.stateManager.setShowAnswer(true);
         } else {
-          new import_obsidian12.Notice("Already at first card");
+          new import_obsidian11.Notice("Already at first card");
         }
       }
     }
@@ -9825,7 +9310,7 @@ var ReviewView = class extends import_obsidian12.ItemView {
     this.resetReviewState();
     const nextUnreviewedIndex = this.findNextUnreviewedCard(this.currentCardIndex + 1);
     if (nextUnreviewedIndex === -1) {
-      new import_obsidian12.Notice(`\u2705 Review session complete!`);
+      new import_obsidian11.Notice(`\u2705 Review session complete!`);
       this.currentCard = null;
       this.dueCards = [];
       this.render();
@@ -9847,21 +9332,21 @@ var ReviewView = class extends import_obsidian12.ItemView {
     if (!this.currentCard)
       return;
     const file = this.app.vault.getAbstractFileByPath(this.currentCard.sourceFile);
-    if (!(file instanceof import_obsidian12.TFile)) {
-      new import_obsidian12.Notice("Source file not found");
+    if (!(file instanceof import_obsidian11.TFile)) {
+      new import_obsidian11.Notice("Source file not found");
       return;
     }
     const contentUnit = this.plugin.dataManager.getContentUnit(
       this.currentCard.sourceContentId
     );
     if (!contentUnit) {
-      new import_obsidian12.Notice("Source content not found");
+      new import_obsidian11.Notice("Source content not found");
       return;
     }
     const leaf = this.app.workspace.getLeaf(false);
     await leaf.openFile(file);
     setTimeout(() => {
-      const view = this.app.workspace.getActiveViewOfType(import_obsidian12.MarkdownView);
+      const view = this.app.workspace.getActiveViewOfType(import_obsidian11.MarkdownView);
       if (view) {
         const editor = view.editor;
         if (editor) {
@@ -9878,7 +9363,7 @@ var ReviewView = class extends import_obsidian12.ItemView {
     var _a;
     try {
       await this.plugin.flashcardManager.deleteCard(cardId);
-      new import_obsidian12.Notice(t("notice.flashcardDeleted", this.language));
+      new import_obsidian11.Notice(t("notice.flashcardDeleted", this.language));
       this.dueCards = this.dueCards.filter((card) => card.id !== cardId);
       if (((_a = this.currentCard) == null ? void 0 : _a.id) === cardId) {
         if (this.currentCardIndex >= this.dueCards.length) {
@@ -9890,7 +9375,7 @@ var ReviewView = class extends import_obsidian12.ItemView {
       this.render();
     } catch (error) {
       console.error("Error deleting flashcard:", error);
-      new import_obsidian12.Notice(t("notice.deleteFlashcardFailed", this.language));
+      new import_obsidian11.Notice(t("notice.deleteFlashcardFailed", this.language));
     }
   }
   editCurrentFlashcard() {
@@ -9912,12 +9397,12 @@ var ReviewView = class extends import_obsidian12.ItemView {
             }
           };
           await this.plugin.flashcardManager.updateCard(updatedCard);
-          new import_obsidian12.Notice(t("notice.flashcardUpdated", this.language));
+          new import_obsidian11.Notice(t("notice.flashcardUpdated", this.language));
           this.currentCard = updatedCard;
           this.render();
         } catch (error) {
           console.error("Error updating flashcard:", error);
-          new import_obsidian12.Notice(t("notice.updateFlashcardFailed", this.language));
+          new import_obsidian11.Notice(t("notice.updateFlashcardFailed", this.language));
         }
       }
     );
@@ -9946,12 +9431,12 @@ var ReviewView = class extends import_obsidian12.ItemView {
       await this.plugin.flashcardManager.updateCard(card);
       await this.plugin.flashcardManager.clearCardReviewLogs(cardId);
       await this.plugin.dataManager.save();
-      new import_obsidian12.Notice(t("notice.cardStatsReset", this.language));
+      new import_obsidian11.Notice(t("notice.cardStatsReset", this.language));
       this.currentCard = card;
       this.render();
     } catch (error) {
       console.error("Error resetting card stats:", error);
-      new import_obsidian12.Notice(t("notice.resetStatsFailed", this.language));
+      new import_obsidian11.Notice(t("notice.resetStatsFailed", this.language));
     }
   }
   registerKeyboardHandlers() {
@@ -9966,7 +9451,7 @@ var ReviewView = class extends import_obsidian12.ItemView {
 };
 
 // src/ui/view/StatsView.ts
-var import_obsidian13 = require("obsidian");
+var import_obsidian12 = require("obsidian");
 
 // src/core/AnalyticsEngine.ts
 var AnalyticsEngine = class {
@@ -10654,7 +10139,7 @@ var AnalyticsEngine = class {
 // src/ui/view/StatsView.ts
 init_setCssProps();
 var VIEW_TYPE_STATS = "learning-system-stats";
-var StatsView = class extends import_obsidian13.ItemView {
+var StatsView = class extends import_obsidian12.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.currentTab = "overview";
@@ -11032,7 +10517,7 @@ var StatsView = class extends import_obsidian13.ItemView {
   }
   async jumpToCard(card) {
     const file = this.app.vault.getAbstractFileByPath(card.sourceFile);
-    if (!(file instanceof import_obsidian13.TFile))
+    if (!(file instanceof import_obsidian12.TFile))
       return;
     const contentUnit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
     if (!contentUnit)
@@ -11040,7 +10525,7 @@ var StatsView = class extends import_obsidian13.ItemView {
     const leaf = this.app.workspace.getLeaf(false);
     await leaf.openFile(file);
     setTimeout(() => {
-      const view = this.app.workspace.getActiveViewOfType(import_obsidian13.ItemView);
+      const view = this.app.workspace.getActiveViewOfType(import_obsidian12.ItemView);
       if (view) {
         const editor = view.editor;
         if (editor) {
@@ -11056,11 +10541,11 @@ var StatsView = class extends import_obsidian13.ItemView {
   async deleteFlashcard(cardId) {
     try {
       await this.plugin.flashcardManager.deleteCard(cardId);
-      new import_obsidian13.Notice(t("notice.flashcardDeleted", this.language));
+      new import_obsidian12.Notice(t("notice.flashcardDeleted", this.language));
       this.render();
     } catch (error) {
       console.error("Error deleting flashcard:", error);
-      new import_obsidian13.Notice(t("notice.deleteFlashcardFailed", this.language));
+      new import_obsidian12.Notice(t("notice.deleteFlashcardFailed", this.language));
     }
   }
   showClearStatsModal() {
@@ -11100,7 +10585,7 @@ var StatsView = class extends import_obsidian13.ItemView {
     (_b = modal.querySelector('[data-action="all"]')) == null ? void 0 : _b.addEventListener("click", async () => {
       if (confirm("\u26A0\uFE0F This will reset ALL statistics and card progress. Are you sure?")) {
         await this.analytics.clearAllStats();
-        new import_obsidian13.Notice("\u2705 All statistics cleared.");
+        new import_obsidian12.Notice("\u2705 All statistics cleared.");
         modal.remove();
         this.render();
       }
@@ -11108,7 +10593,7 @@ var StatsView = class extends import_obsidian13.ItemView {
     (_c = modal.querySelector('[data-action="old"]')) == null ? void 0 : _c.addEventListener("click", async () => {
       if (confirm("Clear statistics older than 30 days?")) {
         await this.analytics.clearStatsBeforeDate(30);
-        new import_obsidian13.Notice("\u2705 Old statistics cleared.");
+        new import_obsidian12.Notice("\u2705 Old statistics cleared.");
         modal.remove();
         this.render();
       }
@@ -11125,7 +10610,7 @@ var StatsView = class extends import_obsidian13.ItemView {
     var _a, _b;
     const deckStats = this.analytics.getDeckStats();
     if (deckStats.length === 0) {
-      new import_obsidian13.Notice("No decks available");
+      new import_obsidian12.Notice("No decks available");
       return;
     }
     const modal = document.createElement("div");
@@ -11162,7 +10647,7 @@ var StatsView = class extends import_obsidian13.ItemView {
         const deckName = btn.dataset.deck;
         if (deckName && confirm(`Clear statistics for deck "${deckName}"?`)) {
           await this.analytics.clearDeckStats(deckName);
-          new import_obsidian13.Notice(`\u2705 Statistics cleared for ${deckName}`);
+          new import_obsidian12.Notice(`\u2705 Statistics cleared for ${deckName}`);
           modal.remove();
           this.render();
         }
@@ -11177,7 +10662,7 @@ var StatsView = class extends import_obsidian13.ItemView {
     const fileName = `Learning Report ${new Date().toISOString().split("T")[0]}.md`;
     try {
       let file = this.app.vault.getAbstractFileByPath(fileName);
-      if (file instanceof import_obsidian13.TFile) {
+      if (file instanceof import_obsidian12.TFile) {
         if (!confirm(`Report "${fileName}" already exists. Overwrite?`)) {
           return;
         }
@@ -11186,13 +10671,13 @@ var StatsView = class extends import_obsidian13.ItemView {
         file = await this.app.vault.create(fileName, report);
       }
       const leaf = this.app.workspace.getLeaf(false);
-      if (file instanceof import_obsidian13.TFile) {
+      if (file instanceof import_obsidian12.TFile) {
         await leaf.openFile(file);
       }
-      new import_obsidian13.Notice("\u{1F4CA} Report generated.");
+      new import_obsidian12.Notice("\u{1F4CA} Report generated.");
     } catch (error) {
       console.error("Error generating report:", error);
-      new import_obsidian13.Notice("\u274C Failed to generate report.");
+      new import_obsidian12.Notice("\u274C Failed to generate report.");
     }
   }
   renderCycleBanner(container) {
@@ -11239,7 +10724,7 @@ var StatsView = class extends import_obsidian13.ItemView {
     (_a = modal.querySelector(".cancel-btn")) == null ? void 0 : _a.addEventListener("click", () => modal.remove());
     (_b = modal.querySelector(".confirm-btn")) == null ? void 0 : _b.addEventListener("click", async () => {
       await this.analytics.startNewCycle();
-      new import_obsidian13.Notice("\u2728 New learning cycle started!");
+      new import_obsidian12.Notice("\u2728 New learning cycle started!");
       modal.remove();
       this.render();
     });
@@ -11293,7 +10778,7 @@ var StatsView = class extends import_obsidian13.ItemView {
     var _a, _b;
     const details = this.analytics.getCycleDetails(cycleNumber);
     if (!details) {
-      new import_obsidian13.Notice("Cycle data not found");
+      new import_obsidian12.Notice("Cycle data not found");
       return;
     }
     const { cycle, dailyStats, deckStats } = details;
@@ -11373,11 +10858,11 @@ var StatsView = class extends import_obsidian13.ItemView {
 };
 
 // src/ui/view/MindmapView.ts
-var import_obsidian15 = require("obsidian");
+var import_obsidian14 = require("obsidian");
 
 // src/ui/view/ClozeBlankModal.ts
-var import_obsidian14 = require("obsidian");
-var ClozeBlankModal = class extends import_obsidian14.Modal {
+var import_obsidian13 = require("obsidian");
+var ClozeBlankModal = class extends import_obsidian13.Modal {
   constructor(app, text, onSubmit) {
     super(app);
     this.value = text;
@@ -11391,18 +10876,18 @@ var ClozeBlankModal = class extends import_obsidian14.Modal {
       cls: "setting-item-description"
     });
     let textarea;
-    new import_obsidian14.Setting(contentEl).setName("\u8282\u70B9\u6587\u672C").then((s) => {
+    new import_obsidian13.Setting(contentEl).setName("\u8282\u70B9\u6587\u672C").then((s) => {
       s.controlEl.style.width = "100%";
       textarea = s.controlEl.createEl("textarea");
       textarea.value = this.value;
       textarea.rows = 4;
       textarea.style.width = "100%";
     });
-    new import_obsidian14.Setting(contentEl).addButton(
+    new import_obsidian13.Setting(contentEl).addButton(
       (btn) => btn.setButtonText("\u521B\u5EFA\u6316\u7A7A\u5361").setCta().onClick(() => {
         const result = parseBlanks(textarea.value);
         if (result.deletions.length === 0) {
-          new import_obsidian14.Notice("\u8BF7\u5148\u7528 == \u6807\u8BB0\u8981\u6316\u7A7A\u7684\u8BCD");
+          new import_obsidian13.Notice("\u8BF7\u5148\u7528 == \u6807\u8BB0\u8981\u6316\u7A7A\u7684\u8BCD");
           return;
         }
         this.close();
@@ -11448,7 +10933,7 @@ var WRITE_BACK_OPS = /* @__PURE__ */ new Set([
   "copyNode",
   "copyNodes"
 ]);
-var MindmapView = class extends import_obsidian15.ItemView {
+var MindmapView = class extends import_obsidian14.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.mind = null;
@@ -11510,7 +10995,7 @@ var MindmapView = class extends import_obsidian15.ItemView {
     this.modifyWatcherRegistered = true;
     this.registerEvent(
       this.app.vault.on("modify", (file) => {
-        if (file instanceof import_obsidian15.TFile && this.filePath && file.path === this.filePath) {
+        if (file instanceof import_obsidian14.TFile && this.filePath && file.path === this.filePath) {
           this.scheduleRefresh();
         }
       })
@@ -11528,7 +11013,7 @@ var MindmapView = class extends import_obsidian15.ItemView {
     if (!this.filePath || !this.mind)
       return;
     const file = this.app.vault.getAbstractFileByPath(this.filePath);
-    if (!(file instanceof import_obsidian15.TFile))
+    if (!(file instanceof import_obsidian14.TFile))
       return;
     const text = await this.app.vault.cachedRead(file);
     if (this.lastWrittenContent !== null && text === this.lastWrittenContent) {
@@ -11546,7 +11031,7 @@ var MindmapView = class extends import_obsidian15.ItemView {
     if (!this.filePath || !this.mind)
       return;
     const file = this.app.vault.getAbstractFileByPath(this.filePath);
-    if (!(file instanceof import_obsidian15.TFile))
+    if (!(file instanceof import_obsidian14.TFile))
       return;
     const newText = serializeOutline(this.mind.nodeData);
     this.lastWrittenContent = newText;
@@ -11572,7 +11057,7 @@ var MindmapView = class extends import_obsidian15.ItemView {
       this.markClozedNodes(data.nodeData, this.sourceFile);
     } else if (this.filePath) {
       const file = this.app.vault.getAbstractFileByPath(this.filePath);
-      if (!(file instanceof import_obsidian15.TFile)) {
+      if (!(file instanceof import_obsidian14.TFile)) {
         container.setText(`\u627E\u4E0D\u5230\u6587\u4EF6:${this.filePath}`);
         return;
       }
@@ -11736,12 +11221,12 @@ var MindmapView = class extends import_obsidian15.ItemView {
       return;
     const selected = ((_a = mind.currentNodes) == null ? void 0 : _a.length) ? mind.currentNodes : mind.currentNode ? [mind.currentNode] : [];
     if (selected.length === 0) {
-      new import_obsidian15.Notice("\u8BF7\u5148\u9009\u4E2D\u8981\u63D0\u5347\u7684\u8282\u70B9");
+      new import_obsidian14.Notice("\u8BF7\u5148\u9009\u4E2D\u8981\u63D0\u5347\u7684\u8282\u70B9");
       return;
     }
     const root = mind.findEle("root");
     if (!root) {
-      new import_obsidian15.Notice("\u672A\u627E\u5230\u6839\u8282\u70B9");
+      new import_obsidian14.Notice("\u672A\u627E\u5230\u6839\u8282\u70B9");
       return;
     }
     const movable = selected.filter(
@@ -11751,14 +11236,14 @@ var MindmapView = class extends import_obsidian15.ItemView {
       }
     );
     if (movable.length === 0) {
-      new import_obsidian15.Notice("\u9009\u4E2D\u7684\u8282\u70B9\u5DF2\u662F\u4E00\u7EA7\u8282\u70B9");
+      new import_obsidian14.Notice("\u9009\u4E2D\u7684\u8282\u70B9\u5DF2\u662F\u4E00\u7EA7\u8282\u70B9");
       return;
     }
     try {
       mind.moveNodeIn(movable, root);
     } catch (e) {
       console.error("[learning-system] promoteToTopLevel failed", e);
-      new import_obsidian15.Notice("\u63D0\u5347\u5931\u8D25,\u89C1\u63A7\u5236\u53F0");
+      new import_obsidian14.Notice("\u63D0\u5347\u5931\u8D25,\u89C1\u63A7\u5236\u53F0");
     }
   }
   // ==================== 节点挖空(cloze)====================
@@ -11871,12 +11356,12 @@ var MindmapView = class extends import_obsidian15.ItemView {
   clozeWholeNode() {
     const topic = this.currentTopic();
     if (!topic) {
-      new import_obsidian15.Notice("\u8BF7\u5148\u9009\u4E2D\u4E00\u4E2A\u8282\u70B9");
+      new import_obsidian14.Notice("\u8BF7\u5148\u9009\u4E2D\u4E00\u4E2A\u8282\u70B9");
       return;
     }
     const text = this.nodeCleanText(topic.nodeObj);
     if (!text) {
-      new import_obsidian15.Notice("\u8BE5\u8282\u70B9\u6CA1\u6709\u53EF\u6316\u7A7A\u7684\u6587\u672C");
+      new import_obsidian14.Notice("\u8BE5\u8282\u70B9\u6CA1\u6709\u53EF\u6316\u7A7A\u7684\u6587\u672C");
       return;
     }
     const path = this.parentPath(topic.nodeObj);
@@ -11888,7 +11373,7 @@ var MindmapView = class extends import_obsidian15.ItemView {
   clozeWords() {
     const topic = this.currentTopic();
     if (!topic) {
-      new import_obsidian15.Notice("\u8BF7\u5148\u9009\u4E2D\u4E00\u4E2A\u8282\u70B9");
+      new import_obsidian14.Notice("\u8BF7\u5148\u9009\u4E2D\u4E00\u4E2A\u8282\u70B9");
       return;
     }
     const text = this.nodeCleanText(topic.nodeObj);
@@ -11943,10 +11428,10 @@ var MindmapView = class extends import_obsidian15.ItemView {
       await this.plugin.dataManager.saveContentUnit(unit);
       await this.plugin.flashcardManager.createClozeCard(id, original, deletions);
       this.markNodeCloze(topic);
-      new import_obsidian15.Notice("\u5DF2\u52A0\u5165\u95F4\u9694\u8BB0\u5FC6(cloze)");
+      new import_obsidian14.Notice("\u5DF2\u52A0\u5165\u95F4\u9694\u8BB0\u5FC6(cloze)");
     } catch (e) {
       console.error("[learning-system] create cloze failed", e);
-      new import_obsidian15.Notice("\u521B\u5EFA\u6316\u7A7A\u5361\u5931\u8D25,\u89C1\u63A7\u5236\u53F0");
+      new import_obsidian14.Notice("\u521B\u5EFA\u6316\u7A7A\u5361\u5931\u8D25,\u89C1\u63A7\u5236\u53F0");
     }
   }
   /** 给节点加 cloze 标签作为视觉标记。 */
@@ -12217,7 +11702,7 @@ var DataManager = class {
 };
 
 // src/core/ExtractionEngine.ts
-var import_obsidian16 = require("obsidian");
+var import_obsidian15 = require("obsidian");
 var ExtractionEngine = class {
   constructor(app, dataManager, flashcardManager, plugin) {
     this.app = app;
@@ -12255,7 +11740,7 @@ var ExtractionEngine = class {
     var _a, _b;
     const selection = editor.getSelection();
     if (!selection) {
-      new import_obsidian16.Notice("No text selected");
+      new import_obsidian15.Notice("No text selected");
       return;
     }
     const cursor = editor.getCursor("from");
@@ -12276,7 +11761,7 @@ var ExtractionEngine = class {
       }
       const existingUnit = await this.findDuplicateUnit(unit);
       if (existingUnit) {
-        new import_obsidian16.Notice(`This content was already extracted`);
+        new import_obsidian15.Notice(`This content was already extracted`);
         return;
       }
       await this.dataManager.saveContentUnits([unit]);
@@ -12307,11 +11792,11 @@ var ExtractionEngine = class {
         QA: "QA card",
         cloze: "cloze card"
       };
-      new import_obsidian16.Notice(`\u2705 Extracted as ${typeNames[extractType]}`);
+      new import_obsidian15.Notice(`\u2705 Extracted as ${typeNames[extractType]}`);
       this.refreshAllViews();
     } catch (error) {
       console.error("Error extracting selection:", error);
-      new import_obsidian16.Notice(`\u274C Error: ${error.message}`);
+      new import_obsidian15.Notice(`\u274C Error: ${error.message}`);
     }
   }
   /**
@@ -12465,7 +11950,7 @@ var ExtractionEngine = class {
       if (units.length > 0) {
         const qaCount = units.filter((u) => u.type === "QA").length;
         const clozeCount = units.filter((u) => u.type === "cloze").length;
-        new import_obsidian16.Notice(`Extracted ${qaCount} QA cards and ${clozeCount} cloze cards from ${file.name}`);
+        new import_obsidian15.Notice(`Extracted ${qaCount} QA cards and ${clozeCount} cloze cards from ${file.name}`);
         setTimeout(() => {
           this.refreshAllViews();
         }, 100);
@@ -12473,7 +11958,7 @@ var ExtractionEngine = class {
       return units.length;
     } catch (error) {
       console.error("[scanFile] Error:", error);
-      new import_obsidian16.Notice(`Error scanning file: ${error.message}`);
+      new import_obsidian15.Notice(`Error scanning file: ${error.message}`);
       return 0;
     }
   }
@@ -12498,13 +11983,13 @@ var ExtractionEngine = class {
     const files = this.app.vault.getMarkdownFiles();
     let scanned = 0;
     let extracted = 0;
-    new import_obsidian16.Notice(`Scanning ${files.length} files...`);
+    new import_obsidian15.Notice(`Scanning ${files.length} files...`);
     for (const file of files) {
       const count = await this.scanFile(file);
       scanned++;
       extracted += count;
     }
-    new import_obsidian16.Notice(`Scan complete! Extracted ${extracted} items from ${scanned} files.`);
+    new import_obsidian15.Notice(`Scan complete! Extracted ${extracted} items from ${scanned} files.`);
     return { scanned, extracted };
   }
   /**
@@ -12519,12 +12004,12 @@ var ExtractionEngine = class {
     const existingUnits = await this.dataManager.getAllContentUnits();
     const newUnits = await this.filterDuplicateUnits(allExtractedUnits, existingUnits);
     if (newUnits.length === 0) {
-      new import_obsidian16.Notice(` ${file.name}: No new content to extract`);
+      new import_obsidian15.Notice(` ${file.name}: No new content to extract`);
       return [];
     }
     if (newUnits.length < allExtractedUnits.length) {
       const skipped = allExtractedUnits.length - newUnits.length;
-      new import_obsidian16.Notice(` ${file.name}:Skipped ${skipped} duplicate items`);
+      new import_obsidian15.Notice(` ${file.name}:Skipped ${skipped} duplicate items`);
     }
     units.push(...newUnits);
     if (units.length > 0) {
@@ -13859,6 +13344,329 @@ var FlashcardManager = class {
   }
 };
 
+// src/core/UnlockSystem.ts
+var import_obsidian16 = require("obsidian");
+var UnlockSystem = class {
+  constructor(app, plugin) {
+    this.app = app;
+    this.plugin = plugin;
+    this.dataPath = `${this.app.vault.configDir}/plugins/learning-system/data/unlock-progress.json`;
+  }
+  get language() {
+    return this.plugin.settings.language || "en";
+  }
+  async initialize() {
+    await this.loadProgress();
+    this.updateDailyStreak();
+  }
+  // ==================== 核心检查点 ====================
+  /**
+   * 🎯 卡片提取完成时调用
+   */
+  async onCardExtracted() {
+    this.progress.stats.cardsExtracted++;
+    await this.checkLevelUp();
+    await this.saveProgress();
+  }
+  /**
+   * 🎯 提取为text时调用
+   */
+  async onNoteExtractedAsText() {
+    this.progress.stats.notesExtractedAsText++;
+    await this.checkLevelUp();
+    await this.saveProgress();
+  }
+  /**
+   * 🎯 提取为QA时调用
+   */
+  async onNoteExtractedAsQA() {
+    this.progress.stats.notesExtractedAsQA++;
+    await this.checkLevelUp();
+    await this.saveProgress();
+  }
+  /**
+   * 🎯 提取为cloze时调用
+   */
+  async onNoteExtractedAsCloze() {
+    this.progress.stats.notesExtractedAsCloze++;
+    await this.checkLevelUp();
+    await this.saveProgress();
+  }
+  /**
+   * 🎯 scan提取笔记时调用
+   */
+  async onNoteScanned() {
+    this.progress.stats.notesScanned++;
+    await this.checkLevelUp();
+    await this.saveProgress();
+  }
+  /**
+   * 🎯 批注完成时调用
+   */
+  async onAnnotationCompleted() {
+    const before = this.progress.stats.annotationsCompleted;
+    this.progress.stats.annotationsCompleted++;
+    await this.checkLevelUp();
+    await this.saveProgress();
+  }
+  /**
+   * 🎯 卡片复习完成时调用
+   */
+  async onCardReviewed() {
+    this.progress.stats.cardsReviewed++;
+    this.updateDailyStreak();
+    await this.checkLevelUp();
+    await this.saveProgress();
+  }
+  /**
+   * 🎯 扫描表格时调用
+   */
+  async onTableScanned() {
+    this.progress.stats.tablesScanned++;
+    await this.checkLevelUp();
+    await this.saveProgress();
+  }
+  /**
+   * 🎯 访问统计页面时调用
+   */
+  async onStatsPageVisited() {
+    if (!this.progress.stats.statsPageVisited) {
+      this.progress.stats.statsPageVisited = true;
+      await this.checkLevelUp();
+      await this.saveProgress();
+    }
+  }
+  // ==================== 功能门禁(已取消) ====================
+  /**
+   * 尝试使用功能。
+   *
+   * ⭐ 已取消「等级门禁」:所有功能始终可用,不再因等级未达标而拦截。
+   * 等级/成就系统改为纯粹的「里程碑」展示(见 getAchievements / LevelInfoModal),
+   * 达成里程碑会弹祝贺通知,但不再锁任何功能。
+   * 保留本方法签名,避免改动所有调用点。
+   */
+  tryUseFeature(_feature, _featureName) {
+    return true;
+  }
+  // ==================== 里程碑(成就)系统 ====================
+  /** 把插件的各项功能/目标列成里程碑;current/target 由累计统计推导。 */
+  getAchievements() {
+    const s = this.progress.stats;
+    const zh = this.language === "zh-CN";
+    const lbl = (en2, cn2) => zh ? cn2 : en2;
+    const defs = [
+      // 入门:做一次即达成,给即时正反馈
+      { id: "first-extract", icon: "\u{1F331}", title: lbl("First Extraction", "\u9996\u6B21\u63D0\u53D6\u5185\u5BB9"), current: s.cardsExtracted, target: 1 },
+      { id: "visit-stats", icon: "\u{1F4CA}", title: lbl("Visit Statistics Page", "\u8BBF\u95EE\u7EDF\u8BA1\u9875\u9762"), current: s.statsPageVisited ? 1 : 0, target: 1 },
+      // 进阶:三种提取方式各练几次(提取是高频低成本操作,数量略高)
+      { id: "extract-text", icon: "\u{1F4C4}", title: lbl("Extract as Text \xD75", "\u63D0\u53D6\u4E3A\u6587\u672C \xD75"), current: s.notesExtractedAsText, target: 5 },
+      { id: "extract-qa", icon: "\u2753", title: lbl("Extract as Q&A \xD75", "\u63D0\u53D6\u4E3A\u95EE\u7B54 \xD75"), current: s.notesExtractedAsQA, target: 5 },
+      { id: "extract-cloze", icon: "\u2B1B", title: lbl("Extract as Cloze \xD75", "\u63D0\u53D6\u4E3A\u6316\u7A7A \xD75"), current: s.notesExtractedAsCloze, target: 5 },
+      { id: "scan-notes-10", icon: "\u{1F50D}", title: lbl("Scan 10 Notes", "\u626B\u63CF 10 \u7BC7\u7B14\u8BB0"), current: s.notesScanned, target: 10 },
+      // 熟练:成体量的积累(批注成本较高,数量适中)
+      { id: "collector-30", icon: "\u{1F4E6}", title: lbl("Extract 30 Cards", "\u7D2F\u8BA1\u63D0\u53D6 30 \u5F20\u5361"), current: s.cardsExtracted, target: 30 },
+      { id: "annotate-10", icon: "\u{1F4DD}", title: lbl("Add 10 Annotations", "\u5B8C\u6210 10 \u6761\u6279\u6CE8"), current: s.annotationsCompleted, target: 10 },
+      { id: "scan-tables-5", icon: "\u{1F4CB}", title: lbl("Scan 5 Tables", "\u626B\u63CF 5 \u4E2A\u8868\u683C"), current: s.tablesScanned, target: 5 },
+      { id: "streak-7", icon: "\u{1F525}", title: lbl("7-Day Streak", "\u8FDE\u7EED\u5B66\u4E60 7 \u5929"), current: s.consecutiveDays, target: 7 },
+      // 精通:长期复习与坚持
+      { id: "review-50", icon: "\u{1F504}", title: lbl("Review 50 Cards", "\u590D\u4E60 50 \u5F20\u5361"), current: s.cardsReviewed, target: 50 },
+      { id: "days-21", icon: "\u{1F4C5}", title: lbl("21 Active Days", "\u7D2F\u8BA1\u5B66\u4E60 21 \u5929"), current: s.totalDays, target: 21 },
+      // 大师
+      { id: "review-150", icon: "\u{1F3AF}", title: lbl("Review 150 Cards", "\u590D\u4E60 150 \u5F20\u5361"), current: s.cardsReviewed, target: 150 }
+    ];
+    return defs.map((d) => ({
+      ...d,
+      current: Math.min(d.current, d.target),
+      done: d.current >= d.target
+    }));
+  }
+  /** 检测「本次新达成」的里程碑并弹祝贺通知(每个只祝贺一次)。 */
+  async checkAchievements() {
+    const zh = this.language === "zh-CN";
+    let changed = false;
+    for (const a of this.getAchievements()) {
+      if (a.done && !this.progress.celebratedAchievements.includes(a.id)) {
+        this.progress.celebratedAchievements.push(a.id);
+        changed = true;
+        const msg = zh ? `\u{1F389} \u91CC\u7A0B\u7891\u8FBE\u6210:${a.icon} ${a.title}` : `\u{1F389} Milestone reached: ${a.icon} ${a.title}`;
+        new import_obsidian16.Notice(msg, 8e3);
+      }
+    }
+    if (changed)
+      await this.saveProgress();
+  }
+  // ==================== 等级检查和升级 ====================
+  async checkLevelUp() {
+    const oldLevel = this.progress.currentLevel;
+    let newLevel = oldLevel;
+    if (oldLevel === 1 && this.canUpgradeToLevel2()) {
+      newLevel = 2;
+    } else if (oldLevel === 2 && this.canUpgradeToLevel3()) {
+      newLevel = 3;
+    } else if (oldLevel === 3 && this.canUpgradeToLevel4()) {
+      newLevel = 4;
+    } else if (oldLevel === 4 && this.canUpgradeToLevel5()) {
+      newLevel = 5;
+    }
+    if (newLevel > oldLevel) {
+      await this.levelUp(newLevel);
+    }
+    await this.checkAchievements();
+  }
+  canUpgradeToLevel2() {
+    const { notesExtractedAsText, notesExtractedAsQA, notesExtractedAsCloze } = this.progress.stats;
+    return notesExtractedAsText >= 2 && notesExtractedAsQA >= 2 && notesExtractedAsCloze >= 2;
+  }
+  canUpgradeToLevel3() {
+    return this.progress.stats.annotationsCompleted >= 3 && this.progress.stats.notesScanned >= 5;
+  }
+  canUpgradeToLevel4() {
+    return this.progress.stats.cardsReviewed >= 30 && this.progress.stats.tablesScanned >= 2;
+  }
+  canUpgradeToLevel5() {
+    return this.progress.stats.cardsReviewed >= 70 && this.progress.stats.totalDays >= 21 && this.progress.stats.statsPageVisited;
+  }
+  async levelUp(newLevel) {
+    this.progress.currentLevel = newLevel;
+    this.progress.levelUnlockedAt[newLevel] = Date.now();
+    const message = t(`unlock.levelUp.${newLevel}`, this.language);
+    const milestone = {
+      level: newLevel,
+      unlockedAt: Date.now()
+    };
+    this.progress.milestones.push(milestone);
+    new import_obsidian16.Notice(message, 1e4);
+    await this.saveProgress();
+  }
+  // ==================== 日常连续天数 ====================
+  updateDailyStreak() {
+    const today = new Date().toISOString().split("T")[0];
+    const lastActive = this.progress.stats.lastActiveDate;
+    if (lastActive !== today) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split("T")[0];
+      if (lastActive === yesterdayStr) {
+        this.progress.stats.consecutiveDays++;
+      } else if (!lastActive) {
+        this.progress.stats.consecutiveDays = 1;
+      } else {
+        this.progress.stats.consecutiveDays = 1;
+      }
+      this.progress.stats.totalDays++;
+      this.progress.stats.lastActiveDate = today;
+    }
+  }
+  // ==================== 辅助方法 ====================
+  getCurrentLevel() {
+    return this.progress.currentLevel;
+  }
+  getProgress() {
+    return this.progress;
+  }
+  // ==================== 数据持久化 ====================
+  async loadProgress() {
+    try {
+      const adapter = this.app.vault.adapter;
+      if (await adapter.exists(this.dataPath)) {
+        const data = await adapter.read(this.dataPath);
+        const saved = JSON.parse(data);
+        saved.unlockedFeatures = new Set(saved.unlockedFeatures || []);
+        saved.celebratedAchievements = saved.celebratedAchievements || [];
+        this.progress = saved;
+      } else {
+        this.progress = this.createDefaultProgress();
+      }
+    } catch (error) {
+      console.error("Error loading unlock progress:", error);
+      this.progress = this.createDefaultProgress();
+    }
+  }
+  async saveProgress() {
+    try {
+      const adapter = this.app.vault.adapter;
+      const toSave = {
+        ...this.progress,
+        unlockedFeatures: Array.from(this.progress.unlockedFeatures)
+      };
+      const data = JSON.stringify(toSave, null, 2);
+      await adapter.write(this.dataPath, data);
+    } catch (error) {
+      console.error("Error saving unlock progress:", error);
+    }
+  }
+  createDefaultProgress() {
+    return {
+      currentLevel: 1,
+      stats: {
+        cardsExtracted: 0,
+        notesExtractedAsText: 0,
+        notesExtractedAsQA: 0,
+        notesExtractedAsCloze: 0,
+        annotationsCompleted: 0,
+        notesScanned: 0,
+        cardsReviewed: 0,
+        tablesScanned: 0,
+        consecutiveDays: 0,
+        totalDays: 0,
+        statsPageVisited: false,
+        lastActiveDate: ""
+      },
+      unlockedFeatures: /* @__PURE__ */ new Set(["extract-single", "sidebar-basic"]),
+      levelUnlockedAt: { 1: Date.now() },
+      milestones: [{
+        level: 1,
+        unlockedAt: Date.now()
+      }],
+      celebratedAchievements: []
+    };
+  }
+};
+var LevelInfoModal = class extends import_obsidian16.Modal {
+  constructor(app, progress, unlockSystem, language = "en") {
+    super(app);
+    this.progress = progress;
+    this.unlockSystem = unlockSystem;
+    this.language = language;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("level-info-modal");
+    const zh = this.language === "zh-CN";
+    const achievements = this.unlockSystem.getAchievements();
+    const doneCount = achievements.filter((a) => a.done).length;
+    contentEl.createEl("h2", {
+      text: zh ? "\u{1F3C6} \u91CC\u7A0B\u7891" : "\u{1F3C6} Milestones"
+    });
+    contentEl.createEl("p", {
+      cls: "milestone-summary",
+      text: zh ? `\u5DF2\u8FBE\u6210 ${doneCount} / ${achievements.length} \u9879` : `${doneCount} / ${achievements.length} reached`
+    });
+    const list = contentEl.createDiv({ cls: "achievements-list" });
+    for (const a of achievements) {
+      const item = list.createDiv({ cls: "achievement-item" });
+      if (a.done)
+        item.addClass("achievement-done");
+      item.createSpan({ cls: "achievement-icon", text: a.icon });
+      const body = item.createDiv({ cls: "achievement-body" });
+      body.createDiv({ cls: "achievement-title", text: a.title });
+      body.createDiv({
+        cls: "achievement-progress",
+        text: a.done ? zh ? "\u5DF2\u8FBE\u6210" : "Completed" : `${a.current} / ${a.target}`
+      });
+      item.createSpan({
+        cls: "achievement-mark",
+        text: a.done ? "\u2713" : ""
+      });
+    }
+  }
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+};
+
 // src/ui/view/RecentlyDeletedView.ts
 var import_obsidian17 = require("obsidian");
 var RecentlyDeletedModal = class extends import_obsidian17.Modal {
@@ -14329,6 +14137,18 @@ var LearningSystemPlugin = class extends import_obsidian19.Plugin {
       name: "Show recently deleted items",
       callback: async () => {
         void this.openRecentlyDeletedModal();
+      }
+    });
+    this.addCommand({
+      id: "show-milestones",
+      name: "Show milestones",
+      callback: () => {
+        new LevelInfoModal(
+          this.app,
+          this.unlockSystem.getProgress(),
+          this.unlockSystem,
+          this.settings.language
+        ).open();
       }
     });
     if (this.settings.experimentalMindmap) {
