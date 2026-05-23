@@ -3386,9 +3386,6 @@ var SidebarOverviewView = class extends import_obsidian8.ItemView {
       onJumpToSource: (unit) => this.jumpToSource(unit),
       onJumpToFlashcard: (card) => this.jumpToFlashcardSource(card),
       onToggleAnnotation: (card, unit) => {
-        if (!this.plugin.unlockSystem.tryUseFeature("annotation", "Annotation")) {
-          return;
-        }
         this.annotationEditor.toggle(card, unit);
       },
       onQuickFlashcard: (unit) => this.quickGenerateFlashcard(unit),
@@ -4022,9 +4019,6 @@ var SidebarOverviewView = class extends import_obsidian8.ItemView {
     const callbacks = {
       onJumpToSource: (unit2) => this.jumpToSource(unit2),
       onToggleAnnotation: (unit2) => {
-        if (!this.plugin.unlockSystem.tryUseFeature("annotation", "Annotation")) {
-          return;
-        }
         const cardEl = this.containerEl.querySelector(
           `[data-unit-id="${unit2.id}"]`
         );
@@ -13435,18 +13429,6 @@ var UnlockSystem = class {
       await this.saveProgress();
     }
   }
-  // ==================== 功能门禁(已取消) ====================
-  /**
-   * 尝试使用功能。
-   *
-   * ⭐ 已取消「等级门禁」:所有功能始终可用,不再因等级未达标而拦截。
-   * 等级/成就系统改为纯粹的「里程碑」展示(见 getAchievements / LevelInfoModal),
-   * 达成里程碑会弹祝贺通知,但不再锁任何功能。
-   * 保留本方法签名,避免改动所有调用点。
-   */
-  tryUseFeature(_feature, _featureName) {
-    return true;
-  }
   // ==================== 里程碑(成就)系统 ====================
   /** 把插件的各项功能/目标列成里程碑;current/target 由累计统计推导。 */
   getAchievements() {
@@ -13570,7 +13552,7 @@ var UnlockSystem = class {
       if (await adapter.exists(this.dataPath)) {
         const data = await adapter.read(this.dataPath);
         const saved = JSON.parse(data);
-        saved.unlockedFeatures = new Set(saved.unlockedFeatures || []);
+        delete saved.unlockedFeatures;
         saved.celebratedAchievements = saved.celebratedAchievements || [];
         this.progress = saved;
       } else {
@@ -13584,11 +13566,7 @@ var UnlockSystem = class {
   async saveProgress() {
     try {
       const adapter = this.app.vault.adapter;
-      const toSave = {
-        ...this.progress,
-        unlockedFeatures: Array.from(this.progress.unlockedFeatures)
-      };
-      const data = JSON.stringify(toSave, null, 2);
+      const data = JSON.stringify(this.progress, null, 2);
       await adapter.write(this.dataPath, data);
     } catch (error) {
       console.error("Error saving unlock progress:", error);
@@ -13611,7 +13589,6 @@ var UnlockSystem = class {
         statsPageVisited: false,
         lastActiveDate: ""
       },
-      unlockedFeatures: /* @__PURE__ */ new Set(["extract-single", "sidebar-basic"]),
       levelUnlockedAt: { 1: Date.now() },
       milestones: [{
         level: 1,
@@ -14014,9 +13991,6 @@ var LearningSystemPlugin = class extends import_obsidian19.Plugin {
       void this.activateSidebarOverview();
     });
     this.addRibbonIcon("layers", "Start review", () => {
-      if (!this.unlockSystem.tryUseFeature("review-page", "Start Review")) {
-        return;
-      }
       void this.activateReview();
     });
     this.setupStatusBar();
@@ -14058,9 +14032,6 @@ var LearningSystemPlugin = class extends import_obsidian19.Plugin {
       id: "scan-current-file",
       name: "Scan current file for content",
       callback: async () => {
-        if (!this.unlockSystem.tryUseFeature("scan-file", "Scan Current File")) {
-          return;
-        }
         const activeFile = this.app.workspace.getActiveFile();
         if (!activeFile)
           return;
@@ -14072,9 +14043,6 @@ var LearningSystemPlugin = class extends import_obsidian19.Plugin {
       id: "scan-vault",
       name: "Scan entire vault",
       callback: async () => {
-        if (!this.unlockSystem.tryUseFeature("scan-vault", "Scan Entire Vault")) {
-          return;
-        }
         await this.extractionEngine.scanVault();
         this.refreshOverview();
       }
@@ -14090,9 +14058,6 @@ var LearningSystemPlugin = class extends import_obsidian19.Plugin {
       id: "open-main-overview",
       name: "Toggle learning overview (main view)",
       callback: async () => {
-        if (!this.unlockSystem.tryUseFeature("open-main- overview", "Toggle Learning Overview (Main View)")) {
-          return;
-        }
         await this.toggleMainView();
       }
     });
@@ -14100,9 +14065,6 @@ var LearningSystemPlugin = class extends import_obsidian19.Plugin {
       id: "add-file-annotation",
       name: "Add file annotation",
       callback: async () => {
-        if (!this.unlockSystem.tryUseFeature("annotation", "File Annotation")) {
-          return;
-        }
         const activeFile = this.app.workspace.getActiveFile();
         if (!activeFile)
           return;
@@ -14120,9 +14082,6 @@ var LearningSystemPlugin = class extends import_obsidian19.Plugin {
       id: "start-review",
       name: "Start flashcard review",
       callback: () => {
-        if (!this.unlockSystem.tryUseFeature("review-page", "Flashcard Review")) {
-          return;
-        }
         void this.activateReview();
       }
     });
@@ -14130,9 +14089,6 @@ var LearningSystemPlugin = class extends import_obsidian19.Plugin {
       id: "show-stats",
       name: "Show flashcard statistics",
       callback: () => {
-        if (!this.unlockSystem.tryUseFeature("stats-page", "Statistics")) {
-          return;
-        }
         void this.activateStats();
       }
     });

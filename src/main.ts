@@ -168,9 +168,6 @@ this.registerEvent(
     });
   
     this.addRibbonIcon('layers', 'Start review', () => {
-      if (!this.unlockSystem.tryUseFeature('review-page', 'Start Review')) {
-        return;
-      }
      void this.activateReview();
     });
   
@@ -227,10 +224,6 @@ async saveCycleData() {
       id: 'scan-current-file',
       name: 'Scan current file for content',
       callback: async () => {
-            // 🎯 权限检查
-    if (!this.unlockSystem.tryUseFeature('scan-file', 'Scan Current File')) {
-      return;
-    }
         const activeFile = this.app.workspace.getActiveFile();
         if (!activeFile) return;
         await this.extractionEngine.scanFile(activeFile);
@@ -242,10 +235,6 @@ async saveCycleData() {
       id: 'scan-vault',
       name: 'Scan entire vault',
       callback: async () => {
-            // 🎯 权限检查
-    if (!this.unlockSystem.tryUseFeature('scan-vault', 'Scan Entire Vault')) {
-      return;
-    }
         await this.extractionEngine.scanVault();
         this.refreshOverview();
       }
@@ -263,10 +252,6 @@ async saveCycleData() {
       id: 'open-main-overview',
       name: 'Toggle learning overview (main view)',
       callback: async () => {
-                    // 🎯 权限检查
-    if (!this.unlockSystem.tryUseFeature('open-main- overview', 'Toggle Learning Overview (Main View)')) {
-      return;
-    }
         await this.toggleMainView();
       }
     });
@@ -275,10 +260,6 @@ async saveCycleData() {
       id: 'add-file-annotation',
       name: 'Add file annotation',
       callback: async () => {
-           // 🎯 权限检查
-    if (!this.unlockSystem.tryUseFeature('annotation', 'File Annotation')) {
-      return;
-    }
         const activeFile = this.app.workspace.getActiveFile();
         if (!activeFile) return;
 
@@ -297,10 +278,6 @@ async saveCycleData() {
       id: 'start-review',
       name: 'Start flashcard review',
       callback: () => {
-            // 🎯 权限检查
-    if (!this.unlockSystem.tryUseFeature('review-page', 'Flashcard Review')) {
-      return;
-    }
        void this.activateReview();
       }
     });
@@ -309,11 +286,6 @@ async saveCycleData() {
       id: 'show-stats',
       name: 'Show flashcard statistics',
       callback: () => {
-            // 🎯 权限检查
-    if (!this.unlockSystem.tryUseFeature('stats-page', 'Statistics')) {
-      return;
-    }
-
        void this.activateStats();
       }
     });

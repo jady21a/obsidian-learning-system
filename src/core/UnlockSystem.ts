@@ -21,7 +21,6 @@ export interface UnlockProgress {
     statsPageVisited: boolean;    // Lv4→5: 需要至少1次
     lastActiveDate: string;       // YYYY-MM-DD 格式
   };
-  unlockedFeatures: Set<string>;
   levelUnlockedAt: Record<number, number>; // timestamp
   milestones: {
     level: UserLevel;
@@ -148,20 +147,6 @@ async onNoteScanned() {
       await this.checkLevelUp();
       await this.saveProgress();
     }
-  }
-
-  // ==================== 功能门禁(已取消) ====================
-
-  /**
-   * 尝试使用功能。
-   *
-   * ⭐ 已取消「等级门禁」:所有功能始终可用,不再因等级未达标而拦截。
-   * 等级/成就系统改为纯粹的「里程碑」展示(见 getAchievements / LevelInfoModal),
-   * 达成里程碑会弹祝贺通知,但不再锁任何功能。
-   * 保留本方法签名,避免改动所有调用点。
-   */
-  tryUseFeature(_feature: string, _featureName: string): boolean {
-    return true;
   }
 
   // ==================== 里程碑(成就)系统 ====================
@@ -332,10 +317,9 @@ async onNoteScanned() {
       if (await adapter.exists(this.dataPath)) {
         const data = await adapter.read(this.dataPath);
         const saved = JSON.parse(data);
-        
-        // 恢复 Set
-        saved.unlockedFeatures = new Set(saved.unlockedFeatures || []);
-        // 兼容旧存档:补默认字段
+
+        // 兼容旧存档:旧字段 unlockedFeatures 已废弃,丢弃即可
+        delete saved.unlockedFeatures;
         saved.celebratedAchievements = saved.celebratedAchievements || [];
 
         this.progress = saved;
@@ -351,14 +335,7 @@ async onNoteScanned() {
   private async saveProgress() {
     try {
       const adapter = this.app.vault.adapter;
-      
-      // 转换 Set 为数组
-      const toSave = {
-        ...this.progress,
-        unlockedFeatures: Array.from(this.progress.unlockedFeatures)
-      };
-      
-      const data = JSON.stringify(toSave, null, 2);
+      const data = JSON.stringify(this.progress, null, 2);
       await adapter.write(this.dataPath, data);
     } catch (error) {
       console.error('Error saving unlock progress:', error);
@@ -382,7 +359,6 @@ async onNoteScanned() {
         statsPageVisited: false,
         lastActiveDate: ''
       },
-      unlockedFeatures: new Set(['extract-single', 'sidebar-basic']),
       levelUnlockedAt: { 1: Date.now() },
       milestones: [{
         level: 1,

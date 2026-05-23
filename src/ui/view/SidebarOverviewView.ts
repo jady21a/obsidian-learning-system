@@ -156,10 +156,6 @@ export class SidebarOverviewView extends ItemView {
       onJumpToSource: (unit) => this.jumpToSource(unit),
       onJumpToFlashcard: (card) => this.jumpToFlashcardSource(card), 
       onToggleAnnotation: (card, unit) => {
-        // 🎯 Lv2 权限检查
-        if (!this.plugin.unlockSystem.tryUseFeature('annotation', 'Annotation')) {
-          return;
-        }
         this.annotationEditor.toggle(card, unit);
       },
       onQuickFlashcard: (unit) => this.quickGenerateFlashcard(unit),
@@ -1029,10 +1025,6 @@ private showContextMenu(event: MouseEvent, unit: ContentUnit): void {
     onJumpToSource: (unit) => this.jumpToSource(unit),
     
     onToggleAnnotation: (unit) => {
-        // 🎯 Lv2 权限检查
-  if (!this.plugin.unlockSystem.tryUseFeature('annotation', 'Annotation')) {
-    return;
-  }
       // ⭐ 按 unit.id 重新取「当前存活」的卡片,而非用闭包里可能已被列表重建
       //    销毁的旧节点(否则编辑器会插进游离节点 → 首击失效)。
       const cardEl = this.containerEl.querySelector(
