@@ -6058,6 +6058,14 @@ var AnnotationEditor = class {
       this.activeEditors.delete(unit.id);
       return;
     }
+    const textarea = editor.querySelector("textarea");
+    if (textarea) {
+      const trimmed = textarea.value.trim();
+      const original = this.callbacks.getAnnotationContent(unit.id) || "";
+      if (trimmed !== original) {
+        void this.callbacks.onSave(unit.id, trimmed);
+      }
+    }
     editor.remove();
     this.activeEditors.delete(unit.id);
     cardEl.removeAttribute("data-editing");

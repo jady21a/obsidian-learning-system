@@ -102,14 +102,27 @@ private open(cardEl: HTMLElement, unit: ContentUnit): void {
    */
 
   private close(cardEl: HTMLElement, unit: ContentUnit): void {
-    
+
     const editor = cardEl.querySelector('.inline-annotation-editor') as HTMLElement;
     if (!editor) {
       cardEl.removeAttribute('data-editing');
       this.activeEditors.delete(unit.id);
       return;
     }
-  
+
+    // ⭐ 先把 textarea 当前内容提交一次再移除,确保「外部触发关闭」
+    //   (卡片点击 toggle、closeAllOthers、刷新等)也能落盘——
+    //   blur handler 在 editor.remove() 后会因 editor.parentElement === null
+    //   跳过保存,所以必须在这里同步触发一次 onSave。
+    const textarea = editor.querySelector('textarea') as HTMLTextAreaElement | null;
+    if (textarea) {
+      const trimmed = textarea.value.trim();
+      const original = this.callbacks.getAnnotationContent(unit.id) || '';
+      if (trimmed !== original) {
+        void this.callbacks.onSave(unit.id, trimmed);
+      }
+    }
+
     editor.remove();
     this.activeEditors.delete(unit.id);
     cardEl.removeAttribute('data-editing');
