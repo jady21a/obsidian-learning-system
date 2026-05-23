@@ -1,10 +1,7 @@
 import { App, TFile } from 'obsidian';
 import MindElixir from 'mind-elixir';
 import type { NodeObj } from 'mind-elixir';
-import mindElixirCss from 'mind-elixir/style.css';
 import { buildTreeFromMarkdown, type OutlineNodeMeta } from '../../core/MindmapTreeBuilder';
-
-const STYLE_EL_ID = 'learning-system-mindmap-styles';
 
 /** 存在卡片来源 customData.mindmap 上的复习定位信息。 */
 export interface MindmapCardMeta {
@@ -32,14 +29,6 @@ export interface GroupAnswerTarget {
   deletions: { index: number; answer: string }[];
   /** 与 deletions 同序:每个空的用户答案与是否正确。 */
   blanks: { user: string; correct: boolean }[];
-}
-
-function injectStyles() {
-  if (document.getElementById(STYLE_EL_ID)) return;
-  const styleEl = document.createElement('style');
-  styleEl.id = STYLE_EL_ID;
-  styleEl.textContent = mindElixirCss;
-  document.head.appendChild(styleEl);
 }
 
 function escapeHtml(s: string): string {
@@ -142,10 +131,8 @@ function buildAnswerHtml(t: GroupAnswerTarget, startNo: number): { html: string;
 }
 
 function newReadonlyMap(container: HTMLElement, nodeData: NodeObj) {
-  injectStyles();
   container.empty();
-  container.style.width = '100%';
-  container.style.height = '320px';
+  container.addClass('learning-system-mindmap-readonly');
   const mind = new MindElixir({
     el: container,
     direction: MindElixir.RIGHT,

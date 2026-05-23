@@ -50,8 +50,8 @@ export class FlashcardCreateModal extends Modal {
       .setDesc('Choose the type of flashcard')
       .addDropdown(dropdown => {
         dropdown
-          .addOption('qa', '📝 Question & answer')
-          .addOption('cloze', '✏️ Cloze deletion')
+          .addOption('qa', '📝 question & answer')
+          .addOption('cloze', '✏️ cloze deletion')
           .setValue(this.cardType)
           .onChange(value => {
             this.cardType = value as 'qa' | 'cloze';
@@ -124,7 +124,7 @@ export class FlashcardCreateModal extends Modal {
     // 提示：可以使用原内容
     const hint = this.cardInputContainer.createDiv({ cls: 'input-hint' });
     hint.createEl('small', { 
-      text: '💡 Tip: You can use the source content as the answer, or write your own.'
+      text: '💡 tip: you can use the source content as the answer, or write your own.'
     });
   }
 
@@ -255,7 +255,7 @@ export class FlashcardCreateModal extends Modal {
           this.answer
         );
 
-        new Notice('Q&A flashcard created!');
+        new Notice('Q&A flashcard created!'); // eslint-disable-line obsidianmd/ui/sentence-case
 
       } else {
         // 验证输入

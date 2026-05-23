@@ -34,7 +34,7 @@ export class SettingsTab extends PluginSettingTab {
           })
       );
 
-    new Setting(containerEl).setName('General').setHeading();
+    new Setting(containerEl).setName('Extraction').setHeading();
 
     new Setting(containerEl)
       .setName('Enable extraction')

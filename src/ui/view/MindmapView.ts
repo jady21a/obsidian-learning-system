@@ -1,6 +1,5 @@
 import { ItemView, WorkspaceLeaf, Notice, TFile, type ViewStateResult } from 'obsidian';
 import MindElixir, { type MindElixirInstance, type MindElixirData } from 'mind-elixir';
-import mindElixirCss from 'mind-elixir/style.css';
 import type LearningSystemPlugin from '../../main';
 import {
   buildTreeFromFlashcards,
@@ -13,8 +12,6 @@ import type { ContentUnit } from '../../core/DataManager';
 import { ClozeBlankModal, type ClozeResult } from './ClozeBlankModal';
 
 export const VIEW_TYPE_MINDMAP = 'learning-system-mindmap';
-
-const STYLE_EL_ID = 'learning-system-mindmap-styles';
 
 /** 需要写回原文的操作类型(改名 + 增/删/移动/复制)。 */
 const WRITE_BACK_OPS = new Set<string>([
@@ -99,7 +96,6 @@ export class MindmapView extends ItemView {
   }
 
   async onOpen() {
-    this.injectStyles();
     this.registerModifyWatcher();
     await this.renderMindmap();
   }
@@ -156,7 +152,6 @@ export class MindmapView extends ItemView {
 
   /** 根据 this.filePath 渲染:有则按文档大纲,无则全部闪卡。 */
   private async renderMindmap() {
-    this.injectStyles();
 
     // 清理旧实例
     if (this.mind) {
@@ -168,8 +163,6 @@ export class MindmapView extends ItemView {
     root.empty();
 
     const container = root.createDiv({ cls: 'learning-system-mindmap-container' });
-    container.style.width = '100%';
-    container.style.height = '100%';
     this.container = container;
 
     let data: MindElixirData;
@@ -224,7 +217,6 @@ export class MindmapView extends ItemView {
 
     // 编辑事件钩子。文件模式下:任何结构/文本变更都整树序列化写回原文。
     mind.bus.addListener('operation', (operation) => {
-      console.debug('[learning-system] mindmap operation', operation);
       if (this.filePath && WRITE_BACK_OPS.has(operation.name)) {
         void this.writeBackStructure();
       }
@@ -598,12 +590,4 @@ export class MindmapView extends ItemView {
     this.container = null;
   }
 
-  private injectStyles() {
-    if (document.getElementById(STYLE_EL_ID)) return;
-    const styleEl = document.createElement('style');
-    styleEl.id = STYLE_EL_ID;
-    styleEl.textContent = mindElixirCss;
-    document.head.appendChild(styleEl);
-    this.register(() => styleEl.remove());
-  }
 }

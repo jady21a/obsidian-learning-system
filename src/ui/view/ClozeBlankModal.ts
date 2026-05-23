@@ -23,17 +23,17 @@ export class ClozeBlankModal extends Modal {
     const { contentEl } = this;
     contentEl.createEl('h3', { text: '挖空选中词(cloze)' });
     contentEl.createEl('p', {
+      // eslint-disable-next-line obsidianmd/ui/sentence-case
       text: '用 == 包裹要挖空的词,可多处。例如:水的化学式是 ==H2O==。',
       cls: 'setting-item-description',
     });
 
     let textarea: HTMLTextAreaElement;
     new Setting(contentEl).setName('节点文本').then((s) => {
-      s.controlEl.style.width = '100%';
-      textarea = s.controlEl.createEl('textarea');
+      s.controlEl.addClass('ls-cloze-control');
+      textarea = s.controlEl.createEl('textarea', { cls: 'ls-cloze-textarea' });
       textarea.value = this.value;
       textarea.rows = 4;
-      textarea.style.width = '100%';
     });
 
     new Setting(contentEl).addButton((btn) =>

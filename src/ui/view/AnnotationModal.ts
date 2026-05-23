@@ -71,7 +71,7 @@ export class AnnotationModal extends Modal {
 
     new Setting(contentEl)
       .setName('Badge text')
-      .setDesc('Short text to display as a badge (e.g., “Important”, “To review”).')
+      .setDesc('Short text to display as a badge (e.g., "important", "to review").')
       .addText(text =>
         text
           .setPlaceholder('Badge text')
@@ -278,7 +278,7 @@ export class FileAnnotationModal extends Modal {
         });
 
         const deleteBtn = annotationCard.createEl('button', {
-          text: '🗑 Delete',
+          text: '🗑 delete',
           cls: 'delete-annotation-btn'
         });
         deleteBtn.addEventListener('click', async () => {

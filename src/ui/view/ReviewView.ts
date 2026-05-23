@@ -128,7 +128,7 @@ export class ReviewView extends ItemView {
 
   private renderNoDueCards(container: Element) {
     const emptyState = container.createDiv({ cls: 'empty-state' });
-    emptyState.createEl('h2', { text: '🎉 All done!' });
+    emptyState.createEl('h2', { text: '🎉 all done!' });
     emptyState.createEl('p', { text: 'No cards due for review right now.' });
 
     const stats = this.plugin.flashcardManager.getStats();
@@ -434,7 +434,7 @@ export class ReviewView extends ItemView {
 
     const next = this.findNextUnreviewedCard(0);
     if (next === -1) {
-      new Notice('✅ Review session complete!');
+      new Notice('✅ review session complete!');
       this.currentCard = null;
       this.dueCards = [];
       this.render();
@@ -596,9 +596,9 @@ export class ReviewView extends ItemView {
 
   private renderShowAnswerButton(container: HTMLElement) {
     const showAnswerBtn = container.createEl('button', {
-      text: 'Show Answer',
+      text: 'Show answer',
       cls: 'mod-cta show-answer-btn',
-      attr: { title: 'Press Enter or Tab' }
+      attr: { title: 'Press Enter or Tab' } // eslint-disable-line obsidianmd/ui/sentence-case
     });
     showAnswerBtn.addEventListener('click', () => {
       this.stateManager.setShowAnswer(true);
@@ -774,7 +774,7 @@ export class ReviewView extends ItemView {
     
     if (nextUnreviewedIndex === -1) {
       // ⭐ 所有卡片都已复习 - 不设置 currentCard 为 null
-      new Notice(`✅ Review session complete!`);
+      new Notice(`✅ review session complete!`);
       // ⭐ 设置一个标志让 render 知道复习已完成
       this.currentCard = null;
       this.dueCards = []; // ⭐ 清空列表,触发 renderNoDueCards

@@ -190,14 +190,14 @@ export class StatsView extends ItemView {
     // 生成报告按钮
     const reportSection = container.createDiv({ cls: 'report-section' });
     const reportBtn = reportSection.createEl('button', {
-      text: '📄 Generate full report',
+      text: '📄 generate full report',
       cls: 'mod-cta'
     });
     reportBtn.addEventListener('click', () => this.generateAndShowReport());
   
   // 清除统计按钮
 const clearBtn = reportSection.createEl('button', {
-  text: '🗑️ Clear statistics',
+  text: '🗑️ clear statistics',
   cls: 'mod-warning'
 });
 setCssProps(clearBtn, { 'margin-left': '10px' });
@@ -288,7 +288,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
   }
 
   private renderDifficult(container: HTMLElement) {
-    container.createEl('h3', { text: 'Cards Needing Attention' });
+    container.createEl('h3', { text: 'Cards needing attention' });
 
     const difficultCards = this.analytics.getDifficultCards(10);
 
@@ -624,7 +624,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
     modal.querySelector('[data-action="all"]')?.addEventListener('click', async () => {
       if (confirm('⚠️ This will reset ALL statistics and card progress. Are you sure?')) {
         await this.analytics.clearAllStats();
-        new Notice('✅ All statistics cleared.');
+        new Notice('✅ all statistics cleared.');
         modal.remove();
         this.render();
       }
@@ -634,7 +634,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
     modal.querySelector('[data-action="old"]')?.addEventListener('click', async () => {
       if (confirm('Clear statistics older than 30 days?')) {
         await this.analytics.clearStatsBeforeDate(30);
-        new Notice('✅ Old statistics cleared.');
+        new Notice('✅ old statistics cleared.');
         modal.remove();
         this.render();
       }
@@ -741,10 +741,10 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
         await leaf.openFile(file);
       }
       
-      new Notice('📊 Report generated.');
+      new Notice('📊 report generated.');
     } catch (error) {
       console.error('Error generating report:', error);
-      new Notice('❌ Failed to generate report.');
+      new Notice('❌ failed to generate report.');
     }
 
   }
@@ -799,7 +799,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
     modal.querySelector('.cancel-btn')?.addEventListener('click', () => modal.remove());
     modal.querySelector('.confirm-btn')?.addEventListener('click', async () => {
       await this.analytics.startNewCycle();
-      new Notice('✨ New learning cycle started!');
+      new Notice('✨ new learning cycle started!');
       modal.remove();
       this.render();
     });
@@ -808,7 +808,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
   }
 
   private renderCycleHistory(container: HTMLElement) {
-    container.createEl('h3', { text: '📜 Learning Cycle History' });
+    container.createEl('h3', { text: '📜 learning cycle history' });
   
     const cycles = this.analytics.getArchivedCycles();
     
@@ -848,7 +848,7 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
       // 查看详情按钮
       const actions = cycleCard.createDiv({ cls: 'cycle-card-actions' });
       const detailBtn = actions.createEl('button', {
-        text: '📊 View Details',
+        text: '📊 view details',
         cls: 'mod-cta'
       });
       detailBtn.addEventListener('click', () => this.showCycleDetails(cycle.cycleNumber));

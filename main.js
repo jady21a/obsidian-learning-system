@@ -91,7 +91,7 @@ var init_AnnotationModal = __esm({
           setCssProps(text.inputEl, { width: "100%" });
         });
         contentEl.createEl("h3", { text: "Badge (optional)" });
-        new import_obsidian18.Setting(contentEl).setName("Badge text").setDesc("Short text to display as a badge (e.g., \u201CImportant\u201D, \u201CTo review\u201D).").addText(
+        new import_obsidian18.Setting(contentEl).setName("Badge text").setDesc('Short text to display as a badge (e.g., "important", "to review").').addText(
           (text) => text.setPlaceholder("Badge text").setValue(this.badgeText).onChange((value) => {
             this.badgeText = value;
             this.updateBadgePreview();
@@ -240,7 +240,7 @@ var init_AnnotationModal = __esm({
               cls: "annotation-date"
             });
             const deleteBtn = annotationCard.createEl("button", {
-              text: "\u{1F5D1} Delete",
+              text: "\u{1F5D1} delete",
               cls: "delete-annotation-btn"
             });
             deleteBtn.addEventListener("click", async () => {
@@ -334,7 +334,7 @@ var SettingsTab = class extends import_obsidian.PluginSettingTab {
         new import_obsidian.Notice("Reload Obsidian to apply / \u8BF7\u91CD\u8F7D Obsidian \u4EE5\u751F\u6548");
       })
     );
-    new import_obsidian.Setting(containerEl).setName("General").setHeading();
+    new import_obsidian.Setting(containerEl).setName("Extraction").setHeading();
     new import_obsidian.Setting(containerEl).setName("Enable extraction").setDesc("Enable automatic content extraction").addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.extractionEnabled).onChange(async (value) => {
         this.plugin.settings.extractionEnabled = value;
@@ -8251,9 +8251,6 @@ j.new = (e) => ({
   }
 });
 
-// node_modules/mind-elixir/dist/MindElixir.css
-var MindElixir_default = '.map-container{-webkit-tap-highlight-color:rgba(0,0,0,0);font-family:-apple-system,BlinkMacSystemFont,Helvetica Neue,PingFang SC,Microsoft YaHei,Source Han Sans SC,Noto Sans CJK SC,WenQuanYi Micro Hei,sans-serif;user-select:none;-webkit-user-select:none;height:100%;width:100%;overflow:hidden;font-size:16px;outline:none;touch-action:none;background-color:var(--bgcolor)}.map-container p{margin:0}.map-container *{box-sizing:border-box}.map-container::-webkit-scrollbar{width:0px;height:0px}.map-container .selected{outline:2px solid var(--selected);outline-offset:1px}.map-container.space-pressed,.map-container.space-pressed *{cursor:grab!important}.map-container.space-pressed:active,.map-container.space-pressed:active *{cursor:grabbing!important}.map-container .hyper-link{text-decoration:none;margin-left:.3em}.map-container me-main>me-wrapper>me-parent>me-epd{top:50%;transform:translateY(-50%)}.map-container me-epd{top:100%;transform:translateY(-50%)}.map-container .lhs{direction:rtl}.map-container .lhs>me-wrapper>me-parent>me-epd{left:-10px}.map-container .lhs me-epd{left:5px}.map-container .lhs me-tpc{direction:ltr}.map-container .rhs>me-wrapper>me-parent>me-epd{right:-10px}.map-container .rhs me-epd{right:5px}.map-container .map-canvas{position:relative;-webkit-user-select:none;user-select:none;width:fit-content;transform:scale(1)}.map-container .map-canvas me-nodes{position:relative;display:flex;justify-content:center;align-items:center;height:max-content;width:max-content;padding:var(--map-padding)}.map-container me-main>me-wrapper{position:relative;margin:var(--main-gap-y) var(--main-gap-x)}.map-container me-main>me-wrapper>me-parent{margin:10px;padding:0}.map-container me-main>me-wrapper>me-parent>me-tpc{border-radius:var(--main-radius);background-color:var(--main-bgcolor);border:2px solid var(--main-color);color:var(--main-color);padding:8px 25px}.map-container me-wrapper{display:block;pointer-events:none;width:fit-content}.map-container me-children,.map-container me-parent{display:inline-block;vertical-align:middle}.map-container me-root{position:relative;margin:45px 0;z-index:10}.map-container me-root me-tpc{font-size:25px;color:var(--root-color);padding:10px 30px;border-radius:var(--root-radius);border:var(--root-border-color) 2px solid;background-color:var(--root-bgcolor)}.map-container me-parent{position:relative;cursor:pointer;padding:6px var(--node-gap-x);margin-top:var(--node-gap-y);z-index:10}.map-container me-parent me-tpc{position:relative;border-radius:3px;color:var(--color);padding:var(--topic-padding)}.map-container me-parent me-tpc .insert-preview{position:absolute;width:100%;left:0;z-index:9}.map-container me-parent me-tpc .show{background:#7ad5ff;pointer-events:none;opacity:.7;border-radius:3px}.map-container me-parent me-tpc .before{height:14px;top:-14px}.map-container me-parent me-tpc .in{height:100%;top:0}.map-container me-parent me-tpc .after{height:14px;bottom:-14px}.map-container me-parent me-epd{position:absolute;height:18px;width:18px;opacity:.8;background-image:url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/PjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+CjxzdmcgdD0iMTY1NjY1NDcxNzI0MiIgY2xhc3M9Imljb24iIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiIHZlcnNpb249IjEuMSIKICAgIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKICAgIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCI+CiAgICA8cGF0aCBkPSJNNTEyIDc0LjY2NjY2N0MyNzAuOTMzMzMzIDc0LjY2NjY2NyA3NC42NjY2NjcgMjcwLjkzMzMzMyA3NC42NjY2NjcgNTEyUzI3MC45MzMzMzMgOTQ5LjMzMzMzMyA1MTIgOTQ5LjMzMzMzMyA5NDkuMzMzMzMzIDc1My4wNjY2NjcgOTQ5LjMzMzMzMyA1MTIgNzUzLjA2NjY2NyA3NC42NjY2NjcgNTEyIDc0LjY2NjY2N3oiIHN0cm9rZS13aWR0aD0iNTQiIHN0cm9rZT0nYmxhY2snIGZpbGw9J3doaXRlJyA+PC9wYXRoPgogICAgPHBhdGggZD0iTTY4Mi42NjY2NjcgNDgwaC0xMzguNjY2NjY3VjM0MS4zMzMzMzNjMC0xNy4wNjY2NjctMTQuOTMzMzMzLTMyLTMyLTMycy0zMiAxNC45MzMzMzMtMzIgMzJ2MTM4LjY2NjY2N0gzNDEuMzMzMzMzYy0xNy4wNjY2NjcgMC0zMiAxNC45MzMzMzMtMzIgMzJzMTQuOTMzMzMzIDMyIDMyIDMyaDEzOC42NjY2NjdWNjgyLjY2NjY2N2MwIDE3LjA2NjY2NyAxNC45MzMzMzMgMzIgMzIgMzJzMzItMTQuOTMzMzMzIDMyLTMydi0xMzguNjY2NjY3SDY4Mi42NjY2NjdjMTcuMDY2NjY3IDAgMzItMTQuOTMzMzMzIDMyLTMycy0xNC45MzMzMzMtMzItMzItMzJ6Ij48L3BhdGg+Cjwvc3ZnPg==);background-repeat:no-repeat;background-size:contain;background-position:center;pointer-events:all;z-index:9}.map-container me-parent me-epd.minus{background-image:url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/PjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+CjxzdmcgdD0iMTY1NjY1NTU2NDk4NSIgY2xhc3M9Imljb24iIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiIHZlcnNpb249IjEuMSIKICAgIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKICAgIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCI+CiAgICA8cGF0aCBkPSJNNTEyIDc0LjY2NjY2N0MyNzAuOTMzMzMzIDc0LjY2NjY2NyA3NC42NjY2NjcgMjcwLjkzMzMzMyA3NC42NjY2NjcgNTEyUzI3MC45MzMzMzMgOTQ5LjMzMzMzMyA1MTIgOTQ5LjMzMzMzMyA5NDkuMzMzMzMzIDc1My4wNjY2NjcgOTQ5LjMzMzMzMyA1MTIgNzUzLjA2NjY2NyA3NC42NjY2NjcgNTEyIDc0LjY2NjY2N3oiIHN0cm9rZS13aWR0aD0iNTQiIHN0cm9rZT0nYmxhY2snIGZpbGw9J3doaXRlJyA+PC9wYXRoPgogICAgPHBhdGggZD0iTTY4Mi42NjY2NjcgNTQ0SDM0MS4zMzMzMzNjLTE3LjA2NjY2NyAwLTMyLTE0LjkzMzMzMy0zMi0zMnMxNC45MzMzMzMtMzIgMzItMzJoMzQxLjMzMzMzNGMxNy4wNjY2NjcgMCAzMiAxNC45MzMzMzMgMzIgMzJzLTE0LjkzMzMzMyAzMi0zMiAzMnoiPjwvcGF0aD4KPC9zdmc+)!important;transition:opacity .3s;opacity:0}@media (hover: hover){.map-container me-parent me-epd.minus:hover{opacity:.8}}@media (hover: none){.map-container me-parent me-epd.minus{opacity:.8}}.map-container .icon{width:1em;height:1em;vertical-align:-.15em;fill:currentColor;overflow:hidden}.map-container .lines,.map-container .summary,.map-container .subLines,.map-container .topiclinks,.map-container .linkcontroller{position:absolute;height:102%;width:100%;top:0;left:0}.map-container .topiclinks,.map-container .linkcontroller,.map-container .summary{pointer-events:none;z-index:20}.map-container .summary>g,.map-container .topiclinks>g{cursor:pointer;pointer-events:stroke;z-index:20}.map-container .label-container{z-index:21}.map-container .lines,.map-container .subLines{pointer-events:none}.map-container #input-box{position:absolute;top:0;left:0;width:max-content;max-width:35em;direction:ltr;-webkit-user-select:auto;user-select:auto;pointer-events:auto;color:var(--color);background-color:var(--bgcolor);outline:1px solid #ccc;border-radius:2px;z-index:100}.map-container me-tpc{display:block;max-width:35em;white-space:pre-wrap;pointer-events:all}.map-container me-tpc>*{pointer-events:none}.map-container me-tpc>a,.map-container me-tpc>iframe{pointer-events:auto}.map-container me-tpc>.text{display:inline-block}.map-container me-tpc>.text a{pointer-events:auto}.map-container me-tpc>img{display:block;margin-bottom:8px;object-fit:cover}.map-container .circle{position:absolute;height:10px;width:10px;margin-top:-5px;margin-left:-5px;border-radius:100%;background:#757575;border:2px solid #ffffff;z-index:50;cursor:pointer}.map-container .circle:before{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30px;height:30px;background:transparent}.map-container .tags{direction:ltr}.map-container .tags span{display:inline-block;border-radius:3px;padding:2px 4px;background:#d6f0f8;color:#276f86;margin:2px 4px 0 0;font-size:12px;line-height:1.3em}.map-container .icons{display:inline-block;direction:ltr;margin-left:5px}.map-container .icons span{display:inline-block;line-height:1.3em}.map-container .mind-elixir-ghost{position:absolute;top:0;left:0;box-sizing:content-box;opacity:.7;background-color:var(--main-bgcolor);border:2px solid var(--main-color);color:var(--main-color);max-width:200px;width:fit-content;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:8px 16px;border-radius:6px;display:none;pointer-events:none;z-index:1000}.map-container .selection-area{background:#4f90f22d;border:1px solid #4f90f2}.map-container .svg-label{position:absolute;overflow-wrap:break-word;-webkit-hyphens:auto;hyphens:auto;line-height:1.2;pointer-events:auto;cursor:pointer;z-index:10;width:max-content;max-width:200px;border-radius:3px;padding:var(--topic-padding)}.map-container .svg-label[data-type=arrow]{background-color:var(--main-bgcolor-transparent)}.map-container h1{font-size:1.5rem;font-weight:700;color:var(--selected)}.map-container h2{font-size:1.25rem;font-weight:600;color:var(--selected)}.map-container h3{font-size:1.125rem;font-weight:600;color:var(--selected)}.map-container h4{font-size:1rem;font-weight:600;color:var(--selected)}.map-container h5{font-size:.875rem;font-weight:600;color:var(--selected)}.map-container h6{font-size:.875rem;font-weight:500;margin:.1rem 0;color:var(--selected);font-style:italic}.map-container strong.asterisk-emphasis,.map-container em{color:var(--selected)}.map-container strong.underscore-emphasis{background:#ffeb3b40;padding:.05em .15em;border-radius:.15em}.map-container a{color:var(--selected)}.map-container a:hover{color:var(--selected);text-decoration:underline}.map-container .context-menu{position:fixed;top:0;left:0;width:100%;height:100%;z-index:99}.map-container .context-menu .menu-list{position:fixed;list-style:none;margin:0;padding:0;color:var(--panel-color);box-shadow:0 12px 15px #0003;border-radius:5px;overflow:hidden}.map-container .context-menu .menu-list li{min-width:200px;overflow:hidden;white-space:nowrap;padding:6px 10px;background:var(--panel-bgcolor);border-bottom:1px solid var(--panel-border-color);cursor:pointer}.map-container .context-menu .menu-list li span{line-height:20px}.map-container .context-menu .menu-list li a{color:#333;text-decoration:none}.map-container .context-menu .menu-list li.disabled{display:none}.map-container .context-menu .menu-list li:hover{filter:brightness(.95)}.map-container .context-menu .menu-list li:last-child{border-bottom:0}.map-container .context-menu .menu-list li span:last-child{float:right}.map-container .context-menu .key{font-size:10px;background-color:#f1f1f1;color:#333;padding:2px 5px;border-radius:3px}.map-container .tips{position:absolute;bottom:28px;left:50%;transform:translate(-50%);color:var(--panel-color);background:var(--panel-bgcolor);opacity:.8;padding:5px 10px;border-radius:5px;font-weight:700}.mind-elixir-toolbar{position:absolute;color:var(--panel-color);background:var(--panel-bgcolor);padding:10px;border-radius:5px;box-shadow:0 1px 2px #0003}.mind-elixir-toolbar svg{display:inline-block}.mind-elixir-toolbar span:active{opacity:.5}.mind-elixir-toolbar.rb{right:20px;bottom:20px}.mind-elixir-toolbar.rb span+span{margin-left:10px}.mind-elixir-toolbar.lt{font-size:20px;left:20px;top:20px}.mind-elixir-toolbar.lt span{display:block}.mind-elixir-toolbar.lt span+span{margin-top:10px}\n';
-
 // src/core/MindmapTreeBuilder.ts
 var STATE_COLOR = {
   new: "#9e9e9e",
@@ -8534,15 +8531,6 @@ function serializeOutline(root) {
 }
 
 // src/ui/view/MindmapReview.ts
-var STYLE_EL_ID = "learning-system-mindmap-styles";
-function injectStyles() {
-  if (document.getElementById(STYLE_EL_ID))
-    return;
-  const styleEl = document.createElement("style");
-  styleEl.id = STYLE_EL_ID;
-  styleEl.textContent = MindElixir_default;
-  document.head.appendChild(styleEl);
-}
 function escapeHtml(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
@@ -8625,10 +8613,8 @@ function buildAnswerHtml(t2, startNo) {
   return { html, used: no2 - startNo };
 }
 function newReadonlyMap(container, nodeData) {
-  injectStyles();
   container.empty();
-  container.style.width = "100%";
-  container.style.height = "320px";
+  container.addClass("learning-system-mindmap-readonly");
   const mind = new j({
     el: container,
     direction: j.RIGHT,
@@ -8794,7 +8780,7 @@ var ReviewView = class extends import_obsidian11.ItemView {
   }
   renderNoDueCards(container) {
     const emptyState = container.createDiv({ cls: "empty-state" });
-    emptyState.createEl("h2", { text: "\u{1F389} All done!" });
+    emptyState.createEl("h2", { text: "\u{1F389} all done!" });
     emptyState.createEl("p", { text: "No cards due for review right now." });
     const stats = this.plugin.flashcardManager.getStats();
     const statsDiv = emptyState.createDiv({ cls: "stats-summary" });
@@ -9057,7 +9043,7 @@ var ReviewView = class extends import_obsidian11.ItemView {
     this.mmGraded = false;
     const next = this.findNextUnreviewedCard(0);
     if (next === -1) {
-      new import_obsidian11.Notice("\u2705 Review session complete!");
+      new import_obsidian11.Notice("\u2705 review session complete!");
       this.currentCard = null;
       this.dueCards = [];
       this.render();
@@ -9188,9 +9174,10 @@ var ReviewView = class extends import_obsidian11.ItemView {
   }
   renderShowAnswerButton(container) {
     const showAnswerBtn = container.createEl("button", {
-      text: "Show Answer",
+      text: "Show answer",
       cls: "mod-cta show-answer-btn",
       attr: { title: "Press Enter or Tab" }
+      // eslint-disable-line obsidianmd/ui/sentence-case
     });
     showAnswerBtn.addEventListener("click", () => {
       this.stateManager.setShowAnswer(true);
@@ -9310,7 +9297,7 @@ var ReviewView = class extends import_obsidian11.ItemView {
     this.resetReviewState();
     const nextUnreviewedIndex = this.findNextUnreviewedCard(this.currentCardIndex + 1);
     if (nextUnreviewedIndex === -1) {
-      new import_obsidian11.Notice(`\u2705 Review session complete!`);
+      new import_obsidian11.Notice(`\u2705 review session complete!`);
       this.currentCard = null;
       this.dueCards = [];
       this.render();
@@ -10266,12 +10253,12 @@ var StatsView = class extends import_obsidian12.ItemView {
     this.renderSimpleBarChart(activityChart, dailyStats);
     const reportSection = container.createDiv({ cls: "report-section" });
     const reportBtn = reportSection.createEl("button", {
-      text: "\u{1F4C4} Generate full report",
+      text: "\u{1F4C4} generate full report",
       cls: "mod-cta"
     });
     reportBtn.addEventListener("click", () => this.generateAndShowReport());
     const clearBtn = reportSection.createEl("button", {
-      text: "\u{1F5D1}\uFE0F Clear statistics",
+      text: "\u{1F5D1}\uFE0F clear statistics",
       cls: "mod-warning"
     });
     setCssProps(clearBtn, { "margin-left": "10px" });
@@ -10340,7 +10327,7 @@ var StatsView = class extends import_obsidian12.ItemView {
     });
   }
   renderDifficult(container) {
-    container.createEl("h3", { text: "Cards Needing Attention" });
+    container.createEl("h3", { text: "Cards needing attention" });
     const difficultCards = this.analytics.getDifficultCards(10);
     if (difficultCards.length === 0) {
       container.createDiv({
@@ -10585,7 +10572,7 @@ var StatsView = class extends import_obsidian12.ItemView {
     (_b = modal.querySelector('[data-action="all"]')) == null ? void 0 : _b.addEventListener("click", async () => {
       if (confirm("\u26A0\uFE0F This will reset ALL statistics and card progress. Are you sure?")) {
         await this.analytics.clearAllStats();
-        new import_obsidian12.Notice("\u2705 All statistics cleared.");
+        new import_obsidian12.Notice("\u2705 all statistics cleared.");
         modal.remove();
         this.render();
       }
@@ -10593,7 +10580,7 @@ var StatsView = class extends import_obsidian12.ItemView {
     (_c = modal.querySelector('[data-action="old"]')) == null ? void 0 : _c.addEventListener("click", async () => {
       if (confirm("Clear statistics older than 30 days?")) {
         await this.analytics.clearStatsBeforeDate(30);
-        new import_obsidian12.Notice("\u2705 Old statistics cleared.");
+        new import_obsidian12.Notice("\u2705 old statistics cleared.");
         modal.remove();
         this.render();
       }
@@ -10674,10 +10661,10 @@ var StatsView = class extends import_obsidian12.ItemView {
       if (file instanceof import_obsidian12.TFile) {
         await leaf.openFile(file);
       }
-      new import_obsidian12.Notice("\u{1F4CA} Report generated.");
+      new import_obsidian12.Notice("\u{1F4CA} report generated.");
     } catch (error) {
       console.error("Error generating report:", error);
-      new import_obsidian12.Notice("\u274C Failed to generate report.");
+      new import_obsidian12.Notice("\u274C failed to generate report.");
     }
   }
   renderCycleBanner(container) {
@@ -10724,14 +10711,14 @@ var StatsView = class extends import_obsidian12.ItemView {
     (_a = modal.querySelector(".cancel-btn")) == null ? void 0 : _a.addEventListener("click", () => modal.remove());
     (_b = modal.querySelector(".confirm-btn")) == null ? void 0 : _b.addEventListener("click", async () => {
       await this.analytics.startNewCycle();
-      new import_obsidian12.Notice("\u2728 New learning cycle started!");
+      new import_obsidian12.Notice("\u2728 new learning cycle started!");
       modal.remove();
       this.render();
     });
     (_c = modal.querySelector(".modal-bg")) == null ? void 0 : _c.addEventListener("click", () => modal.remove());
   }
   renderCycleHistory(container) {
-    container.createEl("h3", { text: "\u{1F4DC} Learning Cycle History" });
+    container.createEl("h3", { text: "\u{1F4DC} learning cycle history" });
     const cycles = this.analytics.getArchivedCycles();
     if (cycles.length === 0) {
       container.createDiv({
@@ -10759,7 +10746,7 @@ var StatsView = class extends import_obsidian12.ItemView {
       );
       const actions = cycleCard.createDiv({ cls: "cycle-card-actions" });
       const detailBtn = actions.createEl("button", {
-        text: "\u{1F4CA} View Details",
+        text: "\u{1F4CA} view details",
         cls: "mod-cta"
       });
       detailBtn.addEventListener("click", () => this.showCycleDetails(cycle.cycleNumber));
@@ -10872,16 +10859,16 @@ var ClozeBlankModal = class extends import_obsidian13.Modal {
     const { contentEl } = this;
     contentEl.createEl("h3", { text: "\u6316\u7A7A\u9009\u4E2D\u8BCD(cloze)" });
     contentEl.createEl("p", {
+      // eslint-disable-next-line obsidianmd/ui/sentence-case
       text: "\u7528 == \u5305\u88F9\u8981\u6316\u7A7A\u7684\u8BCD,\u53EF\u591A\u5904\u3002\u4F8B\u5982:\u6C34\u7684\u5316\u5B66\u5F0F\u662F ==H2O==\u3002",
       cls: "setting-item-description"
     });
     let textarea;
     new import_obsidian13.Setting(contentEl).setName("\u8282\u70B9\u6587\u672C").then((s) => {
-      s.controlEl.style.width = "100%";
-      textarea = s.controlEl.createEl("textarea");
+      s.controlEl.addClass("ls-cloze-control");
+      textarea = s.controlEl.createEl("textarea", { cls: "ls-cloze-textarea" });
       textarea.value = this.value;
       textarea.rows = 4;
-      textarea.style.width = "100%";
     });
     new import_obsidian13.Setting(contentEl).addButton(
       (btn) => btn.setButtonText("\u521B\u5EFA\u6316\u7A7A\u5361").setCta().onClick(() => {
@@ -10918,7 +10905,6 @@ function parseBlanks(marked) {
 
 // src/ui/view/MindmapView.ts
 var VIEW_TYPE_MINDMAP = "learning-system-mindmap";
-var STYLE_EL_ID2 = "learning-system-mindmap-styles";
 var WRITE_BACK_OPS = /* @__PURE__ */ new Set([
   "finishEdit",
   "addChild",
@@ -10984,7 +10970,6 @@ var MindmapView = class extends import_obsidian14.ItemView {
     await this.renderMindmap();
   }
   async onOpen() {
-    this.injectStyles();
     this.registerModifyWatcher();
     await this.renderMindmap();
   }
@@ -11040,7 +11025,6 @@ var MindmapView = class extends import_obsidian14.ItemView {
   /** 根据 this.filePath 渲染:有则按文档大纲,无则全部闪卡。 */
   async renderMindmap() {
     var _a, _b;
-    this.injectStyles();
     if (this.mind) {
       (_b = (_a = this.mind).destroy) == null ? void 0 : _b.call(_a);
       this.mind = null;
@@ -11048,8 +11032,6 @@ var MindmapView = class extends import_obsidian14.ItemView {
     const root = this.contentEl;
     root.empty();
     const container = root.createDiv({ cls: "learning-system-mindmap-container" });
-    container.style.width = "100%";
-    container.style.height = "100%";
     this.container = container;
     let data;
     if (this.inlineText != null) {
@@ -11100,7 +11082,6 @@ var MindmapView = class extends import_obsidian14.ItemView {
     });
     mind.init(data);
     mind.bus.addListener("operation", (operation) => {
-      console.debug("[learning-system] mindmap operation", operation);
       if (this.filePath && WRITE_BACK_OPS.has(operation.name)) {
         void this.writeBackStructure();
       }
@@ -11455,15 +11436,6 @@ var MindmapView = class extends import_obsidian14.ItemView {
       this.mind = null;
     }
     this.container = null;
-  }
-  injectStyles() {
-    if (document.getElementById(STYLE_EL_ID2))
-      return;
-    const styleEl = document.createElement("style");
-    styleEl.id = STYLE_EL_ID2;
-    styleEl.textContent = MindElixir_default;
-    document.head.appendChild(styleEl);
-    this.register(() => styleEl.remove());
   }
 };
 
@@ -12039,33 +12011,6 @@ var ExtractionEngine = class {
   async filterDuplicateUnits(newUnits, existingUnits) {
     var _a, _b, _c, _d, _e2, _f, _g;
     const filtered = [];
-    const tableClozeExisting = existingUnits.filter(
-      (u) => {
-        var _a2, _b2;
-        return ((_a2 = u.extractRule) == null ? void 0 : _a2.ruleId) === "cloze-table" && u.source.file === ((_b2 = newUnits[0]) == null ? void 0 : _b2.source.file);
-      }
-    );
-    console.log(
-      "[dedup] existing cloze-table units:",
-      JSON.stringify(tableClozeExisting.map((u) => {
-        var _a2, _b2;
-        return {
-          id: u.id,
-          content: u.content,
-          allHighlights: (_b2 = (_a2 = u.metadata) == null ? void 0 : _a2.customData) == null ? void 0 : _b2.allHighlights
-        };
-      }))
-    );
-    console.log(
-      "[dedup] new cloze-table units:",
-      JSON.stringify(newUnits.filter((u) => {
-        var _a2;
-        return ((_a2 = u.extractRule) == null ? void 0 : _a2.ruleId) === "cloze-table";
-      }).map((u) => {
-        var _a2, _b2;
-        return { content: u.content, allHighlights: (_b2 = (_a2 = u.metadata) == null ? void 0 : _a2.customData) == null ? void 0 : _b2.allHighlights };
-      }))
-    );
     for (const newUnit of newUnits) {
       if (((_a = newUnit.extractRule) == null ? void 0 : _a.ruleId) === "cloze-table") {
         const rebuildContext = (originalContext, keepRows) => {

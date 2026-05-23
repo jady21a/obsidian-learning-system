@@ -448,20 +448,6 @@ if (this.plugin?.unlockSystem && units.length > 0) {
   ): Promise<ContentUnit[]> {
     const filtered: ContentUnit[] = [];
     
-    const tableClozeExisting = existingUnits.filter(
-      u => u.extractRule?.ruleId === 'cloze-table' && u.source.file === newUnits[0]?.source.file
-    );
-    console.log('[dedup] existing cloze-table units:', 
-      JSON.stringify(tableClozeExisting.map(u => ({ 
-        id: u.id, 
-        content: u.content, 
-        allHighlights: u.metadata?.customData?.allHighlights 
-      })))
-    );
-    console.log('[dedup] new cloze-table units:', 
-      JSON.stringify(newUnits.filter(u => u.extractRule?.ruleId === 'cloze-table')
-        .map(u => ({ content: u.content, allHighlights: u.metadata?.customData?.allHighlights })))
-    );
     for (const newUnit of newUnits) {
       // 🆕 表格合并逻辑：同一表格时，合并而非新建
       if (newUnit.extractRule?.ruleId === 'cloze-table') {
