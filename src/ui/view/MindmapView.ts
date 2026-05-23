@@ -10,6 +10,7 @@ import {
 import type { NodeObj } from 'mind-elixir';
 import type { ContentUnit } from '../../core/DataManager';
 import { ClozeBlankModal, type ClozeResult } from './ClozeBlankModal';
+import { OBSIDIAN_MINDMAP_THEME } from './mindElixirTheme';
 
 export const VIEW_TYPE_MINDMAP = 'learning-system-mindmap';
 
@@ -194,6 +195,7 @@ export class MindmapView extends ItemView {
       editable: true,
       toolBar: true,
       allowUndo: true,
+      theme: OBSIDIAN_MINDMAP_THEME, // 让颜色跟随 Obsidian 主题
       contextMenu: {
         // Mind Elixir 的拖拽不支持把深层节点拖回一级(根的直接子节点),
         // 这里用 moveNodeIn API 补一个右键菜单项实现「提升为一级节点」。

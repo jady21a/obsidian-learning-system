@@ -395,10 +395,12 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
       changePercent: string;
     }
   ) {
-    const item = container.createDiv({ cls: 'comparison-item' });
-    
+    // ⭐ 用 stat-comparison-item 避免与 reviewCardRender 的 .comparison-item 冲突
+    //    (后者要求紧凑,前者要求 flex 宽布局)
+    const item = container.createDiv({ cls: 'stat-comparison-item' });
+
     item.createDiv({ text: config.label, cls: 'comparison-label' });
-    
+
     const values = item.createDiv({ cls: 'comparison-values' });
     values.createSpan({ 
       text: `${config.thisWeek}`,

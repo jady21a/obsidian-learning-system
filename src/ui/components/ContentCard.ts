@@ -15,7 +15,12 @@ export interface CardCallbacks {
   onShowContextMenu: (event: MouseEvent, unit: ContentUnit) => void;
   onFlashcardContextMenu?: (event: MouseEvent, card: Flashcard) => void;
   getAnnotationContent?: (unitId: string) => string | undefined;
-  getContentUnit?: (unitId: string) => ContentUnit | undefined;  
+  getContentUnit?: (unitId: string) => ContentUnit | undefined;
+  /**
+   * 可选:为 mindmap 来源的闪卡渲染只读迷你导图作为预览。
+   * 返回 false 表示无法渲染(如源文件缺失),调用方回退到标准内容。
+   */
+  renderMindmapPreview?: (container: HTMLElement, card: Flashcard) => Promise<boolean>;
 }
 
 export class ContentCard {
@@ -156,8 +161,10 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
 
     const header = cardEl.createDiv({ cls: 'grid-card-header' });
     const cardType = header.createDiv({ cls: 'card-type-badge' });
-    cardType.textContent = card.type === 'qa' ? 'Q&A' : 'Cloze';
-    cardType.addClass(`type-${card.type}`);
+    const srcUnit = this.callbacks.getContentUnit?.(card.sourceContentId);
+    const isMindmap = srcUnit?.extractRule?.ruleId === 'mindmap-cloze';
+    cardType.textContent = isMindmap ? 'Mindmap' : card.type === 'qa' ? 'Q&A' : 'Cloze';
+    cardType.addClass(`type-${isMindmap ? 'mindmap' : card.type}`);
     
     header.addEventListener('mousedown', (e) => {
       e.stopPropagation();
@@ -183,7 +190,18 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     });
 
     const content = cardEl.createDiv({ cls: 'grid-card-content' });
-    this.renderFlashcardContent(content, card);
+    if (isMindmap && this.callbacks.renderMindmapPreview) {
+      content.addClass('grid-card-mindmap-preview');
+      void this.callbacks.renderMindmapPreview(content, card).then((ok) => {
+        if (!ok) {
+          content.empty();
+          content.removeClass('grid-card-mindmap-preview');
+          this.renderFlashcardContent(content, card);
+        }
+      });
+    } else {
+      this.renderFlashcardContent(content, card);
+    }
 
     const meta = cardEl.createDiv({ cls: 'grid-card-meta' });
     this.renderFlashcardMeta(meta, card);
@@ -428,8 +446,9 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
       // eslint-disable-next-line obsidianmd/ui/sentence-case -- "Q&A" is an acronym
       typeIndicator.textContent = 'Q&A';
     } else if (unit.type === 'cloze') {
-      typeIndicator.addClass('type-cloze');
-      typeIndicator.textContent = 'Cloze';
+      const isMindmap = unit.extractRule?.ruleId === 'mindmap-cloze';
+      typeIndicator.addClass(isMindmap ? 'type-mindmap' : 'type-cloze');
+      typeIndicator.textContent = isMindmap ? 'Mindmap' : 'Cloze';
     } else {
       typeIndicator.addClass('type-text');
       typeIndicator.textContent = 'Text';

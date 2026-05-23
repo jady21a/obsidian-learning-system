@@ -2605,7 +2605,7 @@
   margin-top: 15px;
 }
 
-.comparison-item {
+.stat-comparison-item {
   padding: 15px;
   background: var(--background-secondary);
   border-radius: 6px;
@@ -3278,17 +3278,24 @@ color: var(--text-muted);
   padding: 2px 4px;
 }
 .mm-cloze-correct {
-  color: #1a7f37;
+  color: var(--color-green);
   font-weight: 600;
 }
 .mm-cloze-wrong {
-  color: #b00020;
+  color: var(--color-red);
   font-weight: 600;
 }
 .mm-cloze-user {
   font-style: italic;
   text-decoration: line-through;
-  opacity: 0.85;
+  color: var(--text-muted);
+  opacity: 1;
+}
+/* 节点内的答案文字:继承节点 bg 上的白色,加粗、轻微下划线区分编号 */
+.mm-cloze-answer {
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 /* 地图里的挖空横线 + 编号(对应下方输入框) */
 .mm-cloze-blank {
@@ -3302,13 +3309,6 @@ color: var(--text-muted);
   font-weight: 700;
   opacity: 0.85;
   margin-right: 1px;
-}
-
-/* Cloze underline blank for question rendering (width set via setCssProps) */
-.cloze-underline-blank {
-  display: inline-block;
-  border-bottom: 2px solid currentColor;
-  color: transparent;
 }
 
 /* EditFlashcardModal card info box (replaces inline styles) */
@@ -3348,6 +3348,31 @@ color: var(--text-muted);
 .learning-system-mindmap-readonly {
   width: 100%;
   height: 320px;
+}
+
+/*
+ * Mind-elixir 主题对接:把 mind-elixir 的内部 CSS 变量重映射到 Obsidian 主题变量,
+ * 使思维导图随主题深浅自动切换(类似 obsidian-mindmap-nextgen 的做法)。
+ * 因为 CSS 自定义属性会继承,在我们的容器上设置即可覆盖到内部 .map-container。
+ */
+.learning-system-mindmap-container,
+.learning-system-mindmap-readonly {
+  --bgcolor: var(--background-primary);
+  --color: var(--text-normal);
+
+  --main-bgcolor: var(--background-secondary);
+  --main-color: var(--text-accent);
+  --main-bgcolor-transparent: var(--background-secondary);
+
+  --root-bgcolor: var(--interactive-accent);
+  --root-color: var(--text-on-accent);
+  --root-border-color: var(--interactive-accent);
+
+  --panel-bgcolor: var(--background-secondary);
+  --panel-color: var(--text-normal);
+  --panel-border-color: var(--background-modifier-border);
+
+  --selected: var(--interactive-accent);
 }
 
 /* Cloze blank modal textarea full-width */

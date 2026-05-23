@@ -255,19 +255,13 @@ async onNoteScanned() {
   private async levelUp(newLevel: UserLevel) {
     this.progress.currentLevel = newLevel;
     this.progress.levelUnlockedAt[newLevel] = Date.now();
-  
-    const message = t(`unlock.levelUp.${newLevel}`, this.language);
-  
-    const milestone = {
+
+    this.progress.milestones.push({
       level: newLevel,
       unlockedAt: Date.now(),
-    };
-  
-    this.progress.milestones.push(milestone);
-  
-    // 显示升级通知
-    new Notice(message, 10000);
-    
+    });
+
+    // 升级通知已移除(按需求);里程碑达成的祝贺通知仍由 checkAchievements 触发。
     await this.saveProgress();
   }
 

@@ -1280,7 +1280,7 @@ var QuickFlashcardCreator = class {
 };
 
 // src/ui/view/SidebarOverviewView.ts
-var import_obsidian8 = require("obsidian");
+var import_obsidian9 = require("obsidian");
 
 // src/ui/stats/ViewState.ts
 var ViewState = class {
@@ -1837,14 +1837,17 @@ var ContentCard = class {
    * 渲染闪卡网格
    */
   renderFlashcardGrid(container, card) {
+    var _a, _b, _c;
     const cardEl = container.createDiv({ cls: "grid-card flashcard-grid-card" });
     if (this.state.batchMode) {
       this.renderCheckbox(cardEl, card.id, this.state.selectedCardIds.has(card.id));
     }
     const header = cardEl.createDiv({ cls: "grid-card-header" });
     const cardType = header.createDiv({ cls: "card-type-badge" });
-    cardType.textContent = card.type === "qa" ? "Q&A" : "Cloze";
-    cardType.addClass(`type-${card.type}`);
+    const srcUnit = (_b = (_a = this.callbacks).getContentUnit) == null ? void 0 : _b.call(_a, card.sourceContentId);
+    const isMindmap = ((_c = srcUnit == null ? void 0 : srcUnit.extractRule) == null ? void 0 : _c.ruleId) === "mindmap-cloze";
+    cardType.textContent = isMindmap ? "Mindmap" : card.type === "qa" ? "Q&A" : "Cloze";
+    cardType.addClass(`type-${isMindmap ? "mindmap" : card.type}`);
     header.addEventListener("mousedown", (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -1865,7 +1868,18 @@ var ContentCard = class {
       }
     });
     const content = cardEl.createDiv({ cls: "grid-card-content" });
-    this.renderFlashcardContent(content, card);
+    if (isMindmap && this.callbacks.renderMindmapPreview) {
+      content.addClass("grid-card-mindmap-preview");
+      void this.callbacks.renderMindmapPreview(content, card).then((ok) => {
+        if (!ok) {
+          content.empty();
+          content.removeClass("grid-card-mindmap-preview");
+          this.renderFlashcardContent(content, card);
+        }
+      });
+    } else {
+      this.renderFlashcardContent(content, card);
+    }
     const meta = cardEl.createDiv({ cls: "grid-card-meta" });
     this.renderFlashcardMeta(meta, card);
   }
@@ -2063,13 +2077,15 @@ var ContentCard = class {
     }
   }
   renderTypeIndicator(header, unit) {
+    var _a;
     const typeIndicator = header.createDiv({ cls: "type-indicator" });
     if (unit.type === "QA") {
       typeIndicator.addClass("type-qa");
       typeIndicator.textContent = "Q&A";
     } else if (unit.type === "cloze") {
-      typeIndicator.addClass("type-cloze");
-      typeIndicator.textContent = "Cloze";
+      const isMindmap = ((_a = unit.extractRule) == null ? void 0 : _a.ruleId) === "mindmap-cloze";
+      typeIndicator.addClass(isMindmap ? "type-mindmap" : "type-cloze");
+      typeIndicator.textContent = isMindmap ? "Mindmap" : "Cloze";
     } else {
       typeIndicator.addClass("type-text");
       typeIndicator.textContent = "Text";
@@ -2532,2867 +2548,8 @@ var ContentList = class {
   }
 };
 
-// src/ui/components/AnnotationEditor.ts
-var AnnotationEditor = class {
-  constructor(callbacks) {
-    this.activeEditors = /* @__PURE__ */ new Map();
-    this.callbacks = callbacks;
-  }
-  /**
-   * 切换内联批注编辑器
-   *
-   * 同步打开:编辑器元素同步插入 DOM,使 `.inline-annotation-editor` 立即存在,
-   * 从而 refresh() 的 DOM 守卫能立刻挡住重渲——不再需要任何 boolean 锁/防抖。
-   */
-  toggle(cardEl, unit) {
-    const existingEditor = cardEl.querySelector(".inline-annotation-editor");
-    if (existingEditor) {
-      this.close(cardEl, unit);
-      return;
-    }
-    const content = cardEl.querySelector(".card-content, .grid-card-content");
-    const oldPreviews = content == null ? void 0 : content.querySelectorAll(".annotation-preview, .grid-annotation");
-    if (oldPreviews && oldPreviews.length > 0) {
-      oldPreviews.forEach((el) => el.remove());
-    }
-    this.closeAllOthers(unit.id);
-    this.open(cardEl, unit);
-  }
-  /**
-   * 关闭除指定 unitId 外的所有编辑器
-   */
-  closeAllOthers(currentUnitId) {
-    const allEditingCards = document.querySelectorAll('[data-editing="true"]');
-    if (allEditingCards.length > 0) {
-      allEditingCards.forEach((card) => {
-        const unitId = card.getAttribute("data-unit-id");
-        if (unitId && unitId !== currentUnitId) {
-          const unit = { id: unitId };
-          this.close(card, unit);
-        }
-      });
-    }
-  }
-  /**
-   * 打开编辑器
-   */
-  open(cardEl, unit) {
-    cardEl.setAttribute("data-editing", "true");
-    const annotationContent = this.callbacks.getAnnotationContent(unit.id);
-    const content = cardEl.querySelector(".card-content, .grid-card-content");
-    const existingPreviews = content == null ? void 0 : content.querySelectorAll(".annotation-preview, .grid-annotation");
-    existingPreviews == null ? void 0 : existingPreviews.forEach((el) => el.remove());
-    const existingEditors = content == null ? void 0 : content.querySelectorAll(".inline-annotation-editor");
-    existingEditors == null ? void 0 : existingEditors.forEach((el) => el.remove());
-    const editor = this.createEditor(unit.id, annotationContent || "");
-    const noteText = content == null ? void 0 : content.querySelector(".note-text, .grid-note-text");
-    if (noteText) {
-      noteText.insertAdjacentElement("afterend", editor);
-    } else {
-      content == null ? void 0 : content.appendChild(editor);
-    }
-    const textarea = editor.querySelector("textarea");
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        textarea.focus();
-        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-      });
-    });
-    this.activeEditors.set(unit.id, editor);
-  }
-  /**
-   * 关闭编辑器
-   */
-  close(cardEl, unit) {
-    const editor = cardEl.querySelector(".inline-annotation-editor");
-    if (!editor) {
-      cardEl.removeAttribute("data-editing");
-      this.activeEditors.delete(unit.id);
-      return;
-    }
-    editor.remove();
-    this.activeEditors.delete(unit.id);
-    cardEl.removeAttribute("data-editing");
-    const annotationContent = this.callbacks.getAnnotationContent(unit.id);
-    if (annotationContent) {
-      const content = cardEl.querySelector(".card-content, .grid-card-content");
-      const oldPreview = content == null ? void 0 : content.querySelector(".annotation-preview, .grid-annotation");
-      if (oldPreview) {
-        oldPreview.remove();
-      }
-      if (content) {
-        this.recreatePreview(content, cardEl, unit, annotationContent);
-      }
-    }
-  }
-  /**
-   * 创建编辑器元素
-   */
-  createEditor(unitId, defaultValue) {
-    const editor = document.createElement("div");
-    editor.className = "inline-annotation-editor";
-    const textarea = document.createElement("textarea");
-    textarea.className = "inline-annotation-textarea";
-    textarea.placeholder = "Add comment...";
-    textarea.value = defaultValue;
-    textarea.setAttribute("data-unit-id", unitId);
-    const hint = document.createElement("div");
-    hint.className = "inline-annotation-hint";
-    hint.textContent = "Shift + Enter to insert a new line";
-    editor.appendChild(textarea);
-    editor.appendChild(hint);
-    this.bindEditorEvents(textarea, unitId);
-    return editor;
-  }
-  /**
-   * 绑定编辑器事件
-   */
-  bindEditorEvents(textarea, unitId) {
-    const blurHandler = async (e) => {
-      const relatedTarget = e.relatedTarget;
-      const editor = textarea.closest(".inline-annotation-editor");
-      const card = editor == null ? void 0 : editor.closest(".compact-card, .grid-card");
-      if (!relatedTarget || !(editor == null ? void 0 : editor.contains(relatedTarget))) {
-        setTimeout(async () => {
-          if ((editor == null ? void 0 : editor.parentElement) && card) {
-            const trimmedText = textarea.value.trim();
-            const originalContent = this.callbacks.getAnnotationContent(unitId) || "";
-            if (trimmedText !== originalContent) {
-              await this.callbacks.onSave(unitId, trimmedText);
-            }
-            const unit = { id: unitId };
-            this.close(card, unit);
-          }
-        }, 150);
-      }
-    };
-    textarea.addEventListener("blur", blurHandler);
-    textarea.addEventListener("keydown", async (e) => {
-      if (e.key === "Tab") {
-        e.preventDefault();
-        e.stopPropagation();
-        const editor = textarea.closest(".inline-annotation-editor");
-        const card = editor == null ? void 0 : editor.closest(".compact-card, .grid-card");
-        if (editor && card) {
-          textarea.removeEventListener("blur", blurHandler);
-          const trimmedText = textarea.value.trim();
-          const originalContent = this.callbacks.getAnnotationContent(unitId) || "";
-          editor.remove();
-          this.activeEditors.delete(unitId);
-          card.removeAttribute("data-editing");
-          if (trimmedText !== originalContent) {
-            await this.callbacks.onSave(unitId, trimmedText);
-          }
-          if (trimmedText) {
-            const content = card.querySelector(".card-content, .grid-card-content");
-            if (content) {
-              const latestContent = this.callbacks.getAnnotationContent(unitId);
-              if (latestContent) {
-                this.recreatePreview(content, card, { id: unitId }, latestContent);
-              }
-              const indicator = card.querySelector(".card-indicator");
-              if (indicator && !indicator.classList.contains("has-annotation")) {
-                indicator.classList.add("has-annotation");
-              }
-            }
-          } else {
-            const indicator = card.querySelector(".card-indicator");
-            if (indicator && indicator.classList.contains("has-annotation")) {
-              indicator.classList.remove("has-annotation");
-            }
-          }
-        }
-      }
-    });
-    textarea.addEventListener("mousedown", (e) => {
-      e.stopPropagation();
-    });
-    textarea.addEventListener("click", (e) => {
-      e.stopPropagation();
-    });
-  }
-  /**
-   * 保存批注
-   */
-  // private async save(editorEl: HTMLElement, unitId: string, text: string): Promise<void> {
-  //   const trimmedText = text.trim();
-  //   const originalContent = this.callbacks.getAnnotationContent(unitId) || '';
-  //   const hasChanged = trimmedText !== originalContent;
-  //   if (hasChanged) {
-  //     await this.callbacks.onSave(unitId, trimmedText);
-  //   }
-  //   const card = editorEl.closest('.compact-card, .grid-card') as HTMLElement;
-  //   editorEl.remove();
-  //   this.activeEditors.delete(unitId);
-  //   if (trimmedText && card) {
-  //     const content = card.querySelector('.card-content, .grid-card-content') as HTMLElement;
-  //     if (content) {
-  //       // 通过回调获取最新的批注内容
-  //       const latestContent = this.callbacks.getAnnotationContent(unitId);
-  //       if (latestContent) {
-  //         // 需要传入完整的 ContentUnit，这里简化处理
-  //         this.recreatePreview(content, card, { id: unitId } as ContentUnit, latestContent);
-  //       }
-  //       // 更新 indicator
-  //       const indicator = card.querySelector('.card-indicator') as HTMLElement;
-  //       if (indicator && !indicator.classList.contains('has-annotation')) {
-  //         indicator.classList.add('has-annotation');
-  //       }
-  //     }
-  //   } else if (!trimmedText && card) {
-  //     const indicator = card.querySelector('.card-indicator') as HTMLElement;
-  //     if (indicator && indicator.classList.contains('has-annotation')) {
-  //       indicator.classList.remove('has-annotation');
-  //     }
-  //   }
-  // }
-  /**
-   * 重新创建批注预览
-   */
-  recreatePreview(contentEl, cardEl, unit, annotationText) {
-    const existingPreview = contentEl.querySelector(".annotation-preview, .grid-annotation");
-    if (existingPreview) {
-      existingPreview.remove();
-    }
-    const isGridCard = cardEl.classList.contains("grid-card");
-    const annEl = document.createElement("div");
-    annEl.className = isGridCard ? "grid-annotation" : "annotation-preview";
-    if (isGridCard) {
-      annEl.setText(`\u{1F4AC} ${annotationText}`);
-    } else {
-      const displayText2 = annotationText.length > 60 ? annotationText.substring(0, 60) + "..." : annotationText;
-      annEl.textContent = `\u{1F4AC} ${displayText2}`;
-    }
-    annEl.addEventListener("click", (e) => {
-      e.stopPropagation();
-      this.toggle(cardEl, unit);
-    });
-    annEl.addEventListener("keydown", (e) => {
-      if (e.key === "Tab") {
-        e.preventDefault();
-        e.stopPropagation();
-        this.toggle(cardEl, unit);
-      }
-    });
-    const noteText = contentEl.querySelector(".note-text, .grid-note-text");
-    if (noteText) {
-      noteText.insertAdjacentElement("afterend", annEl);
-    } else {
-      contentEl.appendChild(annEl);
-    }
-    annEl.setAttribute("tabindex", "0");
-    annEl.focus();
-  }
-  /**
-   * 关闭所有活动的编辑器
-   */
-  closeAll() {
-    this.activeEditors.forEach((editor) => {
-      editor.remove();
-    });
-    this.activeEditors.clear();
-  }
-};
-
-// src/ui/service/sideOverviewService.ts
-var import_obsidian3 = require("obsidian");
-var sideOverviewService = class {
-  constructor(plugin, state) {
-    this.plugin = plugin;
-    this.state = state;
-  }
-  /**
-   * 跳转到笔记的源文件位置
-   */
-  async jumpToSource(unit, app) {
-    const lang = this.plugin.settings.language;
-    const file = app.vault.getAbstractFileByPath(unit.source.file);
-    if (!(file instanceof import_obsidian3.TFile)) {
-      new import_obsidian3.Notice(t("service.fileNotExist", lang));
-      return;
-    }
-    this.state.shouldRestoreScroll = true;
-    const leaf = app.workspace.getLeaf(false);
-    await leaf.openFile(file);
-    setTimeout(() => {
-      const view = app.workspace.getActiveViewOfType(import_obsidian3.MarkdownView);
-      if (view) {
-        const editor = view.editor;
-        if (editor) {
-          const line = unit.source.position.line;
-          const lineCount = editor.lineCount();
-          const validLine = Math.min(line, lineCount - 1);
-          editor.setCursor({ line: validLine, ch: 0 });
-          editor.scrollIntoView(
-            { from: { line: validLine, ch: 0 }, to: { line: validLine, ch: 0 } },
-            true
-          );
-          setTimeout(() => {
-            var _a;
-            try {
-              const lineLength = ((_a = editor.getLine(validLine)) == null ? void 0 : _a.length) || 0;
-              editor.setSelection(
-                { line: validLine, ch: 0 },
-                { line: validLine, ch: lineLength }
-              );
-            } catch (e) {
-              console.error("Selection error:", e);
-            }
-          }, 100);
-        }
-      }
-    }, 200);
-  }
-  /**
-   * 保存或删除批注
-   */
-  async saveAnnotation(unitId, content) {
-    const lang = this.plugin.settings.language;
-    const trimmedText = content.trim();
-    const annotation = this.plugin.annotationManager.getContentAnnotation(unitId);
-    if (trimmedText) {
-      if (annotation) {
-        await this.plugin.annotationManager.updateAnnotation(annotation.id, {
-          content: trimmedText
-        });
-      } else {
-        await this.plugin.annotationManager.addContentAnnotation(unitId, trimmedText);
-      }
-    } else if (annotation) {
-      await this.plugin.annotationManager.deleteAnnotation(annotation.id);
-      new import_obsidian3.Notice(t("service.annotationDeleted", lang));
-    }
-  }
-  /**
-   * AI 快速生成闪卡
-   */
-  async quickGenerateFlashcard(unit) {
-    const lang = this.plugin.settings.language;
-    try {
-      const creator = new QuickFlashcardCreator(this.plugin);
-      await creator.createSmartCard(unit);
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      new import_obsidian3.Notice(t("service.flashcardGenerated", lang));
-    } catch (error) {
-      new import_obsidian3.Notice(t("service.generateFailed", lang));
-      console.error(error);
-    }
-  }
-  /**
-   * 批量删除笔记
-   */
-  async batchDeleteNotes(unitIds) {
-    let success = 0;
-    let failed = 0;
-    for (const unitId of unitIds) {
-      try {
-        const unit = this.plugin.dataManager.getContentUnit(unitId);
-        if (unit) {
-          if (unit.flashcardIds.length > 0) {
-            for (const cardId of unit.flashcardIds) {
-              await this.plugin.flashcardManager.deleteCard(cardId);
-            }
-          }
-        }
-        await this.plugin.dataManager.deleteContentUnit(unitId);
-        success++;
-      } catch (error) {
-        console.error("Error deleting note:", error);
-        failed++;
-      }
-    }
-    return { success, failed };
-  }
-  /**
-   * 批量删除闪卡
-   */
-  async batchDeleteFlashcards(cardIds) {
-    let success = 0;
-    let failed = 0;
-    for (const cardId of cardIds) {
-      try {
-        await this.plugin.flashcardManager.deleteCard(cardId);
-        success++;
-      } catch (error) {
-        console.error("Error deleting flashcard:", error);
-        failed++;
-      }
-    }
-    return { success, failed };
-  }
-  /**
-   * 获取批注内容
-   */
-  getAnnotationContent(unitId) {
-    const ann = this.plugin.annotationManager.getContentAnnotation(unitId);
-    return ann == null ? void 0 : ann.content;
-  }
-  /**
-   * 跳转到闪卡的源文件
-   */
-  async jumpToFlashcardSource(cardId, app) {
-    const lang = this.plugin.settings.language;
-    const card = this.plugin.flashcardManager.getFlashcard(cardId);
-    if (!card) {
-      new import_obsidian3.Notice(t("service.flashcardNotFound", lang));
-      return;
-    }
-    const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
-    if (unit) {
-      await this.jumpToSource(unit, app);
-    } else {
-      const file = app.vault.getAbstractFileByPath(card.sourceFile);
-      if (file instanceof import_obsidian3.TFile) {
-        await app.workspace.getLeaf(false).openFile(file);
-        new import_obsidian3.Notice(t("service.sourceFileOpened", lang));
-      } else {
-        new import_obsidian3.Notice(t("service.noteNotFound", lang));
-      }
-    }
-  }
-  /**
-   * 激活统计视图
-   */
-  activateStatsView() {
-    void this.plugin.activateStats();
-  }
-};
-
-// src/ui/components/modals/ManualFlashcardModal.ts
-var import_obsidian4 = require("obsidian");
-init_setCssProps();
-var ManualFlashcardModal = class extends import_obsidian4.Modal {
-  constructor(app, plugin, unit, type) {
-    super(app);
-    this.question = "";
-    this.answer = "";
-    this.plugin = plugin;
-    this.unit = unit;
-    this.type = type;
-    if (type === "qa") {
-      this.question = unit.type === "QA" ? unit.content : unit.content;
-      this.answer = unit.type === "QA" && unit.answer ? unit.answer : "";
-    } else {
-      this.question = unit.fullContext || unit.content;
-      this.answer = unit.content;
-    }
-  }
-  onOpen() {
-    const { contentEl } = this;
-    const lang = this.plugin.settings.language;
-    contentEl.empty();
-    contentEl.addClass("manual-flashcard-modal");
-    contentEl.createEl("h2", {
-      text: t(this.type === "qa" ? "manualCard.title.qa" : "manualCard.title.cloze", lang)
-    });
-    contentEl.createEl("p", {
-      text: t(this.type === "qa" ? "manualCard.description.qa" : "manualCard.description.cloze", lang),
-      cls: "modal-description"
-    });
-    new import_obsidian4.Setting(contentEl).setName(t(this.type === "qa" ? "manualCard.front.qa" : "manualCard.front.cloze", lang)).setDesc(t(this.type === "qa" ? "manualCard.front.desc.qa" : "manualCard.front.desc.cloze", lang)).addTextArea((text) => {
-      text.setValue(this.question).setPlaceholder(t(this.type === "qa" ? "manualCard.front.placeholder.qa" : "manualCard.front.placeholder.cloze", lang)).onChange((value) => this.question = value);
-      text.inputEl.rows = 4;
-      setCssProps(text.inputEl, { width: "100%" });
-    });
-    new import_obsidian4.Setting(contentEl).setName(t(this.type === "qa" ? "manualCard.back.qa" : "manualCard.back.cloze", lang)).setDesc(t(this.type === "qa" ? "manualCard.back.desc.qa" : "manualCard.back.desc.cloze", lang)).addTextArea((text) => {
-      text.setValue(this.answer).setPlaceholder(t(this.type === "qa" ? "manualCard.back.placeholder.qa" : "manualCard.back.placeholder.cloze", lang)).onChange((value) => this.answer = value);
-      text.inputEl.rows = 3;
-      setCssProps(text.inputEl, { width: "100%" });
-    });
-    const buttonContainer = contentEl.createDiv({ cls: "modal-button-container" });
-    new import_obsidian4.Setting(buttonContainer).addButton(
-      (btn) => btn.setButtonText(t("manualCard.cancel", lang)).onClick(() => this.close())
-    ).addButton(
-      (btn) => btn.setButtonText(t("manualCard.create", lang)).setCta().onClick(async () => await this.createFlashcard())
-    );
-  }
-  async createFlashcard() {
-    const lang = this.plugin.settings.language;
-    if (!this.question.trim()) {
-      new import_obsidian4.Notice(t("manualCard.error.emptyFront", lang));
-      return;
-    }
-    if (!this.answer.trim()) {
-      new import_obsidian4.Notice(t("manualCard.error.emptyBack", lang));
-      return;
-    }
-    try {
-      await this.plugin.flashcardManager.createFlashcardFromUnit(
-        this.unit,
-        {
-          customQuestion: this.question.trim(),
-          customAnswer: this.answer.trim(),
-          cardType: this.type
-        }
-      );
-      new import_obsidian4.Notice(t(this.type === "qa" ? "manualCard.success.qa" : "manualCard.success.cloze", lang));
-      this.close();
-      this.refreshOverviewView();
-    } catch (error) {
-      new import_obsidian4.Notice(t("manualCard.createFailed", lang));
-      console.error("Error creating flashcard:", error);
-    }
-  }
-  refreshOverviewView() {
-    var _a, _b;
-    const view = ((_a = this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR_OVERVIEW)[0]) == null ? void 0 : _a.view) || ((_b = this.app.workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW)[0]) == null ? void 0 : _b.view);
-    if (view && "refresh" in view && typeof view.refresh === "function") {
-      view.refresh();
-    }
-  }
-  onClose() {
-    const { contentEl } = this;
-    contentEl.empty();
-  }
-};
-
-// src/ui/components/modals/EditFlashcardModal.ts
-var import_obsidian5 = require("obsidian");
-init_setCssProps();
-var EditFlashcardModal = class extends import_obsidian5.Modal {
-  constructor(app, plugin, card) {
-    super(app);
-    this.plugin = plugin;
-    this.card = card;
-    this.front = card.front;
-    this.back = Array.isArray(card.back) ? card.back.join(", ") : card.back;
-  }
-  onOpen() {
-    var _a;
-    const { contentEl } = this;
-    const lang = this.plugin.settings.language;
-    contentEl.empty();
-    contentEl.addClass("edit-flashcard-modal");
-    contentEl.createEl("h2", {
-      text: t("editCard.title", lang)
-    });
-    contentEl.createEl("p", {
-      text: t(this.card.type === "qa" ? "editCard.description.qa" : "editCard.description.cloze", lang),
-      cls: "modal-description"
-    });
-    const infoDiv = contentEl.createDiv({ cls: "card-info" });
-    const box = infoDiv.createDiv({ cls: "card-info-box" });
-    const lines = box.createDiv({ cls: "card-info-lines" });
-    const fileName = (_a = this.card.sourceFile.split("/").pop()) != null ? _a : this.card.sourceFile;
-    lines.appendText(`${t("editCard.info.file", lang)}: ${fileName}`);
-    lines.createEl("br");
-    lines.appendText(`${t("editCard.info.deck", lang)}: ${this.card.deck}`);
-    lines.createEl("br");
-    lines.appendText(
-      `${t("editCard.info.reviews", lang)}: ${this.card.stats.totalReviews}${t("editCard.info.correct", lang)}: ${this.card.stats.correctCount}\u6B21`
-    );
-    new import_obsidian5.Setting(contentEl).setName(t(this.card.type === "qa" ? "editCard.front.qa" : "editCard.front.cloze", lang)).setDesc(t("editCard.front.desc", lang)).addTextArea((text) => {
-      text.setValue(this.front).onChange((value) => this.front = value);
-      text.inputEl.rows = 4;
-      setCssProps(text.inputEl, { width: "100%" });
-    });
-    new import_obsidian5.Setting(contentEl).setName(t(this.card.type === "qa" ? "editCard.back.qa" : "editCard.back.cloze", lang)).setDesc(t(this.card.type === "qa" ? "editCard.back.desc.qa" : "editCard.back.desc.cloze", lang)).addTextArea((text) => {
-      text.setValue(this.back).onChange((value) => this.back = value);
-      text.inputEl.rows = 3;
-      setCssProps(text.inputEl, { width: "100%" });
-    });
-    const buttonContainer = contentEl.createDiv({ cls: "modal-button-container" });
-    new import_obsidian5.Setting(buttonContainer).addButton(
-      (btn) => btn.setButtonText(t("editCard.cancel", lang)).onClick(() => this.close())
-    ).addButton(
-      (btn) => btn.setButtonText(t("editCard.save", lang)).setCta().onClick(async () => await this.saveFlashcard())
-    );
-  }
-  async saveFlashcard() {
-    const lang = this.plugin.settings.language;
-    if (!this.front.trim()) {
-      new import_obsidian5.Notice(t("editCard.error.emptyFront", lang));
-      return;
-    }
-    if (!this.back.trim()) {
-      new import_obsidian5.Notice(t("editCard.error.emptyBack", lang));
-      return;
-    }
-    try {
-      this.card.front = this.front.trim();
-      if (this.card.type === "cloze") {
-        this.card.back = this.back.split(",").map((s) => s.trim()).filter((s) => s);
-      } else {
-        this.card.back = this.back.trim();
-      }
-      this.card.metadata.updatedAt = Date.now();
-      await this.plugin.flashcardManager.updateCard(this.card);
-      new import_obsidian5.Notice(t("editCard.success", lang));
-      this.close();
-      this.refreshOverviewView();
-    } catch (error) {
-      new import_obsidian5.Notice(t("editCard.saveFailed", lang));
-      console.error("Error updating flashcard:", error);
-    }
-  }
-  refreshOverviewView() {
-    var _a, _b;
-    const view = ((_a = this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR_OVERVIEW)[0]) == null ? void 0 : _a.view) || ((_b = this.app.workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW)[0]) == null ? void 0 : _b.view);
-    if (view && "refresh" in view && typeof view.refresh === "function") {
-      view.refresh();
-    }
-  }
-  onClose() {
-    const { contentEl } = this;
-    contentEl.empty();
-  }
-};
-
-// src/ui/components/ContextMenuBuilder.ts
-var import_obsidian6 = require("obsidian");
-var ContextMenuBuilder = class {
-  /**
-   * 构建内容单元的右键菜单
-   */
-  static buildContentUnitMenu(unit, callbacks, language = "en") {
-    const menu = new import_obsidian6.Menu();
-    menu.addItem(
-      (item) => item.setTitle(t("contextMenu.jumpToSource")).setIcon("arrow-up-right").onClick(() => callbacks.onJumpToSource(unit))
-    );
-    menu.addItem(
-      (item) => item.setTitle(t("contextMenu.editAnnotation")).setIcon("message-square").onClick(() => callbacks.onToggleAnnotation(unit))
-    );
-    menu.addSeparator();
-    if (unit.flashcardIds.length > 0) {
-      menu.addItem(
-        (item) => item.setTitle(t("contextMenu.editFlashcard")).setIcon("pencil").onClick(() => callbacks.onEditFlashcard(unit))
-      );
-    }
-    menu.addItem(
-      (item) => item.setTitle(t("contextMenu.generateFlashcard")).setIcon("zap").onClick(() => callbacks.onQuickGenerate(unit))
-    );
-    menu.addItem(
-      (item) => item.setTitle(t("contextMenu.createQA")).setIcon("plus").onClick(() => callbacks.onCreateQA(unit))
-    );
-    menu.addItem(
-      (item) => item.setTitle(t("contextMenu.createCloze")).setIcon("plus").onClick(() => callbacks.onCreateCloze(unit))
-    );
-    menu.addSeparator();
-    menu.addItem(
-      (item) => item.setTitle(t("contextMenu.viewStats")).setIcon("bar-chart").onClick(() => callbacks.onViewStats())
-    );
-    menu.addSeparator();
-    menu.addItem(
-      (item) => item.setTitle(t("contextMenu.deleteNote")).setIcon("trash").onClick(() => callbacks.onDelete(unit))
-    );
-    return menu;
-  }
-  /**
-   * 构建闪卡的右键菜单
-   */
-  static buildFlashcardMenu(card, callbacks, language = "en") {
-    const menu = new import_obsidian6.Menu();
-    menu.addItem(
-      (item) => item.setTitle(t("contextMenu.jumpToSource")).setIcon("arrow-up-right").onClick(() => callbacks.onJumpToSource(card))
-    );
-    menu.addItem(
-      (item) => item.setTitle(t("contextMenu.editCard")).setIcon("pencil").onClick(() => callbacks.onEdit(card))
-    );
-    menu.addSeparator();
-    menu.addItem(
-      (item) => item.setTitle(t("contextMenu.viewStats")).setIcon("bar-chart").onClick(() => callbacks.onViewStats(card))
-    );
-    menu.addSeparator();
-    menu.addItem(
-      (item) => item.setTitle(t("contextMenu.deleteCard")).setIcon("trash").onClick(() => callbacks.onDelete(card))
-    );
-    return menu;
-  }
-  /**
-   * 格式化闪卡统计信息
-   */
-  static formatFlashcardStats(card, language = "en") {
-    var _a;
-    const locale = language === "zh-CN" ? "zh-CN" : "en-US";
-    const createdDate = new Date(card.metadata.createdAt).toLocaleString(locale);
-    const lastReview = card.stats.lastReview ? new Date(card.stats.lastReview).toLocaleString(locale) : t("stats.lastReview.never");
-    const nextReview = new Date(card.scheduling.due).toLocaleString(locale);
-    const accuracy = card.stats.totalReviews > 0 ? (card.stats.correctCount / card.stats.totalReviews * 100).toFixed(1) : "0";
-    const separator = t("stats.separator");
-    return `${t("stats.title")}
-${separator}
-${t("stats.file")}: ${card.sourceFile.split("/").pop()}
-${t("stats.type")}: ${t(card.type === "qa" ? "stats.type.qa" : "stats.type.cloze")}
-${t("stats.deck")}: ${card.deck}
-${t("stats.tags")}: ${((_a = card.tags) == null ? void 0 : _a.length) > 0 ? card.tags.join(", ") : t("stats.tags.none")}
-${separator}
-${t("stats.reviewCount")}: ${card.stats.totalReviews} ${t("stats.times")}
-${t("stats.correctCount")}: ${card.stats.correctCount} ${t("stats.times")}
-${t("stats.accuracy")}: ${accuracy}%
-${t("stats.averageTime")}: ${card.stats.averageTime.toFixed(1)}${t("stats.seconds")}
-${t("stats.difficulty")}: ${(card.stats.difficulty * 100).toFixed(0)}%
-${separator}
-${t("stats.createdAt")}: ${createdDate}
-${t("stats.lastReview")}: ${lastReview}
-${t("stats.nextReview")}: ${nextReview}
-${t("stats.interval")}: ${card.scheduling.interval}${t("stats.days")}
-${t("stats.ease")}: ${card.scheduling.ease.toFixed(2)}`;
-  }
-};
-
-// src/ui/components/modals/BatchCreateModal.ts
-var import_obsidian7 = require("obsidian");
-var BatchCreateModal = class extends import_obsidian7.Modal {
-  constructor(app, plugin, quickCreator, units, onComplete) {
-    super(app);
-    this.plugin = plugin;
-    this.quickCreator = quickCreator;
-    this.units = units;
-    this.onComplete = onComplete;
-  }
-  onOpen() {
-    const { contentEl } = this;
-    const lang = this.plugin.settings.language;
-    contentEl.createEl("h2", { text: t("batchCreate.title", lang) });
-    contentEl.createEl("p", {
-      text: t("batchCreate.description", lang, { count: this.units.length })
-    });
-    const typeContainer = contentEl.createDiv({ cls: "type-select-container" });
-    typeContainer.createEl("h3", { text: t("batchCreate.cardType", lang) });
-    let selectedType = "smart";
-    const types = [
-      {
-        value: "smart",
-        label: t("batchCreate.smartType", lang),
-        desc: t("batchCreate.smartType.desc", lang)
-      },
-      {
-        value: "qa",
-        label: t("batchCreate.qaType", lang),
-        desc: t("batchCreate.qaType.desc", lang)
-      },
-      {
-        value: "cloze",
-        label: t("batchCreate.clozeType", lang),
-        desc: t("batchCreate.clozeType.desc", lang)
-      }
-    ];
-    types.forEach((type) => {
-      const option = typeContainer.createDiv({ cls: "type-option" });
-      const radio = option.createEl("input", {
-        type: "radio",
-        value: type.value,
-        attr: { name: "card-type" }
-      });
-      if (type.value === "smart")
-        radio.checked = true;
-      const label = option.createDiv({ cls: "type-label" });
-      label.createEl("strong", { text: type.label });
-      label.createEl("div", { text: type.desc, cls: "type-desc" });
-      option.addEventListener("click", () => {
-        radio.checked = true;
-        selectedType = type.value;
-      });
-    });
-    const buttonContainer = contentEl.createDiv({ cls: "modal-button-container" });
-    const cancelBtn = buttonContainer.createEl("button", {
-      text: t("batchCreate.cancel", lang)
-    });
-    cancelBtn.addEventListener("click", () => this.close());
-    const createBtn = buttonContainer.createEl("button", {
-      text: t("batchCreate.createButton", lang, { count: this.units.length }),
-      cls: "mod-cta"
-    });
-    createBtn.addEventListener("click", async () => {
-      await this.batchCreate(selectedType);
-    });
-    this.addStyles();
-  }
-  async batchCreate(type) {
-    const { success, failed } = await this.quickCreator.createBatchCards(this.units, type);
-    const lang = this.plugin.settings.language;
-    new import_obsidian7.Notice(t("batchCreate.successNotice", lang, { success, failed }));
-    this.close();
-    this.onComplete();
-  }
-  addStyles() {
-  }
-  onClose() {
-    const { contentEl } = this;
-    contentEl.empty();
-  }
-};
-
-// src/ui/view/SidebarOverviewView.ts
-init_setCssProps();
-var VIEW_TYPE_SIDEBAR_OVERVIEW = "learning-system-sidebar-overview";
-var VIEW_TYPE_MAIN_OVERVIEW = "learning-system-main-overview";
-var SidebarOverviewView = class extends import_obsidian8.ItemView {
-  constructor(leaf, plugin, forceMainMode = false) {
-    super(leaf);
-    this.savingAnnotations = /* @__PURE__ */ new Set();
-    this.plugin = plugin;
-    this._forceMainMode = forceMainMode;
-    this.state = new ViewState(forceMainMode);
-    this.initializeComponents();
-    const activeFile = this.app.workspace.getActiveFile();
-    if (activeFile) {
-      this.state.selectedFile = activeFile.path;
-    }
-    this.setupResizeListener();
-  }
-  // ==================== 生命周期方法 ====================
-  getViewType() {
-    const forceMainMode = this._forceMainMode || false;
-    return forceMainMode ? VIEW_TYPE_MAIN_OVERVIEW : VIEW_TYPE_SIDEBAR_OVERVIEW;
-  }
-  getDisplayText() {
-    return "Learning overview";
-  }
-  getIcon() {
-    return "book-marked";
-  }
-  async onOpen() {
-    this.detectDisplayMode();
-    if (this.state.displayMode === "sidebar") {
-      const activeFile = this.app.workspace.getActiveFile();
-      if (activeFile) {
-        this.state.selectedFile = activeFile.path;
-      }
-    }
-    if (!this.state.forceMainMode) {
-      this.registerActiveLeafChange();
-    }
-    this.state.updateDueCount(this.plugin.flashcardManager);
-    this.render();
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  async onClose() {
-    if (this.state.searchDebounceTimer !== null) {
-      window.clearTimeout(this.state.searchDebounceTimer);
-    }
-    this.annotationEditor.closeAll();
-  }
-  // ==================== 初始化方法 ====================
-  initializeComponents() {
-    this.overviewService = new sideOverviewService(this.plugin, this.state);
-    this.toolbar = new Toolbar(this.state, {
-      onSearchChange: (query) => this.handleSearchChange(query),
-      onFilterChange: (mode) => this.handleFilterChange(mode),
-      onGroupChange: (mode) => this.handleGroupChange(mode),
-      onCheckReview: () => this.checkReviewReminder(),
-      checkFilterHasNotes: (mode) => this.checkFilterHasNotes(mode),
-      checkGroupHasNotes: (mode) => this.checkGroupHasNotes(mode)
-    }, this.plugin.settings.language);
-    const batchCallbacks = {
-      onSelectAll: () => this.handleSelectAll(),
-      onDeselectAll: () => this.handleDeselectAll(),
-      onBatchCreate: () => this.handleBatchCreate(),
-      onBatchDelete: () => this.handleBatchDelete(),
-      onCancel: () => this.handleBatchCancel()
-    };
-    this.batchActions = new BatchActions(this.state, batchCallbacks, this.toolbar, this.plugin.settings.language);
-    const cardCallbacks = {
-      onJumpToSource: (unit) => this.jumpToSource(unit),
-      onJumpToFlashcard: (card) => this.jumpToFlashcardSource(card),
-      onToggleAnnotation: (card, unit) => {
-        this.annotationEditor.toggle(card, unit);
-      },
-      onQuickFlashcard: (unit) => this.quickGenerateFlashcard(unit),
-      onShowContextMenu: (event, unit) => this.showContextMenu(event, unit),
-      onFlashcardContextMenu: (event, card) => this.showFlashcardContextMenu(event, card),
-      getAnnotationContent: (unitId) => {
-        const ann = this.plugin.annotationManager.getContentAnnotation(unitId);
-        return ann == null ? void 0 : ann.content;
-      },
-      getContentUnit: (unitId) => {
-        const allUnits = this.plugin.dataManager.getAllContentUnits();
-        const unit = this.plugin.dataManager.getContentUnit(unitId);
-        if (unit) {
-          return unit;
-        } else {
-          return void 0;
-        }
-      }
-    };
-    this.contentList = new ContentList(this.state, cardCallbacks);
-    const annotationCallbacks = {
-      onSave: async (unitId, content) => {
-        if (this.savingAnnotations.has(unitId)) {
-          return;
-        }
-        this.savingAnnotations.add(unitId);
-        try {
-          await this.saveAnnotation(unitId, content);
-          requestAnimationFrame(() => {
-            this.refresh();
-          });
-        } finally {
-          setTimeout(() => {
-            this.savingAnnotations.delete(unitId);
-          }, 100);
-        }
-      },
-      onCancel: (unitId) => {
-        this.savingAnnotations.delete(unitId);
-      },
-      getAnnotationContent: (unitId) => {
-        const ann = this.plugin.annotationManager.getContentAnnotation(unitId);
-        return ann == null ? void 0 : ann.content;
-      }
-    };
-    this.annotationEditor = new AnnotationEditor(annotationCallbacks);
-  }
-  setupResizeListener() {
-    let resizeTimer;
-    window.addEventListener("resize", () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(() => {
-        this.detectDisplayMode();
-        this.render();
-      }, 150);
-    });
-  }
-  registerActiveLeafChange() {
-    this.registerEvent(
-      this.app.workspace.on("active-leaf-change", () => {
-        const activeFile = this.app.workspace.getActiveFile();
-        if (activeFile && this.state.displayMode === "sidebar" && activeFile.path !== this.state.selectedFile) {
-          this.state.selectedFile = activeFile.path;
-          this.refresh();
-        }
-      })
-    );
-    this.registerEvent(
-      this.app.workspace.on("file-open", (file) => {
-        if (file && this.state.displayMode === "sidebar" && file.path !== this.state.selectedFile) {
-          this.state.selectedFile = file.path;
-          this.refresh();
-        }
-      })
-    );
-  }
-  // ==================== 显示模式检测 ====================
-  detectDisplayMode() {
-    if (this.state.forceMainMode) {
-      this.state.displayMode = "main";
-      return;
-    }
-    const leaf = this.leaf;
-    const parentSplit = leaf["parentSplit"];
-    const isLeftSidebar = (parentSplit == null ? void 0 : parentSplit["type"]) === "split" && this.app.workspace.leftSplit === parentSplit;
-    const isRightSidebar = (parentSplit == null ? void 0 : parentSplit["type"]) === "split" && this.app.workspace.rightSplit === parentSplit;
-    const width = this.containerEl.clientWidth;
-    const isNarrow = width < 500;
-    const isSidebar = isLeftSidebar || isRightSidebar || isNarrow;
-    this.state.displayMode = isSidebar ? "sidebar" : "main";
-  }
-  // ==================== 渲染方法 ====================
-  refresh() {
-    const hasActiveEditors = document.querySelector(".inline-annotation-editor") !== null;
-    if (hasActiveEditors) {
-      return;
-    }
-    if (this.state.isRendering) {
-      requestAnimationFrame(() => this.refresh());
-      return;
-    }
-    if (this.state.searchDebounceTimer !== null) {
-      window.clearTimeout(this.state.searchDebounceTimer);
-      this.state.searchDebounceTimer = null;
-    }
-    this.state.shouldRestoreScroll = true;
-    this.render();
-  }
-  render() {
-    if (this.state.isRendering)
-      return;
-    this.state.isRendering = true;
-    const container = this.containerEl.children[1];
-    if (this.state.displayMode === "sidebar") {
-      const contentList = container.querySelector(".sidebar-content-list");
-      if (contentList) {
-        this.state.savedScrollPosition = contentList.scrollTop;
-      }
-    }
-    container.empty();
-    container.addClass("learning-overview-container");
-    container.setAttribute("data-mode", this.state.displayMode);
-    if (this.state.displayMode === "sidebar") {
-      this.renderSidebarMode(container);
-    } else {
-      this.renderMainMode(container);
-    }
-    if (this.state.displayMode === "sidebar" && this.state.shouldRestoreScroll) {
-      const contentList = container.querySelector(".sidebar-content-list");
-      if (contentList) {
-        requestAnimationFrame(() => {
-          contentList.scrollTop = this.state.savedScrollPosition;
-        });
-      }
-    }
-    this.state.isRendering = false;
-  }
-  // src/ui/SidebarOverviewView.ts
-  renderSidebarMode(container) {
-    const toolbarEl = this.toolbar.renderSidebarToolbar(container);
-    let statsRow = toolbarEl.querySelector(".stats-row");
-    if (!statsRow) {
-      statsRow = toolbarEl.createDiv({ cls: "stats-row" });
-      statsRow.setAttribute("data-stats-container", "true");
-    }
-    const currentFileUnits = this.getFilteredUnits();
-    const items = this.state.viewType === "cards" ? this.getFilteredCardsForCurrentFile() : currentFileUnits;
-    const leftActions = statsRow.createDiv({ cls: "stats-left" });
-    this.batchActions.renderSelectAllButton(leftActions, items, "sidebar");
-    const centerActions = statsRow.createDiv({ cls: "stats-center" });
-    this.batchActions.renderActionButtons(centerActions, "sidebar");
-    const rightActions = statsRow.createDiv({ cls: "stats-right" });
-    this.batchActions.renderReviewCheckButton(rightActions, "sidebar");
-    const contentListEl = container.createDiv({ cls: "sidebar-content-list" });
-    this.contentList.renderCompactList(contentListEl, currentFileUnits);
-    this.insertReviewReminderAtTop(contentListEl);
-  }
-  renderMainMode(container) {
-    const layout = container.createDiv({ cls: "main-layout" });
-    const leftPanel = layout.createDiv({ cls: "left-panel" });
-    this.renderLeftPanel(leftPanel);
-    const rightPanel = layout.createDiv({ cls: "right-panel" });
-    this.renderRightPanel(rightPanel);
-  }
-  renderLeftPanel(container) {
-    this.toolbar.renderMainToolbar(container);
-    this.renderFixedEntries(container);
-    this.renderFileList(container);
-  }
-  renderRightPanel(container) {
-    if (this.state.viewType === "cards") {
-      this.renderFlashcardsView(container);
-      return;
-    }
-    if (!this.state.selectedFile) {
-      const units = this.getFilteredUnits();
-      const grouped = this.contentList.groupUnits(units);
-      if (grouped.length > 0) {
-        this.state.selectedFile = grouped[0].groupKey;
-      }
-    }
-    if (!this.state.selectedFile) {
-      this.renderEmptyRightPanel(container);
-      return;
-    }
-    const header = container.createDiv({ cls: "grid-header" });
-    header.createEl("h2", { text: this.state.selectedFile || "\u5185\u5BB9" });
-    const headerActions = header.createDiv({ cls: "header-actions" });
-    const visibleItems = this.getVisibleItems();
-    const items = visibleItems.units || [];
-    this.batchActions.renderActionButtons(headerActions, "header");
-    this.batchActions.renderSelectAllButton(headerActions, items, "header");
-    const gridContainer = container.createDiv({ cls: "content-grid" });
-    const filteredUnits = this.getFilteredUnitsForSelectedGroup();
-    this.contentList.renderContentGrid(gridContainer, filteredUnits);
-  }
-  renderFlashcardsView(container) {
-    const flashcards = this.plugin.flashcardManager.getAllFlashcards();
-    if (!this.state.selectedFile) {
-      const grouped = this.contentList.groupFlashcards(
-        flashcards,
-        (id) => this.plugin.dataManager.getContentUnit(id)
-      );
-      if (grouped.length > 0) {
-        this.state.selectedFile = grouped[0].groupKey;
-      }
-    }
-    if (!this.state.selectedFile) {
-      this.renderEmptyRightPanel(container);
-      return;
-    }
-    const header = container.createDiv({ cls: "grid-header" });
-    header.createEl("h2", { text: this.state.selectedFile || "\u95EA\u5361" });
-    const headerActions = header.createDiv({ cls: "header-actions" });
-    const visibleItems = this.getVisibleItems();
-    const items = visibleItems.cards || [];
-    this.batchActions.renderActionButtons(headerActions, "header");
-    this.batchActions.renderSelectAllButton(headerActions, items, "header");
-    const gridContainer = container.createDiv({ cls: "content-grid" });
-    const filteredCards = this.getFilteredCardsForSelectedGroup();
-    this.contentList.renderFlashcardsGrid(gridContainer, filteredCards);
-  }
-  renderFixedEntries(container) {
-    const entries = container.createDiv({ cls: "fixed-entries" });
-    const allNotesBtn = entries.createDiv({
-      cls: `entry-btn ${this.state.viewType === "notes" ? "active" : ""}`
-    });
-    allNotesBtn.appendText("\u{1F4DD} ");
-    allNotesBtn.createSpan({ text: "All notes" });
-    allNotesBtn.addEventListener("mousedown", (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      if (this.state.setViewType("notes")) {
-        this.render();
-      }
-    });
-    const cardListBtn = entries.createDiv({
-      cls: `entry-btn ${this.state.viewType === "cards" ? "active" : ""}`
-    });
-    cardListBtn.appendText("\u{1F0CF} ");
-    cardListBtn.createSpan({ text: "Card list" });
-    cardListBtn.addEventListener("mousedown", (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      if (this.state.setViewType("cards")) {
-        this.render();
-      }
-    });
-  }
-  renderFileList(container) {
-    container.createEl("h3", { text: this.t("fileList.title"), cls: "panel-title" });
-    const fileListContainer = container.createDiv({ cls: "file-list" });
-    this.renderFileListContent(fileListContainer);
-  }
-  renderFileListContent(container) {
-    container.empty();
-    let grouped;
-    if (this.state.viewType === "cards") {
-      const flashcards = this.plugin.flashcardManager.getAllFlashcards();
-      if (this.state.groupMode === "annotation") {
-        const annotatedCards = [];
-        const unannotatedCards = [];
-        flashcards.forEach((card) => {
-          const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
-          if (unit && unit.annotationId) {
-            annotatedCards.push(card);
-          } else {
-            unannotatedCards.push(card);
-          }
-        });
-        const fileGroups = /* @__PURE__ */ new Map();
-        annotatedCards.forEach((card) => {
-          const fileName = card.sourceFile;
-          if (!fileGroups.has(fileName)) {
-            fileGroups.set(fileName, []);
-          }
-          fileGroups.get(fileName).push(card);
-        });
-        grouped = [];
-        fileGroups.forEach((cards, fileName) => {
-          grouped.push({
-            groupKey: fileName,
-            count: cards.length
-          });
-        });
-        if (unannotatedCards.length > 0) {
-          grouped.push({
-            groupKey: "filter.unannotated",
-            count: unannotatedCards.length
-          });
-        }
-      } else {
-        const cardGroups = this.contentList.groupFlashcards(
-          flashcards,
-          (id) => this.plugin.dataManager.getContentUnit(id)
-        );
-        grouped = cardGroups.map((g) => ({
-          groupKey: g.groupKey,
-          count: g.cards.length
-        }));
-      }
-    } else {
-      const units = this.getFilteredUnits();
-      if (this.state.groupMode === "annotation") {
-        const annotatedUnits = units.filter((u) => u.annotationId);
-        const unannotatedUnits = units.filter((u) => !u.annotationId);
-        const fileGroups = /* @__PURE__ */ new Map();
-        annotatedUnits.forEach((unit) => {
-          const fileName = unit.source.file;
-          if (!fileGroups.has(fileName)) {
-            fileGroups.set(fileName, []);
-          }
-          fileGroups.get(fileName).push(unit);
-        });
-        grouped = [];
-        fileGroups.forEach((units2, fileName) => {
-          grouped.push({
-            groupKey: fileName,
-            count: units2.length
-          });
-        });
-        if (unannotatedUnits.length > 0) {
-          grouped.push({
-            groupKey: "filter.unannotated",
-            count: unannotatedUnits.length
-          });
-        }
-      } else {
-        const unitGroups = this.contentList.groupUnits(units);
-        grouped = unitGroups.map((g) => ({
-          groupKey: g.groupKey,
-          count: g.units.length
-        }));
-      }
-    }
-    if (grouped.length === 0) {
-      container.createDiv({ text: this.t("empty.noDocuments"), cls: "empty-hint" });
-      return;
-    }
-    if (!this.state.selectedFile && grouped.length > 0) {
-      this.state.selectedFile = grouped[0].groupKey;
-    }
-    grouped.forEach(({ groupKey, count }) => {
-      const fileItem = container.createDiv({
-        cls: `file-item ${this.state.selectedFile === groupKey ? "selected" : ""}`
-      });
-      const displayName = groupKey === "filter.unannotated" ? this.t("filter.unannotated") : groupKey;
-      fileItem.createSpan({ cls: "file-icon", text: this.getGroupIcon() });
-      fileItem.createSpan({ cls: "file-name", text: displayName });
-      fileItem.createSpan({ cls: "file-count", text: String(count) });
-      fileItem.addEventListener("mousedown", (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        if (this.state.selectedFile !== groupKey) {
-          this.annotationEditor.closeAll();
-          this.state.selectedFile = groupKey;
-          const allItems = container.querySelectorAll(".file-item");
-          allItems.forEach((item) => item.removeClass("selected"));
-          fileItem.addClass("selected");
-          this.refreshRightPanel();
-        }
-      });
-    });
-  }
-  renderEmptyRightPanel(container) {
-    const empty = container.createDiv({ cls: "empty-right-panel" });
-    empty.createDiv({ cls: "empty-icon", text: "\u{1F4ED}" });
-    empty.createDiv({ cls: "empty-text", text: this.t("empty.noContent") });
-  }
-  // ==================== 事件处理方法 ====================
-  handleSearchChange(query) {
-    this.state.setSearchQuery(query);
-    if (this.state.searchDebounceTimer !== null) {
-      window.clearTimeout(this.state.searchDebounceTimer);
-    }
-    this.state.searchDebounceTimer = window.setTimeout(() => {
-      const hasActiveEditors = document.querySelector(".inline-annotation-editor") !== null;
-      if (hasActiveEditors) {
-        return;
-      }
-      this.state.clearSelection();
-      this.refreshContentOnly();
-    }, 300);
-  }
-  // 添加新方法:只刷新内容列表
-  refreshContentOnly() {
-    const hasActiveEditors = document.querySelector(".inline-annotation-editor") !== null;
-    if (hasActiveEditors) {
-      return;
-    }
-    const container = this.containerEl.children[1];
-    if (this.state.displayMode === "sidebar") {
-      const contentList = container.querySelector(".sidebar-content-list");
-      if (contentList) {
-        const scrollPos = contentList.scrollTop;
-        const editingCards = /* @__PURE__ */ new Map();
-        contentList.querySelectorAll(".inline-annotation-editor").forEach((editor) => {
-          const card = editor.closest("[data-unit-id]");
-          if (card) {
-            const unitId = card.getAttribute("data-unit-id");
-            if (unitId) {
-              editingCards.set(unitId, editor.cloneNode(true));
-            }
-          }
-        });
-        contentList.empty();
-        const currentFileUnits = this.getFilteredUnits();
-        this.contentList.renderCompactList(contentList, currentFileUnits);
-        this.insertReviewReminderAtTop(contentList);
-        if (editingCards.size > 0) {
-          requestAnimationFrame(() => {
-            editingCards.forEach((editor, unitId) => {
-              const card = contentList.querySelector(`[data-unit-id="${unitId}"]`);
-              if (card) {
-                card.setAttribute("data-editing", "true");
-                const preview = card.querySelector(".annotation-preview");
-                if (preview) {
-                  preview.replaceWith(editor);
-                  const textarea = editor.querySelector("textarea");
-                  if (textarea) {
-                    this.annotationEditor["bindEditorEvents"](textarea, unitId);
-                    requestAnimationFrame(() => {
-                      textarea.focus();
-                    });
-                  }
-                }
-              }
-            });
-          });
-        }
-        contentList.scrollTop = scrollPos;
-      }
-    } else {
-      this.refreshRightPanel();
-      const fileListContainer = container.querySelector(".file-list");
-      if (fileListContainer) {
-        this.renderFileListContent(fileListContainer);
-      }
-    }
-  }
-  handleFilterChange(mode) {
-    if (this.state.setFilterMode(mode)) {
-      this.state.shouldRestoreScroll = false;
-      this.render();
-    }
-  }
-  handleGroupChange(mode) {
-    if (this.state.setGroupMode(mode)) {
-      this.render();
-    }
-  }
-  handleSelectAll() {
-    const visible = this.getVisibleItems();
-    if (this.state.viewType === "cards") {
-      const cards = visible.cards || [];
-      if (cards.length === 0) {
-        new import_obsidian8.Notice(this.t("notice.noSelection"));
-        return;
-      }
-      this.state.selectAllCards(cards);
-    } else {
-      const units = visible.units || [];
-      if (units.length === 0) {
-        new import_obsidian8.Notice(this.t("notice.noSelection"));
-        return;
-      }
-      this.state.selectAllUnits(units);
-    }
-    this.render();
-  }
-  handleDeselectAll() {
-    const visible = this.getVisibleItems();
-    if (this.state.viewType === "cards") {
-      this.state.deselectAllCards(visible.cards || []);
-    } else {
-      this.state.deselectAllUnits(visible.units || []);
-    }
-    this.render();
-  }
-  handleBatchCreate() {
-    if (this.state.selectedUnitIds.size === 0) {
-      new import_obsidian8.Notice(this.t("notice.noSelection"));
-      return;
-    }
-    void this.batchCreateFlashcards();
-  }
-  handleBatchDelete() {
-    if (this.state.getSelectedCount() === 0) {
-      new import_obsidian8.Notice(this.t("notice.noSelection"));
-      return;
-    }
-    if (this.state.viewType === "cards") {
-      void this.batchDeleteFlashcards();
-    } else {
-      void this.batchDeleteNotes();
-    }
-  }
-  handleBatchCancel() {
-    this.state.clearSelection();
-    this.render();
-  }
-  // ==================== 数据获取方法 ====================
-  getFilteredUnits() {
-    let units = this.plugin.dataManager.getAllContentUnits();
-    if (this.state.displayMode === "sidebar" && this.state.selectedFile) {
-      units = units.filter((unit) => unit.source.file === this.state.selectedFile);
-    }
-    if (this.state.searchQuery) {
-      const query = this.state.searchQuery.toLowerCase();
-      units = units.filter(
-        (unit) => unit.content.toLowerCase().includes(query) || unit.source.file.toLowerCase().includes(query) || unit.metadata.tags.some((tag) => tag.toLowerCase().includes(query))
-      );
-    }
-    if (this.state.filterMode === "annotated") {
-      units = units.filter((u) => u.annotationId);
-    } else if (this.state.filterMode === "flashcards") {
-      units = units.filter((u) => u.flashcardIds.length > 0);
-    }
-    return units;
-  }
-  getFilteredUnitsForSelectedGroup() {
-    const units = this.getFilteredUnits();
-    const selected = this.state.selectedFile;
-    if (!selected)
-      return [];
-    return units.filter((unit) => {
-      if (this.state.groupMode === "file") {
-        return unit.source.file === selected;
-      } else if (this.state.groupMode === "annotation") {
-        if (selected === "filter.unannotated") {
-          return !unit.annotationId;
-        } else {
-          return unit.source.file === selected && !!unit.annotationId;
-        }
-      } else if (this.state.groupMode === "tag") {
-        return unit.metadata.tags.includes(selected);
-      } else if (this.state.groupMode === "date") {
-        return this.formatDate(new Date(unit.metadata.createdAt)) === selected;
-      }
-      return false;
-    });
-  }
-  getFilteredCardsForSelectedGroup() {
-    const flashcards = this.plugin.flashcardManager.getAllFlashcards();
-    const selected = this.state.selectedFile;
-    if (!selected)
-      return [];
-    return flashcards.filter((card) => {
-      if (this.state.groupMode === "file") {
-        return card.sourceFile === this.state.selectedFile;
-      } else if (this.state.groupMode === "annotation") {
-        const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
-        if (selected === "filter.unannotated") {
-          return !unit || !unit.annotationId;
-        } else {
-          return card.sourceFile === selected && unit && !!unit.annotationId;
-        }
-      } else if (this.state.groupMode === "tag") {
-        const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
-        return unit && unit.metadata.tags.includes(selected) || card.tags && card.tags.includes(selected) || card.deck === this.state.selectedFile || this.state.selectedFile === "group.uncategorized" && (!card.tags || card.tags.length === 0) && !card.deck && (!unit || !unit.metadata.tags || unit.metadata.tags.length === 0);
-      } else if (this.state.groupMode === "date") {
-        return this.formatDate(new Date(card.metadata.createdAt)) === this.state.selectedFile;
-      }
-      return false;
-    });
-  }
-  getVisibleItems() {
-    if (this.state.viewType === "cards") {
-      const cards = this.getFilteredCardsForSelectedGroup();
-      return { cards };
-    } else {
-      const units = this.state.displayMode === "sidebar" ? this.getFilteredUnits() : this.getFilteredUnitsForSelectedGroup();
-      return { units };
-    }
-  }
-  // ==================== 业务逻辑方法 ====================
-  async jumpToSource(unit) {
-    await this.overviewService.jumpToSource(unit, this.app);
-  }
-  async jumpToFlashcardSource(card) {
-    try {
-      const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
-      if (unit) {
-        await this.jumpToSource(unit);
-        return;
-      }
-      const file = this.app.vault.getAbstractFileByPath(card.sourceFile);
-      if (!(file instanceof import_obsidian8.TFile)) {
-        new import_obsidian8.Notice(this.t("notice.fileNotFound"));
-        return;
-      }
-      const leaf = this.app.workspace.getLeaf(false);
-      await leaf.openFile(file);
-      if (card.anchorLink) {
-        const blockIdMatch = card.anchorLink.match(/\^\S+/);
-        if (blockIdMatch) {
-          const blockId = blockIdMatch[0].substring(1);
-          await new Promise((resolve) => setTimeout(resolve, 100));
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian8.MarkdownView);
-          if (view && view.editor) {
-            const editor = view.editor;
-            const content = editor.getValue();
-            const lines = content.split("\n");
-            for (let i = 0; i < lines.length; i++) {
-              if (lines[i].includes(`^${blockId}`)) {
-                editor.setCursor({ line: i, ch: 0 });
-                editor.scrollIntoView({ from: { line: i, ch: 0 }, to: { line: i, ch: 0 } }, true);
-                break;
-              }
-            }
-          }
-        }
-      }
-      new import_obsidian8.Notice(this.t("notice.jumpedToSource"));
-    } catch (error) {
-      console.error("Error jumping to flashcard source:", error);
-      new import_obsidian8.Notice(this.t("notice.jumpFailed"));
-    }
-  }
-  async saveAnnotation(unitId, content) {
-    await this.overviewService.saveAnnotation(unitId, content);
-  }
-  async quickGenerateFlashcard(unit) {
-    await this.overviewService.quickGenerateFlashcard(unit);
-    requestAnimationFrame(() => {
-      this.refresh();
-    });
-  }
-  // ==================== 右键菜单 ====================
-  showContextMenu(event, unit) {
-    const callbacks = {
-      onJumpToSource: (unit2) => this.jumpToSource(unit2),
-      onToggleAnnotation: (unit2) => {
-        const cardEl = this.containerEl.querySelector(
-          `[data-unit-id="${unit2.id}"]`
-        );
-        if (cardEl) {
-          this.annotationEditor.toggle(cardEl, unit2);
-        }
-      },
-      onEditFlashcard: (unit2) => {
-        const cardId = unit2.flashcardIds[0];
-        const card = this.plugin.flashcardManager.getFlashcard(cardId);
-        if (card) {
-          new EditFlashcardModal(this.app, this.plugin, card).open();
-        } else {
-          new import_obsidian8.Notice(this.t("notice.flashcardNotFound"));
-        }
-      },
-      onQuickGenerate: (unit2) => this.quickGenerateFlashcard(unit2),
-      onCreateQA: (unit2) => {
-        new ManualFlashcardModal(this.app, this.plugin, unit2, "qa").open();
-      },
-      onCreateCloze: (unit2) => {
-        new ManualFlashcardModal(this.app, this.plugin, unit2, "cloze").open();
-      },
-      onViewStats: () => {
-        void this.plugin.activateStats();
-      },
-      onDelete: async (unit2) => {
-        await this.plugin.dataManager.deleteContentUnit(unit2.id, "user-deleted");
-        new import_obsidian8.Notice(this.t("notice.movedToTrash"));
-        this.refresh();
-      }
-    };
-    const menu = ContextMenuBuilder.buildContentUnitMenu(unit, callbacks, this.plugin.settings.language);
-    menu.showAtMouseEvent(event);
-  }
-  openManualFlashcardModal(unit, type) {
-    new ManualFlashcardModal(this.app, this.plugin, unit, type).open();
-  }
-  showFlashcardContextMenu(event, card) {
-    const callbacks = {
-      onJumpToSource: async (card2) => {
-        await this.overviewService.jumpToFlashcardSource(card2.id, this.app);
-      },
-      onEdit: (card2) => {
-        new EditFlashcardModal(this.app, this.plugin, card2).open();
-      },
-      onViewStats: (card2) => {
-        const statsText = ContextMenuBuilder.formatFlashcardStats(card2);
-        new import_obsidian8.Notice(statsText, 1e4);
-      },
-      onDelete: async (card2) => {
-        await this.plugin.flashcardManager.deleteCard(card2.id, "user-deleted");
-        new import_obsidian8.Notice(this.t("notice.movedToTrash"));
-        this.refresh();
-      }
-    };
-    const menu = ContextMenuBuilder.buildFlashcardMenu(card, callbacks, this.plugin.settings.language);
-    menu.showAtMouseEvent(event);
-  }
-  openEditFlashcardModal(card) {
-    new EditFlashcardModal(this.app, this.plugin, card).open();
-  }
-  // ==================== 批量操作 ====================
-  async batchCreateFlashcards() {
-    const units = Array.from(this.state.selectedUnitIds).map((id) => this.plugin.dataManager.getContentUnit(id)).filter((u) => u !== void 0 && u.flashcardIds.length === 0);
-    if (units.length === 0) {
-      new import_obsidian8.Notice(this.t("notice.alreadyHasFlashcards"));
-      return;
-    }
-    const quickCreator = new QuickFlashcardCreator(this.plugin);
-    const modal = new BatchCreateModal(
-      this.app,
-      this.plugin,
-      quickCreator,
-      units,
-      () => {
-        this.state.clearSelection();
-        this.refresh();
-      }
-    );
-    modal.open();
-  }
-  async batchDeleteNotes() {
-    const stats = this.state.getDeleteStats(this.plugin);
-    let confirmMsg = this.t("confirm.deleteItems");
-    const details = [];
-    if (stats.notes > 0) {
-      details.push(this.t("confirm.notesCount", { count: stats.notes }));
-    }
-    if (stats.cards > 0) {
-      details.push(this.t("confirm.cardsCount", { count: stats.cards }));
-    }
-    if (details.length > 0) {
-      confirmMsg += "\n\n" + details.join("\n");
-    }
-    if (!confirm(confirmMsg)) {
-      return;
-    }
-    const { success, failed } = await this.overviewService.batchDeleteNotes(
-      this.state.selectedUnitIds
-    );
-    this.state.clearSelection();
-    new import_obsidian8.Notice(this.t("notice.batchDeleted", { success, failed: failed > 0 ? failed : 0 }));
-    this.refresh();
-  }
-  async batchDeleteFlashcards() {
-    const stats = this.state.getDeleteStats(this.plugin);
-    const confirmMsg = this.t("confirm.deleteFlashcards", { count: stats.cards });
-    if (!confirm(confirmMsg)) {
-      return;
-    }
-    let success = 0;
-    let failed = 0;
-    for (const cardId of this.state.selectedCardIds) {
-      try {
-        await this.plugin.flashcardManager.deleteCard(cardId);
-        success++;
-      } catch (error) {
-        console.error("Error deleting flashcard:", error);
-        failed++;
-      }
-    }
-    this.state.clearSelection();
-    new import_obsidian8.Notice(this.t("notice.batchDeleted", { success, failed: failed > 0 ? failed : 0 }));
-    this.refresh();
-  }
-  // ==================== 工具方法 ====================
-  refreshRightPanel() {
-    const container = this.containerEl.children[1];
-    const rightPanel = container.querySelector(".right-panel");
-    if (rightPanel) {
-      rightPanel.empty();
-      this.renderRightPanel(rightPanel);
-    }
-  }
-  getFilteredCardsForCurrentFile() {
-    if (this.state.displayMode !== "sidebar" || !this.state.selectedFile) {
-      return [];
-    }
-    const flashcards = this.plugin.flashcardManager.getAllFlashcards();
-    return flashcards.filter((card) => card.sourceFile === this.state.selectedFile);
-  }
-  checkFilterHasNotes(mode) {
-    if (this.state.displayMode !== "sidebar" || !this.state.selectedFile) {
-      return true;
-    }
-    const units = this.plugin.dataManager.getAllContentUnits().filter((u) => u.source.file === this.state.selectedFile);
-    if (mode === "all") {
-      return units.length > 0;
-    } else if (mode === "annotated") {
-      return units.some((u) => u.annotationId);
-    } else if (mode === "flashcards") {
-      return units.some((u) => u.flashcardIds.length > 0);
-    }
-    return true;
-  }
-  checkGroupHasNotes(mode) {
-    if (this.state.displayMode !== "sidebar" || !this.state.selectedFile) {
-      return true;
-    }
-    const units = this.plugin.dataManager.getAllContentUnits().filter((u) => u.source.file === this.state.selectedFile);
-    if (units.length === 0)
-      return false;
-    if (mode === "file") {
-      return true;
-    } else if (mode === "tag") {
-      return units.some((u) => u.metadata.tags.length > 0);
-    } else if (mode === "date") {
-      return true;
-    } else if (mode === "annotation") {
-      return units.some((u) => u.annotationId);
-    }
-    return true;
-  }
-  getGroupIcon() {
-    switch (this.state.groupMode) {
-      case "file":
-        return "\u{1F4C4}";
-      case "annotation":
-        return "\u{1F4AC}";
-      case "tag":
-        return "\u{1F3F7}\uFE0F";
-      case "date":
-        return "\u{1F4C5}";
-      default:
-        return "\u{1F4C1}";
-    }
-  }
-  formatDate(date) {
-    if (!date)
-      return "";
-    return date.toLocaleDateString("zh-CN", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit"
-    });
-  }
-  // ==================== 复习检查 ====================
-  // 每日提醒复习
-  // 手动触发复习提醒检查
-  checkReviewReminder() {
-    const isDismissed = this.isReminderDismissedToday();
-    if (isDismissed) {
-      localStorage.removeItem("learning-system-reminder-dismissed");
-    } else {
-      this.markReminderDismissed();
-    }
-    this.refresh();
-    requestAnimationFrame(() => {
-      const contentList = this.containerEl.querySelector(".sidebar-content-list");
-      if (contentList) {
-        contentList.scrollTop = 0;
-      }
-    });
-  }
-  startReview() {
-    void this.plugin.activateReview();
-  }
-  markReminderDismissed() {
-    const today = new Date().toDateString();
-    localStorage.setItem("learning-system-reminder-dismissed", today);
-  }
-  isReminderDismissedToday() {
-    const today = new Date().toDateString();
-    const dismissed = localStorage.getItem("learning-system-reminder-dismissed");
-    return dismissed === today;
-  }
-  insertReviewReminderAtTop(container) {
-    if (this.isReminderDismissedToday())
-      return;
-    const dueCount = this.plugin.flashcardManager.getDueCards().length;
-    if (dueCount === 0)
-      return;
-    const banner = this.createReviewBanner(dueCount);
-    container.insertBefore(banner, container.firstChild);
-    const divider2 = document.createElement("div");
-    divider2.className = "review-divider";
-    setCssProps(divider2, {
-      width: "100%",
-      height: "1px",
-      "background-color": "var(--background-modifier-border)",
-      margin: "12px 0"
-    });
-    if (banner.nextSibling) {
-      container.insertBefore(divider2, banner.nextSibling);
-    } else {
-      container.appendChild(divider2);
-    }
-  }
-  createReviewBanner(count) {
-    const banner = document.createElement("div");
-    banner.className = "content-list-review-reminder";
-    const dueCards = this.plugin.flashcardManager.getDueCards();
-    const actualDueCount = dueCards.length;
-    const allCards = this.plugin.flashcardManager.getAllFlashcards();
-    const today = new Date().setHours(0, 0, 0, 0);
-    const todayDueCardIds = new Set(
-      allCards.filter((card) => {
-        const dueDate = new Date(card.scheduling.due).setHours(0, 0, 0, 0);
-        return dueDate <= today;
-      }).map((card) => card.id)
-    );
-    const reviewedToday = allCards.filter((card) => {
-      if (!card.stats.lastReview)
-        return false;
-      const lastReviewDate = new Date(card.stats.lastReview).setHours(0, 0, 0, 0);
-      return lastReviewDate === today && todayDueCardIds.has(card.id);
-    }).length;
-    const totalToday = reviewedToday + actualDueCount;
-    const progressPercent = totalToday > 0 ? Math.round(reviewedToday / totalToday * 100) : 0;
-    const mostUrgent = dueCards.length > 0 ? dueCards.reduce(
-      (earliest, card) => card.scheduling.due < earliest ? card.scheduling.due : earliest,
-      Date.now()
-    ) : Date.now();
-    const hoursSinceDue = Math.floor((Date.now() - mostUrgent) / (1e3 * 60 * 60));
-    const delayText = this.getDelayText(hoursSinceDue);
-    const streakDays = this.getReviewStreak();
-    const header = banner.createDiv({ cls: "reminder-header" });
-    const headerText = header.createDiv({ cls: "reminder-text" });
-    headerText.createEl("strong", {
-      text: this.t("review.todayProgress", { reviewed: reviewedToday, total: totalToday })
-    });
-    const stats = banner.createDiv({ cls: "reminder-stats" });
-    stats.createDiv({ cls: "stat-item delay-warning", text: delayText });
-    if (streakDays > 0) {
-      stats.createDiv({
-        cls: "stat-item streak-info",
-        text: this.t("review.streak", { days: streakDays })
-      });
-    }
-    const actions = banner.createDiv({ cls: "reminder-actions" });
-    actions.createEl("button", { cls: "reminder-btn primary", text: this.t("review.start") });
-    setCssProps(banner, { "font-size": "0.85em" });
-    setCssProps(actions, { display: "flex", "justify-content": "center" });
-    banner.querySelector(".primary").addEventListener("mousedown", (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      this.startReview();
-      banner.remove();
-      this.markReminderDismissed();
-    });
-    return banner;
-  }
-  // 新增辅助方法 1: 获取延后提示文本
-  getDelayText(hoursSinceDue) {
-    if (hoursSinceDue < 1) {
-      return this.t("review.justDue");
-    } else if (hoursSinceDue < 6) {
-      return this.t("review.delayedHoursShort", { hours: hoursSinceDue });
-    } else if (hoursSinceDue < 24) {
-      return this.t("review.urgentHours", { hours: hoursSinceDue });
-    } else {
-      const days = Math.floor(hoursSinceDue / 24);
-      return this.t("review.urgentDays", { days });
-    }
-  }
-  // 新增辅助方法 2: 获取连续复习天数
-  getReviewStreak() {
-    const allCards = this.plugin.flashcardManager.getAllFlashcards();
-    const reviewDates = /* @__PURE__ */ new Set();
-    allCards.forEach((card) => {
-      if (card.stats.lastReview) {
-        const dateStr = new Date(card.stats.lastReview).toLocaleDateString("zh-CN");
-        reviewDates.add(dateStr);
-      }
-    });
-    let streak = 0;
-    let checkDate = new Date();
-    while (streak < 365) {
-      const dateStr = checkDate.toLocaleDateString("zh-CN");
-      if (reviewDates.has(dateStr)) {
-        streak++;
-        checkDate.setDate(checkDate.getDate() - 1);
-      } else {
-        break;
-      }
-    }
-    return streak;
-  }
-  t(key, params) {
-    return t(key, this.plugin.settings.language, params);
-  }
-};
-
-// src/ui/view/ReviewView.ts
-var import_obsidian11 = require("obsidian");
-
-// src/core/CardScheduler.ts
-var CardScheduler = class {
-  /**
-   * 计算下次复习时间（基于 SM-2 算法）
-   */
-  schedule(card, ease, timeSpent, userAnswer) {
-    const oldScheduling = { ...card.scheduling };
-    const newScheduling = { ...card.scheduling };
-    const now = Date.now();
-    card.stats.totalReviews++;
-    card.stats.lastReview = now;
-    const totalTime = card.stats.averageTime * (card.stats.totalReviews - 1) + timeSpent;
-    card.stats.averageTime = totalTime / card.stats.totalReviews;
-    switch (ease) {
-      case "again":
-        this.scheduleAgain(newScheduling, card.stats);
-        break;
-      case "hard":
-        this.scheduleHard(newScheduling, card.stats);
-        break;
-      case "good":
-        this.scheduleGood(newScheduling, card.stats);
-        break;
-      case "easy":
-        this.scheduleEasy(newScheduling, card.stats);
-        break;
-    }
-    card.scheduling = newScheduling;
-    card.metadata.updatedAt = now;
-    const reviewLog = {
-      flashcardId: card.id,
-      timestamp: now,
-      response: {
-        userAnswer,
-        timeSpent,
-        ease
-      },
-      schedulingChange: {
-        oldInterval: oldScheduling.interval,
-        newInterval: newScheduling.interval,
-        oldEase: oldScheduling.ease,
-        newEase: newScheduling.ease
-      }
-    };
-    return { updatedCard: card, reviewLog };
-  }
-  /**
-   * Again - 完全忘记
-   */
-  scheduleAgain(scheduling, stats) {
-    scheduling.interval = 1;
-    scheduling.ease = Math.max(1.3, scheduling.ease - 0.2);
-    scheduling.due = Date.now() + scheduling.interval * 60 * 1e3;
-    scheduling.lapses++;
-    scheduling.reps++;
-    if (scheduling.state === "new") {
-      scheduling.state = "learning";
-    } else {
-      scheduling.state = "relearning";
-    }
-    stats.difficulty = Math.min(1, stats.difficulty + 0.1);
-  }
-  /**
-   * Hard - 困难
-   */
-  scheduleHard(scheduling, stats) {
-    scheduling.reps++;
-    if (scheduling.state === "new" || scheduling.state === "learning") {
-      scheduling.interval = 10;
-      scheduling.due = Date.now() + 10 * 60 * 1e3;
-      scheduling.state = "learning";
-    } else {
-      scheduling.interval = Math.max(1, scheduling.interval * 1.2);
-      scheduling.ease = Math.max(1.3, scheduling.ease - 0.15);
-      scheduling.due = Date.now() + scheduling.interval * 24 * 60 * 60 * 1e3;
-      scheduling.state = "review";
-    }
-    stats.difficulty = Math.min(1, stats.difficulty + 0.05);
-    stats.correctCount += 0.5;
-  }
-  /**
-   * Good - 正确
-   */
-  scheduleGood(scheduling, stats) {
-    scheduling.reps++;
-    stats.correctCount++;
-    if (scheduling.state === "new") {
-      scheduling.interval = 1;
-      scheduling.due = Date.now() + 1 * 24 * 60 * 60 * 1e3;
-      scheduling.state = "learning";
-    } else if (scheduling.state === "learning") {
-      if (scheduling.interval < 1) {
-        scheduling.interval = 1;
-      } else {
-        scheduling.interval = 3;
-      }
-      scheduling.due = Date.now() + scheduling.interval * 24 * 60 * 60 * 1e3;
-      scheduling.state = "review";
-    } else {
-      scheduling.interval = scheduling.interval * scheduling.ease;
-      scheduling.due = Date.now() + scheduling.interval * 24 * 60 * 60 * 1e3;
-      scheduling.ease = scheduling.ease + 0.1;
-      scheduling.state = "review";
-    }
-    stats.difficulty = Math.max(0, stats.difficulty - 0.05);
-  }
-  /**
-   * Easy - 非常简单
-   */
-  scheduleEasy(scheduling, stats) {
-    scheduling.reps++;
-    stats.correctCount++;
-    if (scheduling.state === "new") {
-      scheduling.interval = 4;
-      scheduling.due = Date.now() + 4 * 24 * 60 * 60 * 1e3;
-      scheduling.state = "review";
-    } else if (scheduling.state === "learning") {
-      scheduling.interval = 7;
-      scheduling.due = Date.now() + 7 * 24 * 60 * 60 * 1e3;
-      scheduling.state = "review";
-    } else {
-      scheduling.interval = scheduling.interval * (scheduling.ease + 0.3);
-      scheduling.due = Date.now() + scheduling.interval * 24 * 60 * 60 * 1e3;
-      scheduling.ease = scheduling.ease + 0.15;
-      scheduling.state = "review";
-    }
-    stats.difficulty = Math.max(0, stats.difficulty - 0.1);
-  }
-  /**
-   * 评估用户答案（用于输入答案模式）
-   */
-  /**
-   * 评估用户答案(用于输入答案模式)
-   */
-  evaluateAnswer(correctAnswer, userAnswer) {
-    if (Array.isArray(correctAnswer) && Array.isArray(userAnswer)) {
-      let correctCount = 0;
-      const total = correctAnswer.length;
-      for (let i = 0; i < total; i++) {
-        const evaluation = this.evaluateSingleAnswer(
-          correctAnswer[i],
-          userAnswer[i] || ""
-        );
-        if (evaluation.similarity >= 0.9)
-          correctCount++;
-        else if (evaluation.similarity >= 0.6)
-          correctCount += 0.5;
-      }
-      const overallSimilarity = correctCount / total;
-      if (overallSimilarity >= 0.9) {
-        return { correctness: "correct", similarity: overallSimilarity };
-      } else if (overallSimilarity >= 0.6) {
-        return { correctness: "partial", similarity: overallSimilarity };
-      } else {
-        return { correctness: "wrong", similarity: overallSimilarity };
-      }
-    }
-    return this.evaluateSingleAnswer(
-      correctAnswer,
-      userAnswer
-    );
-  }
-  /**
-   * 🆕 评估单个答案(支持 "/" 分隔的多个正确答案)
-   */
-  evaluateSingleAnswer(correctAnswer, userAnswer) {
-    const correct = this.normalize(correctAnswer);
-    const user = this.normalize(userAnswer);
-    if (user.length === 0) {
-      return { correctness: "wrong", similarity: 0 };
-    }
-    if (correctAnswer.includes("/") || correctAnswer.includes("|")) {
-      const alternatives = correctAnswer.split(/[/|]/).map((alt) => this.normalize(alt.trim())).filter((alt) => alt.length > 0);
-      let maxSimilarity = 0;
-      for (const alternative of alternatives) {
-        if (user === alternative) {
-          return { correctness: "correct", similarity: 1 };
-        }
-        const similarity2 = this.calculateSimilarity(alternative, user);
-        maxSimilarity = Math.max(maxSimilarity, similarity2);
-      }
-      if (maxSimilarity >= 0.9) {
-        return { correctness: "correct", similarity: maxSimilarity };
-      } else if (maxSimilarity >= 0.7) {
-        return { correctness: "partial", similarity: maxSimilarity };
-      } else {
-        return { correctness: "wrong", similarity: maxSimilarity };
-      }
-    }
-    const lengthRatio = Math.min(user.length, correct.length) / Math.max(user.length, correct.length);
-    if (lengthRatio < 0.3 && user.length < 6) {
-      return { correctness: "wrong", similarity: 0 };
-    }
-    const similarity = this.calculateSimilarity(correct, user);
-    const coverage = this.calculateTokenCoverage(correct, user);
-    if (similarity >= 0.9) {
-      return { correctness: "correct", similarity };
-    }
-    if (similarity < 0.7 && coverage >= 0.6) {
-      return { correctness: "partial", similarity };
-    }
-    if (similarity >= 0.7) {
-      return { correctness: "partial", similarity };
-    }
-    return { correctness: "wrong", similarity };
-  }
-  /**
-   * 标准化文本
-   */
-  normalize(text) {
-    return text.toLowerCase().trim().replace(/\s+/g, " ").replace(/\n+/g, " ").replace(/[，。！？、；：""''（）《》【】.,!?;:"'()[\]{}]/g, "");
-  }
-  /**
-   * 计算相似度（Levenshtein 距离）
-   */
-  calculateSimilarity(str1, str2) {
-    if (str1 === str2)
-      return 1;
-    if (str1.length === 0 || str2.length === 0)
-      return 0;
-    const matrix = [];
-    for (let i = 0; i <= str2.length; i++) {
-      matrix[i] = [i];
-    }
-    for (let j2 = 0; j2 <= str1.length; j2++) {
-      matrix[0][j2] = j2;
-    }
-    for (let i = 1; i <= str2.length; i++) {
-      for (let j2 = 1; j2 <= str1.length; j2++) {
-        if (str2.charAt(i - 1) === str1.charAt(j2 - 1)) {
-          matrix[i][j2] = matrix[i - 1][j2 - 1];
-        } else {
-          matrix[i][j2] = Math.min(
-            matrix[i - 1][j2 - 1] + 1,
-            // 替换
-            matrix[i][j2 - 1] + 1,
-            // 插入
-            matrix[i - 1][j2] + 1
-            // 删除
-          );
-        }
-      }
-    }
-    const distance = matrix[str2.length][str1.length];
-    const maxLength = Math.max(str1.length, str2.length);
-    return 1 - distance / maxLength;
-  }
-  /**
-   * 计算关键词覆盖率
-   * 用户答案中命中了多少标准答案的词
-   */
-  calculateTokenCoverage(correct, user) {
-    const correctTokens = correct.split(" ").filter((t2) => t2.length > 1);
-    const userTokens = new Set(user.split(" "));
-    if (correctTokens.length === 0)
-      return 0;
-    let hit = 0;
-    for (const token of correctTokens) {
-      if (userTokens.has(token))
-        hit++;
-    }
-    return hit / correctTokens.length;
-  }
-  /**
-   * 根据相似度建议难度
-   */
-  suggestEase(similarity) {
-    if (similarity >= 0.8)
-      return "easy";
-    if (similarity >= 0.7)
-      return "good";
-    if (similarity >= 0.5)
-      return "hard";
-    return "again";
-  }
-};
-
-// src/ui/components/modals/FlashcardEditModal.ts
-var import_obsidian9 = require("obsidian");
-var FlashcardEditModal = class extends import_obsidian9.Modal {
-  constructor(app, plugin, card, onSubmit) {
-    super(app);
-    this.plugin = plugin;
-    this.card = card;
-    this.onSubmit = onSubmit;
-  }
-  onOpen() {
-    var _a, _b;
-    const { contentEl } = this;
-    const lang = this.plugin.settings.language;
-    contentEl.empty();
-    contentEl.createEl("h3", { text: t("flashcardEdit.title", lang) });
-    contentEl.createEl("label", { text: t("flashcardEdit.question", lang) });
-    const questionInput = contentEl.createEl("textarea");
-    questionInput.value = this.card.front;
-    contentEl.createEl("label", { text: t("flashcardEdit.answer", lang) });
-    const answerInput = contentEl.createEl("textarea");
-    answerInput.value = this.card.type === "cloze" ? (_b = (_a = this.card.back) == null ? void 0 : _a[0]) != null ? _b : "" : this.card.back;
-    const saveBtn = contentEl.createEl("button", { text: t("flashcardEdit.save", lang) });
-    saveBtn.onclick = () => {
-      this.onSubmit(
-        questionInput.value.trim(),
-        answerInput.value.trim()
-      );
-      this.close();
-    };
-  }
-  onClose() {
-    this.contentEl.empty();
-  }
-};
-
-// src/ui/stats/reviewStateManager.ts
-var ReviewStateManager = class {
-  // ✅ 新增缓存
-  constructor() {
-    this.answerCache = /* @__PURE__ */ new Map();
-    this.state = this.createInitialState();
-  }
-  createInitialState() {
-    return {
-      showAnswer: false,
-      startTime: 0,
-      userAnswers: [],
-      userAnswer: ""
-    };
-  }
-  getState() {
-    return this.state;
-  }
-  reset() {
-    this.state = this.createInitialState();
-  }
-  // ✅ 保存当前卡片的答案到缓存
-  saveAnswerToCache(cardId) {
-    this.answerCache.set(cardId, {
-      userAnswer: this.state.userAnswer,
-      userAnswers: [...this.state.userAnswers]
-    });
-  }
-  // ✅ 从缓存恢复答案
-  restoreAnswerFromCache(cardId) {
-    const cached = this.answerCache.get(cardId);
-    if (cached) {
-      this.state.userAnswer = cached.userAnswer;
-      this.state.userAnswers = [...cached.userAnswers];
-    } else {
-    }
-  }
-  // ✅ 清除指定卡片的缓存
-  clearCache(cardId) {
-    this.answerCache.delete(cardId);
-  }
-  updateForNewCard(newCard, isSameCard, direction) {
-    if (!isSameCard) {
-      if (direction === "prev") {
-        this.restoreAnswerFromCache(newCard.id);
-      } else {
-        this.state.showAnswer = false;
-        this.state.userAnswer = "";
-        if (newCard.type === "cloze" && newCard.cloze) {
-          this.state.userAnswers = new Array(
-            newCard.cloze.deletions.length
-          ).fill("");
-        } else {
-          this.state.userAnswers = [];
-        }
-      }
-    }
-    this.state.startTime = Date.now();
-  }
-  setShowAnswer(show) {
-    this.state.showAnswer = show;
-  }
-  setUserAnswer(answer) {
-    this.state.userAnswer = answer;
-  }
-  setUserAnswers(answers) {
-    this.state.userAnswers = answers;
-  }
-  updateUserAnswerAtIndex(index, value) {
-    this.state.userAnswers[index] = value;
-  }
-  ensureUserAnswersLength(length) {
-    if (this.state.userAnswers.length < length) {
-      this.state.userAnswers = new Array(length).fill("");
-    }
-  }
-  getTimeSpent() {
-    return (Date.now() - this.state.startTime) / 1e3;
-  }
-};
-
-// src/ui/components/TableRenderer.ts
-var TableRenderer = class {
-  // 检测是否为表格格式
-  static isTableFormat(text) {
-    const lines = text.trim().split("\n");
-    if (lines.length < 2)
-      return false;
-    const hasSeparator = lines.some((line) => /^\|?[\s-:|]+\|?$/.test(line.trim()));
-    const pipeLines = lines.filter((line) => line.includes("|")).length;
-    return hasSeparator || pipeLines >= lines.length * 0.7;
-  }
-  // 渲染表格
-  static renderTable(markdown, showAnswer = false) {
-    const container = document.createElement("div");
-    if (!(markdown == null ? void 0 : markdown.trim())) {
-      container.textContent = "(empty table)";
-      return container;
-    }
-    const lines = markdown.trim().split("\n");
-    if (lines.length < 2) {
-      container.textContent = markdown;
-      return container;
-    }
-    const table = container.createEl("table", {
-      cls: "learning-system-table flashcard-review-table"
-    });
-    const separatorIndex = this.findSeparatorIndex(lines);
-    if (separatorIndex > 0) {
-      this.renderTableWithHeader(table, lines, separatorIndex, showAnswer);
-    } else {
-      this.renderTableWithoutHeader(table, lines, showAnswer);
-    }
-    return container;
-  }
-  // 查找分隔符位置
-  static findSeparatorIndex(lines) {
-    return lines.findIndex((line) => {
-      const cleaned = line.replace(/[\s|]/g, "");
-      return cleaned.length >= 3 && /^[-:]+$/.test(cleaned);
-    });
-  }
-  // 渲染带表头的表格
-  static renderTableWithHeader(table, lines, separatorIndex, showAnswer) {
-    const headerCells = this.parseCells(lines[separatorIndex - 1]);
-    const thead = table.createEl("thead");
-    const headerRow = thead.createEl("tr");
-    headerCells.forEach((cell) => {
-      const th = headerRow.createEl("th");
-      this.appendCellInto(th, cell, showAnswer);
-    });
-    const tbody = table.createEl("tbody");
-    for (let i = separatorIndex + 1; i < lines.length; i++) {
-      this.renderTableRow(tbody, lines[i], showAnswer);
-    }
-  }
-  // 渲染无表头的表格
-  static renderTableWithoutHeader(table, lines, showAnswer) {
-    const tbody = table.createEl("tbody");
-    lines.forEach((line) => this.renderTableRow(tbody, line, showAnswer));
-  }
-  // 渲染单行
-  static renderTableRow(tbody, line, showAnswer) {
-    if (!line.trim())
-      return;
-    const cells = this.parseCells(line);
-    if (cells.length === 0)
-      return;
-    const row = tbody.createEl("tr");
-    cells.forEach((cell) => {
-      const td = row.createEl("td");
-      this.appendCellInto(td, cell, showAnswer);
-    });
-  }
-  // 解析单元格
-  static parseCells(line) {
-    let trimmed = line.trim();
-    if (trimmed.startsWith("|"))
-      trimmed = trimmed.slice(1);
-    if (trimmed.endsWith("|"))
-      trimmed = trimmed.slice(0, -1);
-    const cells = trimmed.split("|").map((c) => c.trim()).filter((c) => c.length > 0);
-    return cells;
-  }
-  // 把单元格内容渲染进目标元素(用 DOM API,不走 innerHTML,避免 XSS)。
-  // - 不含 == 标记 → 纯文本;
-  // - 含 ==X==:showAnswer 时渲染 .revealed 文本,否则渲染 .cloze-blank 空 span。
-  static appendCellInto(el, cell, showAnswer) {
-    if (!cell.includes("==")) {
-      el.setText(cell);
-      return;
-    }
-    const re2 = /==([^=]+)==/g;
-    let last = 0;
-    let m;
-    while ((m = re2.exec(cell)) !== null) {
-      if (m.index > last)
-        el.appendText(cell.slice(last, m.index));
-      if (showAnswer) {
-        el.createSpan({ cls: "revealed", text: m[1] });
-      } else {
-        el.createSpan({ cls: "cloze-blank" });
-      }
-      last = m.index + m[0].length;
-    }
-    if (last < cell.length)
-      el.appendText(cell.slice(last));
-  }
-  // 渲染带用户答案的表格（完形填空用）
-  static renderTableWithUserAnswers(originalMarkdown, deletions, userAnswers, scheduler) {
-    const container = document.createElement("div");
-    const lines = originalMarkdown.trim().split("\n");
-    if (lines.length < 2) {
-      container.textContent = originalMarkdown;
-      return container;
-    }
-    const table = container.createEl("table", {
-      cls: "learning-system-table flashcard-review-table user-answer-table"
-    });
-    const separatorIndex = this.findSeparatorIndex(lines);
-    let deletionIndex = 0;
-    if (separatorIndex > 0) {
-      const headerCells = this.parseCells(lines[separatorIndex - 1]);
-      const thead = table.createEl("thead");
-      const headerRow = thead.createEl("tr");
-      let headerIndex = 0;
-      headerCells.forEach((cell) => {
-        const th = headerRow.createEl("th");
-        const correctnessClass = this.appendUserAnswerCellInto(
-          th,
-          cell,
-          deletions,
-          userAnswers,
-          deletionIndex,
-          scheduler
-        );
-        if (correctnessClass)
-          th.classList.add(correctnessClass);
-        if (cell.includes("==")) {
-          deletionIndex++;
-        }
-      });
-    }
-    const tbody = table.createEl("tbody");
-    const startRow = separatorIndex > 0 ? separatorIndex + 1 : 0;
-    for (let i = startRow; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line.trim())
-        continue;
-      const cells = this.parseCells(line);
-      if (cells.length === 0)
-        continue;
-      const row = tbody.createEl("tr");
-      cells.forEach((cell) => {
-        const td = row.createEl("td");
-        const correctnessClass = this.appendUserAnswerCellInto(
-          td,
-          cell,
-          deletions,
-          userAnswers,
-          deletionIndex,
-          scheduler
-        );
-        if (correctnessClass)
-          td.classList.add(correctnessClass);
-        if (cell.includes("==")) {
-          deletionIndex++;
-        }
-      });
-    }
-    return container;
-  }
-  /**
-   * 把带用户答案的单元格内容渲染进目标元素(DOM API,无 innerHTML),
-   * 返回单元格整体正确性 class(供调用方加到 td/th 上)。
-   */
-  static appendUserAnswerCellInto(el, cell, deletions, userAnswers, deletionIndex, scheduler) {
-    if (!cell.includes("==")) {
-      el.setText(cell);
-      return null;
-    }
-    if (deletionIndex >= deletions.length) {
-      const re3 = /==([^=]+)==/g;
-      let last2 = 0;
-      let m2;
-      while ((m2 = re3.exec(cell)) !== null) {
-        if (m2.index > last2)
-          el.appendText(cell.slice(last2, m2.index));
-        el.createSpan({ cls: "cloze-blank" });
-        last2 = m2.index + m2[0].length;
-      }
-      if (last2 < cell.length)
-        el.appendText(cell.slice(last2));
-      return null;
-    }
-    const correctAnswer = deletions[deletionIndex].answer;
-    const userAnswer = userAnswers[deletionIndex] || "";
-    const evaluation = scheduler.evaluateAnswer(correctAnswer, userAnswer);
-    const displayText2 = userAnswer || "(empty)";
-    const correctnessClass = evaluation.correctness;
-    const re2 = /==([^=]+)==/g;
-    let last = 0;
-    let m;
-    while ((m = re2.exec(cell)) !== null) {
-      if (m.index > last)
-        el.appendText(cell.slice(last, m.index));
-      el.createSpan({ cls: `user-answer-cell ${correctnessClass}`, text: displayText2 });
-      last = m.index + m[0].length;
-    }
-    if (last < cell.length)
-      el.appendText(cell.slice(last));
-    return `cell-${correctnessClass}`;
-  }
-};
-
-// src/ui/components/reviewCardRender.ts
-init_setCssProps();
-function appendTextLines(el, text) {
-  const lines = text.split("\n");
-  lines.forEach((line, i) => {
-    el.appendText(line);
-    if (i < lines.length - 1)
-      el.createEl("br");
-  });
-}
-function appendClozeLines(el, text, clozeClass) {
-  const lines = text.split("\n");
-  lines.forEach((line, lineIdx) => {
-    let last = 0;
-    const re2 = /==([^=]+)==/g;
-    let m;
-    while ((m = re2.exec(line)) !== null) {
-      if (m.index > last)
-        el.appendText(line.slice(last, m.index));
-      el.createSpan({ cls: clozeClass, text: m[1] });
-      last = m.index + m[0].length;
-    }
-    if (last < line.length)
-      el.appendText(line.slice(last));
-    if (lineIdx < lines.length - 1)
-      el.createEl("br");
-  });
-}
-function appendClozeBlanksWithUnderline(el, text) {
-  const lines = text.split("\n");
-  lines.forEach((line, lineIdx) => {
-    let last = 0;
-    const re2 = /==([^=]+)==/g;
-    let m;
-    while ((m = re2.exec(line)) !== null) {
-      if (m.index > last)
-        el.appendText(line.slice(last, m.index));
-      const span = el.createSpan({ cls: "cloze-underline-blank" });
-      const widthEm = Math.max(m[1].length * 0.6, 3);
-      setCssProps(span, { "min-width": `${widthEm}em` });
-      span.appendText("\xA0");
-      last = m.index + m[0].length;
-    }
-    if (last < line.length)
-      el.appendText(line.slice(last));
-    if (lineIdx < lines.length - 1)
-      el.createEl("br");
-  });
-}
-var ClozeCardRenderer = class {
-  normalizeOriginal(card) {
-    var _a;
-    const original = ((_a = card.cloze) == null ? void 0 : _a.original) || "";
-    if (/==[^=]+==/.test(original))
-      return original;
-    const answer = Array.isArray(card.back) ? card.back[0] : card.back;
-    if (answer && original.includes(answer)) {
-      return original.replace(answer, `==${answer}==`);
-    }
-    return original;
-  }
-  renderQuestion(container, card, state, updateState) {
-    var _a, _b;
-    const questionText = container.createDiv({ cls: "question-text" });
-    const isTable = TableRenderer.isTableFormat(card.front);
-    if (isTable) {
-      const tableEl = this.renderTableWithInputPreview(
-        card.front,
-        ((_a = card.cloze) == null ? void 0 : _a.deletions) || [],
-        state
-      );
-      questionText.appendChild(tableEl);
-      questionText.classList.add("table-question");
-    } else {
-      const sourceText = ((_b = card.cloze) == null ? void 0 : _b.original) || card.front;
-      appendClozeBlanksWithUnderline(questionText, sourceText);
-    }
-    if (card.cloze) {
-      const normalizedOriginal = this.normalizeOriginal(card);
-      const actualBlankCount = (normalizedOriginal.match(/==[^=]+==/g) || []).length;
-      const blankCount = Math.max(actualBlankCount, card.cloze.deletions.length);
-      if (state.userAnswers.length !== blankCount) {
-        state.userAnswers = new Array(blankCount).fill("");
-      }
-      const inputArea = container.createDiv({ cls: "cloze-input-area" });
-      inputArea.createEl("h4", { text: `Fill in the blanks (${blankCount} total):` });
-      const hint = inputArea.createEl("div", { cls: "cloze-input-hint" });
-      const singleInputGroup = inputArea.createDiv({ cls: "single-input-group" });
-      const initialValue = state.userAnswers.filter((a) => a).join(" | ");
-      const input = singleInputGroup.createEl("input", {
-        type: "text",
-        placeholder: `Enter all ${blankCount} answers separated by |, comma, or spaces...`,
-        cls: "cloze-single-input",
-        value: initialValue
-      });
-      const updatePreview = (inputValue) => {
-        var _a2;
-        const parts = this.parseMultipleAnswers(inputValue, blankCount);
-        updateState.setUserAnswers(parts);
-        if (isTable) {
-          questionText.empty();
-          const updatedTableEl = this.renderTableWithInputPreview(
-            card.front,
-            ((_a2 = card.cloze) == null ? void 0 : _a2.deletions) || [],
-            state
-          );
-          questionText.appendChild(updatedTableEl);
-        }
-      };
-      input.addEventListener("input", (e) => {
-        const inputValue = e.target.value;
-        updatePreview(inputValue);
-      });
-      updatePreview(initialValue);
-      setTimeout(() => input.focus(), 50);
-    }
-  }
-  // ← 添加新方法:渲染带输入预览的表格
-  renderTableWithInputPreview(markdown, deletions, state) {
-    const container = document.createElement("div");
-    if (!(markdown == null ? void 0 : markdown.trim())) {
-      container.textContent = "(empty table)";
-      return container;
-    }
-    const lines = markdown.trim().split("\n");
-    if (lines.length < 2) {
-      container.textContent = markdown;
-      return container;
-    }
-    const table = container.createEl("table", {
-      cls: "learning-system-table flashcard-review-table preview-table"
-    });
-    const separatorIndex = lines.findIndex((line) => {
-      const cleaned = line.replace(/[\s|]/g, "");
-      return cleaned.length >= 3 && /^[-:]+$/.test(cleaned);
-    });
-    let deletionIndex = 0;
-    if (separatorIndex > 0) {
-      const headerCells = this.parseCells(lines[separatorIndex - 1]);
-      const thead = table.createEl("thead");
-      const headerRow = thead.createEl("tr");
-      headerCells.forEach((cell) => {
-        const th = headerRow.createEl("th");
-        const hasBlank = this.appendCellWithPreviewInto(th, cell, state.userAnswers, deletionIndex);
-        if (hasBlank)
-          deletionIndex++;
-      });
-    }
-    const tbody = table.createEl("tbody");
-    const startRow = separatorIndex > 0 ? separatorIndex + 1 : 0;
-    for (let i = startRow; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line.trim())
-        continue;
-      const cells = this.parseCells(line);
-      if (cells.length === 0)
-        continue;
-      const row = tbody.createEl("tr");
-      cells.forEach((cell) => {
-        const td = row.createEl("td");
-        const hasBlank = this.appendCellWithPreviewInto(td, cell, state.userAnswers, deletionIndex);
-        if (hasBlank)
-          deletionIndex++;
-      });
-    }
-    return container;
-  }
-  // ← 添加辅助方法:解析单元格
-  parseCells(line) {
-    let trimmed = line.trim();
-    if (trimmed.startsWith("|"))
-      trimmed = trimmed.slice(1);
-    if (trimmed.endsWith("|"))
-      trimmed = trimmed.slice(0, -1);
-    return trimmed.split("|").map((c) => c.trim()).filter((c) => c.length > 0);
-  }
-  // 把带预览的单元格内容写入元素(DOM 构造,无 innerHTML),返回是否含挖空。
-  appendCellWithPreviewInto(el, cell, userAnswers, deletionIndex) {
-    if (!cell.includes("==")) {
-      el.setText(cell);
-      return false;
-    }
-    const userAnswer = userAnswers[deletionIndex] || "";
-    const re2 = /==([^=]+)==/g;
-    let last = 0;
-    let m;
-    while ((m = re2.exec(cell)) !== null) {
-      if (m.index > last)
-        el.appendText(cell.slice(last, m.index));
-      if (userAnswer) {
-        el.createSpan({ cls: "preview-answer", text: userAnswer });
-      } else {
-        el.createSpan({ cls: "cloze-blank" });
-      }
-      last = m.index + m[0].length;
-    }
-    if (last < cell.length)
-      el.appendText(cell.slice(last));
-    return true;
-  }
-  // ← 添加新的辅助方法:解析多答案输入
-  parseMultipleAnswers(input, expectedCount) {
-    if (!input.trim()) {
-      return new Array(expectedCount).fill("");
-    }
-    let normalized = input.replace(/,/g, "|").replace(/,/g, "|").replace(/\s{2,}/g, "|");
-    const parts = normalized.split("|").map((s) => s.trim());
-    const result = new Array(expectedCount).fill("");
-    for (let i = 0; i < Math.min(parts.length, expectedCount); i++) {
-      result[i] = parts[i];
-    }
-    return result;
-  }
-  renderAnswer(container, card, state, scheduler) {
-    if (!card.cloze)
-      return;
-    const answerArea = container.createDiv({ cls: "answer-area" });
-    const isOriginalTable = TableRenderer.isTableFormat(card.cloze.original);
-    if (isOriginalTable) {
-      this.renderTableAnswer(answerArea, card, state, scheduler);
-    } else {
-      this.renderTextAnswer(answerArea, card, state, scheduler);
-    }
-  }
-  renderTableAnswer(answerArea, card, state, scheduler) {
-    const columnsContainer = answerArea.createDiv({ cls: "cloze-table-columns" });
-    const correctColumn = columnsContainer.createDiv({ cls: "qa-column" });
-    correctColumn.createEl("h4", { text: "Correct answer:", cls: "column-label" });
-    const correctDiv = correctColumn.createDiv({ cls: "comparison-item" });
-    const tableEl = TableRenderer.renderTable(card.cloze.original, true);
-    correctDiv.appendChild(tableEl);
-    correctDiv.classList.add("table-answer");
-    const userColumn = columnsContainer.createDiv({ cls: "qa-column" });
-    userColumn.createEl("h4", { text: "Your answer:", cls: "column-label" });
-    const userDiv = userColumn.createDiv({ cls: "comparison-item" });
-    const actualAnswers = this.extractClozeAnswers(this.normalizeOriginal(card));
-    const constructedDeletions = actualAnswers.map((answer) => ({ answer }));
-    const normalizedAnswers = new Array(actualAnswers.length).fill("");
-    for (let i = 0; i < Math.min(state.userAnswers.length, normalizedAnswers.length); i++) {
-      normalizedAnswers[i] = state.userAnswers[i] || "";
-    }
-    const userTableEl = TableRenderer.renderTableWithUserAnswers(
-      card.cloze.original,
-      constructedDeletions,
-      // ← 使用构建的 deletions
-      normalizedAnswers,
-      scheduler
-    );
-    userDiv.appendChild(userTableEl);
-    userDiv.classList.add("table-answer");
-    this.renderDetailedComparison(answerArea, card, state, scheduler);
-  }
-  renderTextAnswer(answerArea, card, state, scheduler) {
-    const fullText = answerArea.createDiv({ cls: "full-text" });
-    const normalized = this.normalizeOriginal(card);
-    appendClozeLines(fullText, normalized, "cloze-highlight");
-    this.renderDetailedComparison(answerArea, card, state, scheduler);
-  }
-  renderDetailedComparison(answerArea, card, state, scheduler) {
-    if (state.userAnswers.length === 0)
-      return;
-    const comparison = answerArea.createDiv({ cls: "answer-comparison" });
-    comparison.createEl("h4", { text: "Answer details:" });
-    const actualAnswers = this.extractClozeAnswers(this.normalizeOriginal(card));
-    const maxCount = Math.max(actualAnswers.length, state.userAnswers.length);
-    for (let index = 0; index < maxCount; index++) {
-      const item = comparison.createDiv({ cls: "comparison-item" });
-      item.createSpan({ text: `${index + 1}. ` });
-      const userAnswer = state.userAnswers[index] || "";
-      const correctAnswer = actualAnswers[index] || "";
-      if (!correctAnswer) {
-        item.createEl("span", {
-          text: userAnswer || "(empty)",
-          cls: "user-answer  ${evaluation.correctness}"
-        });
-        item.createSpan({ text: " \u2192 " });
-        item.createEl("span", {
-          text: "(no blank here)",
-          cls: "correct-answer"
-        });
-        continue;
-      }
-      const evaluation = scheduler.evaluateAnswer(correctAnswer, userAnswer);
-      item.createEl("span", {
-        text: userAnswer || "(empty)",
-        cls: `user-answer ${evaluation.correctness}`
-      });
-      item.createSpan({ text: " \u2192 " });
-      item.createEl("span", {
-        text: correctAnswer,
-        cls: "correct-answer"
-      });
-      if (evaluation.correctness === "partial") {
-        item.createEl("small", {
-          text: ` (${Math.round(evaluation.similarity * 100)}% match)`,
-          cls: "similarity-info"
-        });
-      }
-    }
-  }
-  // ← 添加新方法:从原始文本提取所有挖空答案
-  extractClozeAnswers(originalText) {
-    const matches = originalText.match(/==([^=]+)==/g);
-    if (!matches)
-      return [];
-    return matches.map((match) => {
-      return match.replace(/==/g, "").trim();
-    });
-  }
-};
-var QACardRenderer = class {
-  renderQuestion(container, card, state, updateState) {
-    const questionText = container.createDiv({ cls: "question-text" });
-    const isTable = TableRenderer.isTableFormat(card.front);
-    if (isTable) {
-      const tableEl = TableRenderer.renderTable(card.front, false);
-      questionText.appendChild(tableEl);
-      questionText.classList.add("table-question");
-    } else {
-      appendTextLines(questionText, card.front);
-    }
-    const inputArea = container.createDiv({ cls: "qa-input-area" });
-    inputArea.createEl("h4", { text: "Your answer:" });
-    const textarea = inputArea.createEl("textarea", {
-      placeholder: "Type your answer here...",
-      cls: "qa-input",
-      value: state.userAnswer
-    });
-    textarea.addEventListener("input", (e) => {
-      updateState.setUserAnswer(e.target.value);
-    });
-    setTimeout(() => textarea.focus(), 50);
-  }
-  renderAnswer(container, card, state, scheduler) {
-    const answerArea = container.createDiv({ cls: "answer-area" });
-    const correctAnswer = Array.isArray(card.back) ? card.back[0] || card.back.join("\n") : card.back;
-    const isTable = TableRenderer.isTableFormat(correctAnswer);
-    const evaluation = state.userAnswer.trim() ? scheduler.evaluateAnswer(correctAnswer, state.userAnswer) : null;
-    const comparison = answerArea.createDiv({
-      cls: "answer-comparison qa-comparison"
-    });
-    const columnsContainer = comparison.createDiv({ cls: "qa-columns-container" });
-    this.renderCorrectAnswerColumn(columnsContainer, correctAnswer, isTable);
-    this.renderUserAnswerColumn(
-      columnsContainer,
-      state.userAnswer,
-      isTable,
-      evaluation
-    );
-    if ((evaluation == null ? void 0 : evaluation.correctness) === "partial") {
-      const similarityInfo = comparison.createEl("div", {
-        cls: "similarity-info qa-similarity"
-      });
-      similarityInfo.textContent = `Similarity: ${Math.round(evaluation.similarity * 100)}%`;
-    }
-  }
-  renderCorrectAnswerColumn(container, correctAnswer, isTable) {
-    const correctColumn = container.createDiv({ cls: "qa-column" });
-    correctColumn.createEl("h4", { text: "Correct answer:", cls: "column-label" });
-    const correctAnswerDiv = correctColumn.createDiv({ cls: "comparison-item" });
-    if (isTable) {
-      const tableEl = TableRenderer.renderTable(correctAnswer, true);
-      correctAnswerDiv.appendChild(tableEl);
-      correctAnswerDiv.classList.add("table-answer");
-    } else {
-      const el = correctAnswerDiv.createEl("div", { cls: "correct-answer qa-correct-answer" });
-      appendTextLines(el, correctAnswer);
-    }
-  }
-  renderUserAnswerColumn(container, userAnswer, isTable, evaluation) {
-    const userColumn = container.createDiv({ cls: "qa-column" });
-    userColumn.createEl("h4", { text: "Your answer:", cls: "column-label" });
-    const userAnswerDiv = userColumn.createDiv({ cls: "comparison-item" });
-    const isUserAnswerTable = TableRenderer.isTableFormat(userAnswer.trim());
-    const shouldRenderAsTable = isUserAnswerTable || isTable && userAnswer.trim();
-    if (shouldRenderAsTable && userAnswer.trim()) {
-      try {
-        const userTableEl = TableRenderer.renderTable(userAnswer, true);
-        userAnswerDiv.appendChild(userTableEl);
-        userAnswerDiv.classList.add("table-answer");
-        if (evaluation) {
-          userAnswerDiv.classList.add("user-answer", evaluation.correctness);
-        }
-      } catch (error) {
-        this.renderTextUserAnswer(userAnswerDiv, userAnswer, evaluation);
-      }
-    } else {
-      this.renderTextUserAnswer(userAnswerDiv, userAnswer, evaluation);
-    }
-  }
-  renderTextUserAnswer(container, userAnswer, evaluation) {
-    const userAnswerElement = container.createEl("div", { cls: "qa-user-answer" });
-    const displayText2 = userAnswer.trim() || "(no answer provided)";
-    appendTextLines(userAnswerElement, displayText2);
-    if (evaluation) {
-      userAnswerElement.classList.add("user-answer", evaluation.correctness);
-    } else {
-      userAnswerElement.classList.add("no-answer");
-    }
-  }
-};
-var CardRendererFactory = class {
-  static getRenderer(cardType) {
-    const renderer = this.renderers.get(cardType);
-    if (!renderer) {
-      throw new Error(`Unknown card type: ${cardType}`);
-    }
-    return renderer;
-  }
-};
-CardRendererFactory.renderers = /* @__PURE__ */ new Map([
-  ["cloze", new ClozeCardRenderer()],
-  ["qa", new QACardRenderer()]
-]);
-
-// src/ui/view/ReviewView.ts
-init_setCssProps();
-
 // src/ui/view/MindmapReview.ts
-var import_obsidian10 = require("obsidian");
+var import_obsidian3 = require("obsidian");
 
 // node_modules/mind-elixir/dist/MindElixir.js
 var be = {
@@ -8588,6 +5745,54 @@ function serializeOutline(root) {
 }
 
 // src/ui/view/MindmapReview.ts
+init_setCssProps();
+
+// src/ui/view/mindElixirTheme.ts
+var OBSIDIAN_MINDMAP_THEME = {
+  name: "obsidian",
+  // 分支配色:mind-elixir 按序给一级分支着色(影响分支线条 + 节点边/字)。
+  // 用浅色主题那套鲜艳 palette(Catppuccin Latte 风):在深色/浅色 Obsidian
+  // 背景上对比都足够。
+  palette: [
+    "#dd7878",
+    "#ea76cb",
+    "#8839ef",
+    "#e64553",
+    "#fe640b",
+    "#df8e1d",
+    "#40a02b",
+    "#209fb5",
+    "#1e66f5",
+    "#7287fd"
+  ],
+  cssVar: {
+    // 间距/圆角保留 mind-elixir 默认观感
+    "--node-gap-x": "32px",
+    "--node-gap-y": "5px",
+    "--main-gap-x": "65px",
+    "--main-gap-y": "45px",
+    "--root-radius": "30px",
+    "--main-radius": "4px",
+    "--topic-padding": "3px",
+    "--map-padding": "50px",
+    // 颜色全部通过 Obsidian 主题变量
+    "--color": "var(--text-normal)",
+    "--bgcolor": "var(--background-primary)",
+    "--main-color": "var(--text-accent)",
+    "--main-bgcolor": "var(--background-secondary)",
+    "--main-bgcolor-transparent": "var(--background-secondary)",
+    "--root-color": "var(--text-on-accent)",
+    "--root-bgcolor": "var(--interactive-accent)",
+    "--root-border-color": "var(--interactive-accent)",
+    "--selected": "var(--interactive-accent)",
+    "--accent-color": "var(--interactive-accent)",
+    "--panel-color": "var(--text-normal)",
+    "--panel-bgcolor": "var(--background-secondary)",
+    "--panel-border-color": "var(--background-modifier-border)"
+  }
+};
+
+// src/ui/view/MindmapReview.ts
 function escapeHtml(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
@@ -8653,16 +5858,13 @@ function buildBlankHtml(nodeText, deletions, startNo) {
   return { html, used: no2 - startNo };
 }
 function buildAnswerHtml(t2, startNo) {
-  var _a;
   const sorted = t2.deletions.map((d, i) => ({ ...d, i })).sort((a, b) => a.index - b.index);
   let html = "";
   let last = 0;
   let no2 = startNo;
   for (const d of sorted) {
     html += escapeHtml(t2.nodeText.slice(last, d.index));
-    const blank = (_a = t2.blanks[d.i]) != null ? _a : { user: "", correct: false };
-    const cls = blank.correct ? "mm-cloze-correct" : "mm-cloze-wrong";
-    html += `<sup class="mm-blank-idx">${no2}</sup><span class="${cls}">${escapeHtml(d.answer)}</span>`;
+    html += `<sup class="mm-blank-idx">${no2}</sup><span class="mm-cloze-answer">${escapeHtml(d.answer)}</span>`;
     last = d.index + d.answer.length;
     no2++;
   }
@@ -8679,14 +5881,15 @@ function newReadonlyMap(container, nodeData) {
     contextMenu: false,
     toolBar: false,
     allowUndo: false,
-    keypress: false
+    keypress: false,
+    theme: OBSIDIAN_MINDMAP_THEME
   });
   mind.init({ nodeData });
   return mind;
 }
 async function renderMindmapGroupQuestion(app, container, sourceFile, targets) {
   const file = app.vault.getAbstractFileByPath(sourceFile);
-  if (!(file instanceof import_obsidian10.TFile))
+  if (!(file instanceof import_obsidian3.TFile))
     return false;
   const text = await app.vault.cachedRead(file);
   const { nodeData } = buildTreeFromMarkdown(file.name, text);
@@ -8705,7 +5908,7 @@ async function renderMindmapGroupQuestion(app, container, sourceFile, targets) {
 }
 async function renderMindmapGroupAnswer(app, container, sourceFile, targets) {
   const file = app.vault.getAbstractFileByPath(sourceFile);
-  if (!(file instanceof import_obsidian10.TFile))
+  if (!(file instanceof import_obsidian3.TFile))
     return false;
   const text = await app.vault.cachedRead(file);
   const { nodeData } = buildTreeFromMarkdown(file.name, text);
@@ -8723,8 +5926,2934 @@ async function renderMindmapGroupAnswer(app, container, sourceFile, targets) {
   newReadonlyMap(container, nodeData);
   return true;
 }
+async function renderMindmapPreviewCard(app, container, meta, height = "200px") {
+  var _a, _b;
+  if (!meta.sourceFile) {
+    console.debug("[ls-mm-preview] no sourceFile");
+    return false;
+  }
+  const file = app.vault.getAbstractFileByPath(meta.sourceFile);
+  if (!(file instanceof import_obsidian3.TFile)) {
+    console.debug("[ls-mm-preview] file not found", meta.sourceFile);
+    return false;
+  }
+  const text = await app.vault.cachedRead(file);
+  const { nodeData } = buildTreeFromMarkdown(file.name, text);
+  const node = locate(nodeData, meta);
+  if (!node) {
+    console.debug("[ls-mm-preview] node not located", meta.path, "blockId=", meta.blockId);
+    return false;
+  }
+  console.debug("[ls-mm-preview] rendering", meta.path);
+  const nodeText = (_a = meta.path[meta.path.length - 1]) != null ? _a : "";
+  const dels = meta.mode === "whole" ? [{ index: 0, answer: nodeText }] : [...meta.deletions].sort((a, b) => a.index - b.index);
+  let html = "";
+  let last = 0;
+  for (const d of dels) {
+    html += escapeHtml(nodeText.slice(last, d.index));
+    const w = Math.max(2, d.answer.length);
+    html += `<span class="mm-cloze-blank" style="width:${w}ch"></span>`;
+    last = d.index + d.answer.length;
+  }
+  html += escapeHtml(nodeText.slice(last));
+  node.dangerouslySetInnerHTML = html;
+  node.style = { background: "#fff3cd", color: "#000", border: "2px dashed #e0a800" };
+  container.empty();
+  container.addClass("learning-system-mindmap-readonly");
+  setCssProps(container, { width: "100%", height });
+  const mind = new j({
+    el: container,
+    direction: j.RIGHT,
+    editable: false,
+    contextMenu: false,
+    toolBar: false,
+    allowUndo: false,
+    keypress: false,
+    theme: OBSIDIAN_MINDMAP_THEME
+  });
+  mind.init({ nodeData });
+  try {
+    (_b = mind.scaleFit) == null ? void 0 : _b.call(mind);
+  } catch (e) {
+  }
+  setCssProps(container, { "pointer-events": "none" });
+  return true;
+}
+
+// src/ui/components/AnnotationEditor.ts
+var AnnotationEditor = class {
+  constructor(callbacks) {
+    this.activeEditors = /* @__PURE__ */ new Map();
+    this.callbacks = callbacks;
+  }
+  /**
+   * 切换内联批注编辑器
+   *
+   * 同步打开:编辑器元素同步插入 DOM,使 `.inline-annotation-editor` 立即存在,
+   * 从而 refresh() 的 DOM 守卫能立刻挡住重渲——不再需要任何 boolean 锁/防抖。
+   */
+  toggle(cardEl, unit) {
+    const existingEditor = cardEl.querySelector(".inline-annotation-editor");
+    if (existingEditor) {
+      this.close(cardEl, unit);
+      return;
+    }
+    const content = cardEl.querySelector(".card-content, .grid-card-content");
+    const oldPreviews = content == null ? void 0 : content.querySelectorAll(".annotation-preview, .grid-annotation");
+    if (oldPreviews && oldPreviews.length > 0) {
+      oldPreviews.forEach((el) => el.remove());
+    }
+    this.closeAllOthers(unit.id);
+    this.open(cardEl, unit);
+  }
+  /**
+   * 关闭除指定 unitId 外的所有编辑器
+   */
+  closeAllOthers(currentUnitId) {
+    const allEditingCards = document.querySelectorAll('[data-editing="true"]');
+    if (allEditingCards.length > 0) {
+      allEditingCards.forEach((card) => {
+        const unitId = card.getAttribute("data-unit-id");
+        if (unitId && unitId !== currentUnitId) {
+          const unit = { id: unitId };
+          this.close(card, unit);
+        }
+      });
+    }
+  }
+  /**
+   * 打开编辑器
+   */
+  open(cardEl, unit) {
+    cardEl.setAttribute("data-editing", "true");
+    const annotationContent = this.callbacks.getAnnotationContent(unit.id);
+    const content = cardEl.querySelector(".card-content, .grid-card-content");
+    const existingPreviews = content == null ? void 0 : content.querySelectorAll(".annotation-preview, .grid-annotation");
+    existingPreviews == null ? void 0 : existingPreviews.forEach((el) => el.remove());
+    const existingEditors = content == null ? void 0 : content.querySelectorAll(".inline-annotation-editor");
+    existingEditors == null ? void 0 : existingEditors.forEach((el) => el.remove());
+    const editor = this.createEditor(unit.id, annotationContent || "");
+    const noteText = content == null ? void 0 : content.querySelector(".note-text, .grid-note-text");
+    if (noteText) {
+      noteText.insertAdjacentElement("afterend", editor);
+    } else {
+      content == null ? void 0 : content.appendChild(editor);
+    }
+    const textarea = editor.querySelector("textarea");
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      });
+    });
+    this.activeEditors.set(unit.id, editor);
+  }
+  /**
+   * 关闭编辑器
+   */
+  close(cardEl, unit) {
+    const editor = cardEl.querySelector(".inline-annotation-editor");
+    if (!editor) {
+      cardEl.removeAttribute("data-editing");
+      this.activeEditors.delete(unit.id);
+      return;
+    }
+    editor.remove();
+    this.activeEditors.delete(unit.id);
+    cardEl.removeAttribute("data-editing");
+    const annotationContent = this.callbacks.getAnnotationContent(unit.id);
+    if (annotationContent) {
+      const content = cardEl.querySelector(".card-content, .grid-card-content");
+      const oldPreview = content == null ? void 0 : content.querySelector(".annotation-preview, .grid-annotation");
+      if (oldPreview) {
+        oldPreview.remove();
+      }
+      if (content) {
+        this.recreatePreview(content, cardEl, unit, annotationContent);
+      }
+    }
+  }
+  /**
+   * 创建编辑器元素
+   */
+  createEditor(unitId, defaultValue) {
+    const editor = document.createElement("div");
+    editor.className = "inline-annotation-editor";
+    const textarea = document.createElement("textarea");
+    textarea.className = "inline-annotation-textarea";
+    textarea.placeholder = "Add comment...";
+    textarea.value = defaultValue;
+    textarea.setAttribute("data-unit-id", unitId);
+    const hint = document.createElement("div");
+    hint.className = "inline-annotation-hint";
+    hint.textContent = "Shift + Enter to insert a new line";
+    editor.appendChild(textarea);
+    editor.appendChild(hint);
+    this.bindEditorEvents(textarea, unitId);
+    return editor;
+  }
+  /**
+   * 绑定编辑器事件
+   */
+  bindEditorEvents(textarea, unitId) {
+    const blurHandler = async (e) => {
+      const relatedTarget = e.relatedTarget;
+      const editor = textarea.closest(".inline-annotation-editor");
+      const card = editor == null ? void 0 : editor.closest(".compact-card, .grid-card");
+      if (!relatedTarget || !(editor == null ? void 0 : editor.contains(relatedTarget))) {
+        setTimeout(async () => {
+          if ((editor == null ? void 0 : editor.parentElement) && card) {
+            const trimmedText = textarea.value.trim();
+            const originalContent = this.callbacks.getAnnotationContent(unitId) || "";
+            if (trimmedText !== originalContent) {
+              await this.callbacks.onSave(unitId, trimmedText);
+            }
+            const unit = { id: unitId };
+            this.close(card, unit);
+          }
+        }, 150);
+      }
+    };
+    textarea.addEventListener("blur", blurHandler);
+    textarea.addEventListener("keydown", async (e) => {
+      if (e.key === "Tab") {
+        e.preventDefault();
+        e.stopPropagation();
+        const editor = textarea.closest(".inline-annotation-editor");
+        const card = editor == null ? void 0 : editor.closest(".compact-card, .grid-card");
+        if (editor && card) {
+          textarea.removeEventListener("blur", blurHandler);
+          const trimmedText = textarea.value.trim();
+          const originalContent = this.callbacks.getAnnotationContent(unitId) || "";
+          editor.remove();
+          this.activeEditors.delete(unitId);
+          card.removeAttribute("data-editing");
+          if (trimmedText !== originalContent) {
+            await this.callbacks.onSave(unitId, trimmedText);
+          }
+          if (trimmedText) {
+            const content = card.querySelector(".card-content, .grid-card-content");
+            if (content) {
+              const latestContent = this.callbacks.getAnnotationContent(unitId);
+              if (latestContent) {
+                this.recreatePreview(content, card, { id: unitId }, latestContent);
+              }
+              const indicator = card.querySelector(".card-indicator");
+              if (indicator && !indicator.classList.contains("has-annotation")) {
+                indicator.classList.add("has-annotation");
+              }
+            }
+          } else {
+            const indicator = card.querySelector(".card-indicator");
+            if (indicator && indicator.classList.contains("has-annotation")) {
+              indicator.classList.remove("has-annotation");
+            }
+          }
+        }
+      }
+    });
+    textarea.addEventListener("mousedown", (e) => {
+      e.stopPropagation();
+    });
+    textarea.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+  }
+  /**
+   * 保存批注
+   */
+  // private async save(editorEl: HTMLElement, unitId: string, text: string): Promise<void> {
+  //   const trimmedText = text.trim();
+  //   const originalContent = this.callbacks.getAnnotationContent(unitId) || '';
+  //   const hasChanged = trimmedText !== originalContent;
+  //   if (hasChanged) {
+  //     await this.callbacks.onSave(unitId, trimmedText);
+  //   }
+  //   const card = editorEl.closest('.compact-card, .grid-card') as HTMLElement;
+  //   editorEl.remove();
+  //   this.activeEditors.delete(unitId);
+  //   if (trimmedText && card) {
+  //     const content = card.querySelector('.card-content, .grid-card-content') as HTMLElement;
+  //     if (content) {
+  //       // 通过回调获取最新的批注内容
+  //       const latestContent = this.callbacks.getAnnotationContent(unitId);
+  //       if (latestContent) {
+  //         // 需要传入完整的 ContentUnit，这里简化处理
+  //         this.recreatePreview(content, card, { id: unitId } as ContentUnit, latestContent);
+  //       }
+  //       // 更新 indicator
+  //       const indicator = card.querySelector('.card-indicator') as HTMLElement;
+  //       if (indicator && !indicator.classList.contains('has-annotation')) {
+  //         indicator.classList.add('has-annotation');
+  //       }
+  //     }
+  //   } else if (!trimmedText && card) {
+  //     const indicator = card.querySelector('.card-indicator') as HTMLElement;
+  //     if (indicator && indicator.classList.contains('has-annotation')) {
+  //       indicator.classList.remove('has-annotation');
+  //     }
+  //   }
+  // }
+  /**
+   * 重新创建批注预览
+   */
+  recreatePreview(contentEl, cardEl, unit, annotationText) {
+    const existingPreview = contentEl.querySelector(".annotation-preview, .grid-annotation");
+    if (existingPreview) {
+      existingPreview.remove();
+    }
+    const isGridCard = cardEl.classList.contains("grid-card");
+    const annEl = document.createElement("div");
+    annEl.className = isGridCard ? "grid-annotation" : "annotation-preview";
+    if (isGridCard) {
+      annEl.setText(`\u{1F4AC} ${annotationText}`);
+    } else {
+      const displayText2 = annotationText.length > 60 ? annotationText.substring(0, 60) + "..." : annotationText;
+      annEl.textContent = `\u{1F4AC} ${displayText2}`;
+    }
+    annEl.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.toggle(cardEl, unit);
+    });
+    annEl.addEventListener("keydown", (e) => {
+      if (e.key === "Tab") {
+        e.preventDefault();
+        e.stopPropagation();
+        this.toggle(cardEl, unit);
+      }
+    });
+    const noteText = contentEl.querySelector(".note-text, .grid-note-text");
+    if (noteText) {
+      noteText.insertAdjacentElement("afterend", annEl);
+    } else {
+      contentEl.appendChild(annEl);
+    }
+    annEl.setAttribute("tabindex", "0");
+    annEl.focus();
+  }
+  /**
+   * 关闭所有活动的编辑器
+   */
+  closeAll() {
+    this.activeEditors.forEach((editor) => {
+      editor.remove();
+    });
+    this.activeEditors.clear();
+  }
+};
+
+// src/ui/service/sideOverviewService.ts
+var import_obsidian4 = require("obsidian");
+var sideOverviewService = class {
+  constructor(plugin, state) {
+    this.plugin = plugin;
+    this.state = state;
+  }
+  /**
+   * 跳转到笔记的源文件位置
+   */
+  async jumpToSource(unit, app) {
+    const lang = this.plugin.settings.language;
+    const file = app.vault.getAbstractFileByPath(unit.source.file);
+    if (!(file instanceof import_obsidian4.TFile)) {
+      new import_obsidian4.Notice(t("service.fileNotExist", lang));
+      return;
+    }
+    this.state.shouldRestoreScroll = true;
+    const leaf = app.workspace.getLeaf(false);
+    await leaf.openFile(file);
+    setTimeout(() => {
+      const view = app.workspace.getActiveViewOfType(import_obsidian4.MarkdownView);
+      if (view) {
+        const editor = view.editor;
+        if (editor) {
+          const line = unit.source.position.line;
+          const lineCount = editor.lineCount();
+          const validLine = Math.min(line, lineCount - 1);
+          editor.setCursor({ line: validLine, ch: 0 });
+          editor.scrollIntoView(
+            { from: { line: validLine, ch: 0 }, to: { line: validLine, ch: 0 } },
+            true
+          );
+          setTimeout(() => {
+            var _a;
+            try {
+              const lineLength = ((_a = editor.getLine(validLine)) == null ? void 0 : _a.length) || 0;
+              editor.setSelection(
+                { line: validLine, ch: 0 },
+                { line: validLine, ch: lineLength }
+              );
+            } catch (e) {
+              console.error("Selection error:", e);
+            }
+          }, 100);
+        }
+      }
+    }, 200);
+  }
+  /**
+   * 保存或删除批注
+   */
+  async saveAnnotation(unitId, content) {
+    const lang = this.plugin.settings.language;
+    const trimmedText = content.trim();
+    const annotation = this.plugin.annotationManager.getContentAnnotation(unitId);
+    if (trimmedText) {
+      if (annotation) {
+        await this.plugin.annotationManager.updateAnnotation(annotation.id, {
+          content: trimmedText
+        });
+      } else {
+        await this.plugin.annotationManager.addContentAnnotation(unitId, trimmedText);
+      }
+    } else if (annotation) {
+      await this.plugin.annotationManager.deleteAnnotation(annotation.id);
+      new import_obsidian4.Notice(t("service.annotationDeleted", lang));
+    }
+  }
+  /**
+   * AI 快速生成闪卡
+   */
+  async quickGenerateFlashcard(unit) {
+    const lang = this.plugin.settings.language;
+    try {
+      const creator = new QuickFlashcardCreator(this.plugin);
+      await creator.createSmartCard(unit);
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      new import_obsidian4.Notice(t("service.flashcardGenerated", lang));
+    } catch (error) {
+      new import_obsidian4.Notice(t("service.generateFailed", lang));
+      console.error(error);
+    }
+  }
+  /**
+   * 批量删除笔记
+   */
+  async batchDeleteNotes(unitIds) {
+    let success = 0;
+    let failed = 0;
+    for (const unitId of unitIds) {
+      try {
+        const unit = this.plugin.dataManager.getContentUnit(unitId);
+        if (unit) {
+          if (unit.flashcardIds.length > 0) {
+            for (const cardId of unit.flashcardIds) {
+              await this.plugin.flashcardManager.deleteCard(cardId);
+            }
+          }
+        }
+        await this.plugin.dataManager.deleteContentUnit(unitId);
+        success++;
+      } catch (error) {
+        console.error("Error deleting note:", error);
+        failed++;
+      }
+    }
+    return { success, failed };
+  }
+  /**
+   * 批量删除闪卡
+   */
+  async batchDeleteFlashcards(cardIds) {
+    let success = 0;
+    let failed = 0;
+    for (const cardId of cardIds) {
+      try {
+        await this.plugin.flashcardManager.deleteCard(cardId);
+        success++;
+      } catch (error) {
+        console.error("Error deleting flashcard:", error);
+        failed++;
+      }
+    }
+    return { success, failed };
+  }
+  /**
+   * 获取批注内容
+   */
+  getAnnotationContent(unitId) {
+    const ann = this.plugin.annotationManager.getContentAnnotation(unitId);
+    return ann == null ? void 0 : ann.content;
+  }
+  /**
+   * 跳转到闪卡的源文件
+   */
+  async jumpToFlashcardSource(cardId, app) {
+    const lang = this.plugin.settings.language;
+    const card = this.plugin.flashcardManager.getFlashcard(cardId);
+    if (!card) {
+      new import_obsidian4.Notice(t("service.flashcardNotFound", lang));
+      return;
+    }
+    const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+    if (unit) {
+      await this.jumpToSource(unit, app);
+    } else {
+      const file = app.vault.getAbstractFileByPath(card.sourceFile);
+      if (file instanceof import_obsidian4.TFile) {
+        await app.workspace.getLeaf(false).openFile(file);
+        new import_obsidian4.Notice(t("service.sourceFileOpened", lang));
+      } else {
+        new import_obsidian4.Notice(t("service.noteNotFound", lang));
+      }
+    }
+  }
+  /**
+   * 激活统计视图
+   */
+  activateStatsView() {
+    void this.plugin.activateStats();
+  }
+};
+
+// src/ui/components/modals/ManualFlashcardModal.ts
+var import_obsidian5 = require("obsidian");
+init_setCssProps();
+var ManualFlashcardModal = class extends import_obsidian5.Modal {
+  constructor(app, plugin, unit, type) {
+    super(app);
+    this.question = "";
+    this.answer = "";
+    this.plugin = plugin;
+    this.unit = unit;
+    this.type = type;
+    if (type === "qa") {
+      this.question = unit.type === "QA" ? unit.content : unit.content;
+      this.answer = unit.type === "QA" && unit.answer ? unit.answer : "";
+    } else {
+      this.question = unit.fullContext || unit.content;
+      this.answer = unit.content;
+    }
+  }
+  onOpen() {
+    const { contentEl } = this;
+    const lang = this.plugin.settings.language;
+    contentEl.empty();
+    contentEl.addClass("manual-flashcard-modal");
+    contentEl.createEl("h2", {
+      text: t(this.type === "qa" ? "manualCard.title.qa" : "manualCard.title.cloze", lang)
+    });
+    contentEl.createEl("p", {
+      text: t(this.type === "qa" ? "manualCard.description.qa" : "manualCard.description.cloze", lang),
+      cls: "modal-description"
+    });
+    new import_obsidian5.Setting(contentEl).setName(t(this.type === "qa" ? "manualCard.front.qa" : "manualCard.front.cloze", lang)).setDesc(t(this.type === "qa" ? "manualCard.front.desc.qa" : "manualCard.front.desc.cloze", lang)).addTextArea((text) => {
+      text.setValue(this.question).setPlaceholder(t(this.type === "qa" ? "manualCard.front.placeholder.qa" : "manualCard.front.placeholder.cloze", lang)).onChange((value) => this.question = value);
+      text.inputEl.rows = 4;
+      setCssProps(text.inputEl, { width: "100%" });
+    });
+    new import_obsidian5.Setting(contentEl).setName(t(this.type === "qa" ? "manualCard.back.qa" : "manualCard.back.cloze", lang)).setDesc(t(this.type === "qa" ? "manualCard.back.desc.qa" : "manualCard.back.desc.cloze", lang)).addTextArea((text) => {
+      text.setValue(this.answer).setPlaceholder(t(this.type === "qa" ? "manualCard.back.placeholder.qa" : "manualCard.back.placeholder.cloze", lang)).onChange((value) => this.answer = value);
+      text.inputEl.rows = 3;
+      setCssProps(text.inputEl, { width: "100%" });
+    });
+    const buttonContainer = contentEl.createDiv({ cls: "modal-button-container" });
+    new import_obsidian5.Setting(buttonContainer).addButton(
+      (btn) => btn.setButtonText(t("manualCard.cancel", lang)).onClick(() => this.close())
+    ).addButton(
+      (btn) => btn.setButtonText(t("manualCard.create", lang)).setCta().onClick(async () => await this.createFlashcard())
+    );
+  }
+  async createFlashcard() {
+    const lang = this.plugin.settings.language;
+    if (!this.question.trim()) {
+      new import_obsidian5.Notice(t("manualCard.error.emptyFront", lang));
+      return;
+    }
+    if (!this.answer.trim()) {
+      new import_obsidian5.Notice(t("manualCard.error.emptyBack", lang));
+      return;
+    }
+    try {
+      await this.plugin.flashcardManager.createFlashcardFromUnit(
+        this.unit,
+        {
+          customQuestion: this.question.trim(),
+          customAnswer: this.answer.trim(),
+          cardType: this.type
+        }
+      );
+      new import_obsidian5.Notice(t(this.type === "qa" ? "manualCard.success.qa" : "manualCard.success.cloze", lang));
+      this.close();
+      this.refreshOverviewView();
+    } catch (error) {
+      new import_obsidian5.Notice(t("manualCard.createFailed", lang));
+      console.error("Error creating flashcard:", error);
+    }
+  }
+  refreshOverviewView() {
+    var _a, _b;
+    const view = ((_a = this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR_OVERVIEW)[0]) == null ? void 0 : _a.view) || ((_b = this.app.workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW)[0]) == null ? void 0 : _b.view);
+    if (view && "refresh" in view && typeof view.refresh === "function") {
+      view.refresh();
+    }
+  }
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+};
+
+// src/ui/components/modals/EditFlashcardModal.ts
+var import_obsidian6 = require("obsidian");
+init_setCssProps();
+var EditFlashcardModal = class extends import_obsidian6.Modal {
+  constructor(app, plugin, card) {
+    super(app);
+    this.plugin = plugin;
+    this.card = card;
+    this.front = card.front;
+    this.back = Array.isArray(card.back) ? card.back.join(", ") : card.back;
+  }
+  onOpen() {
+    var _a;
+    const { contentEl } = this;
+    const lang = this.plugin.settings.language;
+    contentEl.empty();
+    contentEl.addClass("edit-flashcard-modal");
+    contentEl.createEl("h2", {
+      text: t("editCard.title", lang)
+    });
+    contentEl.createEl("p", {
+      text: t(this.card.type === "qa" ? "editCard.description.qa" : "editCard.description.cloze", lang),
+      cls: "modal-description"
+    });
+    const infoDiv = contentEl.createDiv({ cls: "card-info" });
+    const box = infoDiv.createDiv({ cls: "card-info-box" });
+    const lines = box.createDiv({ cls: "card-info-lines" });
+    const fileName = (_a = this.card.sourceFile.split("/").pop()) != null ? _a : this.card.sourceFile;
+    lines.appendText(`${t("editCard.info.file", lang)}: ${fileName}`);
+    lines.createEl("br");
+    lines.appendText(`${t("editCard.info.deck", lang)}: ${this.card.deck}`);
+    lines.createEl("br");
+    lines.appendText(
+      `${t("editCard.info.reviews", lang)}: ${this.card.stats.totalReviews}${t("editCard.info.correct", lang)}: ${this.card.stats.correctCount}\u6B21`
+    );
+    new import_obsidian6.Setting(contentEl).setName(t(this.card.type === "qa" ? "editCard.front.qa" : "editCard.front.cloze", lang)).setDesc(t("editCard.front.desc", lang)).addTextArea((text) => {
+      text.setValue(this.front).onChange((value) => this.front = value);
+      text.inputEl.rows = 4;
+      setCssProps(text.inputEl, { width: "100%" });
+    });
+    new import_obsidian6.Setting(contentEl).setName(t(this.card.type === "qa" ? "editCard.back.qa" : "editCard.back.cloze", lang)).setDesc(t(this.card.type === "qa" ? "editCard.back.desc.qa" : "editCard.back.desc.cloze", lang)).addTextArea((text) => {
+      text.setValue(this.back).onChange((value) => this.back = value);
+      text.inputEl.rows = 3;
+      setCssProps(text.inputEl, { width: "100%" });
+    });
+    const buttonContainer = contentEl.createDiv({ cls: "modal-button-container" });
+    new import_obsidian6.Setting(buttonContainer).addButton(
+      (btn) => btn.setButtonText(t("editCard.cancel", lang)).onClick(() => this.close())
+    ).addButton(
+      (btn) => btn.setButtonText(t("editCard.save", lang)).setCta().onClick(async () => await this.saveFlashcard())
+    );
+  }
+  async saveFlashcard() {
+    const lang = this.plugin.settings.language;
+    if (!this.front.trim()) {
+      new import_obsidian6.Notice(t("editCard.error.emptyFront", lang));
+      return;
+    }
+    if (!this.back.trim()) {
+      new import_obsidian6.Notice(t("editCard.error.emptyBack", lang));
+      return;
+    }
+    try {
+      this.card.front = this.front.trim();
+      if (this.card.type === "cloze") {
+        this.card.back = this.back.split(",").map((s) => s.trim()).filter((s) => s);
+      } else {
+        this.card.back = this.back.trim();
+      }
+      this.card.metadata.updatedAt = Date.now();
+      await this.plugin.flashcardManager.updateCard(this.card);
+      new import_obsidian6.Notice(t("editCard.success", lang));
+      this.close();
+      this.refreshOverviewView();
+    } catch (error) {
+      new import_obsidian6.Notice(t("editCard.saveFailed", lang));
+      console.error("Error updating flashcard:", error);
+    }
+  }
+  refreshOverviewView() {
+    var _a, _b;
+    const view = ((_a = this.app.workspace.getLeavesOfType(VIEW_TYPE_SIDEBAR_OVERVIEW)[0]) == null ? void 0 : _a.view) || ((_b = this.app.workspace.getLeavesOfType(VIEW_TYPE_MAIN_OVERVIEW)[0]) == null ? void 0 : _b.view);
+    if (view && "refresh" in view && typeof view.refresh === "function") {
+      view.refresh();
+    }
+  }
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+};
+
+// src/ui/components/ContextMenuBuilder.ts
+var import_obsidian7 = require("obsidian");
+var ContextMenuBuilder = class {
+  /**
+   * 构建内容单元的右键菜单
+   */
+  static buildContentUnitMenu(unit, callbacks, language = "en") {
+    const menu = new import_obsidian7.Menu();
+    menu.addItem(
+      (item) => item.setTitle(t("contextMenu.jumpToSource")).setIcon("arrow-up-right").onClick(() => callbacks.onJumpToSource(unit))
+    );
+    menu.addItem(
+      (item) => item.setTitle(t("contextMenu.editAnnotation")).setIcon("message-square").onClick(() => callbacks.onToggleAnnotation(unit))
+    );
+    menu.addSeparator();
+    if (unit.flashcardIds.length > 0) {
+      menu.addItem(
+        (item) => item.setTitle(t("contextMenu.editFlashcard")).setIcon("pencil").onClick(() => callbacks.onEditFlashcard(unit))
+      );
+    }
+    menu.addItem(
+      (item) => item.setTitle(t("contextMenu.generateFlashcard")).setIcon("zap").onClick(() => callbacks.onQuickGenerate(unit))
+    );
+    menu.addItem(
+      (item) => item.setTitle(t("contextMenu.createQA")).setIcon("plus").onClick(() => callbacks.onCreateQA(unit))
+    );
+    menu.addItem(
+      (item) => item.setTitle(t("contextMenu.createCloze")).setIcon("plus").onClick(() => callbacks.onCreateCloze(unit))
+    );
+    menu.addSeparator();
+    menu.addItem(
+      (item) => item.setTitle(t("contextMenu.viewStats")).setIcon("bar-chart").onClick(() => callbacks.onViewStats())
+    );
+    menu.addSeparator();
+    menu.addItem(
+      (item) => item.setTitle(t("contextMenu.deleteNote")).setIcon("trash").onClick(() => callbacks.onDelete(unit))
+    );
+    return menu;
+  }
+  /**
+   * 构建闪卡的右键菜单
+   */
+  static buildFlashcardMenu(card, callbacks, language = "en") {
+    const menu = new import_obsidian7.Menu();
+    menu.addItem(
+      (item) => item.setTitle(t("contextMenu.jumpToSource")).setIcon("arrow-up-right").onClick(() => callbacks.onJumpToSource(card))
+    );
+    menu.addItem(
+      (item) => item.setTitle(t("contextMenu.editCard")).setIcon("pencil").onClick(() => callbacks.onEdit(card))
+    );
+    menu.addSeparator();
+    menu.addItem(
+      (item) => item.setTitle(t("contextMenu.viewStats")).setIcon("bar-chart").onClick(() => callbacks.onViewStats(card))
+    );
+    menu.addSeparator();
+    menu.addItem(
+      (item) => item.setTitle(t("contextMenu.deleteCard")).setIcon("trash").onClick(() => callbacks.onDelete(card))
+    );
+    return menu;
+  }
+  /**
+   * 格式化闪卡统计信息
+   */
+  static formatFlashcardStats(card, language = "en") {
+    var _a;
+    const locale = language === "zh-CN" ? "zh-CN" : "en-US";
+    const createdDate = new Date(card.metadata.createdAt).toLocaleString(locale);
+    const lastReview = card.stats.lastReview ? new Date(card.stats.lastReview).toLocaleString(locale) : t("stats.lastReview.never");
+    const nextReview = new Date(card.scheduling.due).toLocaleString(locale);
+    const accuracy = card.stats.totalReviews > 0 ? (card.stats.correctCount / card.stats.totalReviews * 100).toFixed(1) : "0";
+    const separator = t("stats.separator");
+    return `${t("stats.title")}
+${separator}
+${t("stats.file")}: ${card.sourceFile.split("/").pop()}
+${t("stats.type")}: ${t(card.type === "qa" ? "stats.type.qa" : "stats.type.cloze")}
+${t("stats.deck")}: ${card.deck}
+${t("stats.tags")}: ${((_a = card.tags) == null ? void 0 : _a.length) > 0 ? card.tags.join(", ") : t("stats.tags.none")}
+${separator}
+${t("stats.reviewCount")}: ${card.stats.totalReviews} ${t("stats.times")}
+${t("stats.correctCount")}: ${card.stats.correctCount} ${t("stats.times")}
+${t("stats.accuracy")}: ${accuracy}%
+${t("stats.averageTime")}: ${card.stats.averageTime.toFixed(1)}${t("stats.seconds")}
+${t("stats.difficulty")}: ${(card.stats.difficulty * 100).toFixed(0)}%
+${separator}
+${t("stats.createdAt")}: ${createdDate}
+${t("stats.lastReview")}: ${lastReview}
+${t("stats.nextReview")}: ${nextReview}
+${t("stats.interval")}: ${card.scheduling.interval}${t("stats.days")}
+${t("stats.ease")}: ${card.scheduling.ease.toFixed(2)}`;
+  }
+};
+
+// src/ui/components/modals/BatchCreateModal.ts
+var import_obsidian8 = require("obsidian");
+var BatchCreateModal = class extends import_obsidian8.Modal {
+  constructor(app, plugin, quickCreator, units, onComplete) {
+    super(app);
+    this.plugin = plugin;
+    this.quickCreator = quickCreator;
+    this.units = units;
+    this.onComplete = onComplete;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    const lang = this.plugin.settings.language;
+    contentEl.createEl("h2", { text: t("batchCreate.title", lang) });
+    contentEl.createEl("p", {
+      text: t("batchCreate.description", lang, { count: this.units.length })
+    });
+    const typeContainer = contentEl.createDiv({ cls: "type-select-container" });
+    typeContainer.createEl("h3", { text: t("batchCreate.cardType", lang) });
+    let selectedType = "smart";
+    const types = [
+      {
+        value: "smart",
+        label: t("batchCreate.smartType", lang),
+        desc: t("batchCreate.smartType.desc", lang)
+      },
+      {
+        value: "qa",
+        label: t("batchCreate.qaType", lang),
+        desc: t("batchCreate.qaType.desc", lang)
+      },
+      {
+        value: "cloze",
+        label: t("batchCreate.clozeType", lang),
+        desc: t("batchCreate.clozeType.desc", lang)
+      }
+    ];
+    types.forEach((type) => {
+      const option = typeContainer.createDiv({ cls: "type-option" });
+      const radio = option.createEl("input", {
+        type: "radio",
+        value: type.value,
+        attr: { name: "card-type" }
+      });
+      if (type.value === "smart")
+        radio.checked = true;
+      const label = option.createDiv({ cls: "type-label" });
+      label.createEl("strong", { text: type.label });
+      label.createEl("div", { text: type.desc, cls: "type-desc" });
+      option.addEventListener("click", () => {
+        radio.checked = true;
+        selectedType = type.value;
+      });
+    });
+    const buttonContainer = contentEl.createDiv({ cls: "modal-button-container" });
+    const cancelBtn = buttonContainer.createEl("button", {
+      text: t("batchCreate.cancel", lang)
+    });
+    cancelBtn.addEventListener("click", () => this.close());
+    const createBtn = buttonContainer.createEl("button", {
+      text: t("batchCreate.createButton", lang, { count: this.units.length }),
+      cls: "mod-cta"
+    });
+    createBtn.addEventListener("click", async () => {
+      await this.batchCreate(selectedType);
+    });
+    this.addStyles();
+  }
+  async batchCreate(type) {
+    const { success, failed } = await this.quickCreator.createBatchCards(this.units, type);
+    const lang = this.plugin.settings.language;
+    new import_obsidian8.Notice(t("batchCreate.successNotice", lang, { success, failed }));
+    this.close();
+    this.onComplete();
+  }
+  addStyles() {
+  }
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+};
+
+// src/ui/view/SidebarOverviewView.ts
+init_setCssProps();
+var VIEW_TYPE_SIDEBAR_OVERVIEW = "learning-system-sidebar-overview";
+var VIEW_TYPE_MAIN_OVERVIEW = "learning-system-main-overview";
+var SidebarOverviewView = class extends import_obsidian9.ItemView {
+  constructor(leaf, plugin, forceMainMode = false) {
+    super(leaf);
+    this.savingAnnotations = /* @__PURE__ */ new Set();
+    this.plugin = plugin;
+    this._forceMainMode = forceMainMode;
+    this.state = new ViewState(forceMainMode);
+    this.initializeComponents();
+    const activeFile = this.app.workspace.getActiveFile();
+    if (activeFile) {
+      this.state.selectedFile = activeFile.path;
+    }
+    this.setupResizeListener();
+  }
+  // ==================== 生命周期方法 ====================
+  getViewType() {
+    const forceMainMode = this._forceMainMode || false;
+    return forceMainMode ? VIEW_TYPE_MAIN_OVERVIEW : VIEW_TYPE_SIDEBAR_OVERVIEW;
+  }
+  getDisplayText() {
+    return "Learning overview";
+  }
+  getIcon() {
+    return "book-marked";
+  }
+  async onOpen() {
+    this.detectDisplayMode();
+    if (this.state.displayMode === "sidebar") {
+      const activeFile = this.app.workspace.getActiveFile();
+      if (activeFile) {
+        this.state.selectedFile = activeFile.path;
+      }
+    }
+    if (!this.state.forceMainMode) {
+      this.registerActiveLeafChange();
+    }
+    this.state.updateDueCount(this.plugin.flashcardManager);
+    this.render();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  async onClose() {
+    if (this.state.searchDebounceTimer !== null) {
+      window.clearTimeout(this.state.searchDebounceTimer);
+    }
+    this.annotationEditor.closeAll();
+  }
+  // ==================== 初始化方法 ====================
+  initializeComponents() {
+    this.overviewService = new sideOverviewService(this.plugin, this.state);
+    this.toolbar = new Toolbar(this.state, {
+      onSearchChange: (query) => this.handleSearchChange(query),
+      onFilterChange: (mode) => this.handleFilterChange(mode),
+      onGroupChange: (mode) => this.handleGroupChange(mode),
+      onCheckReview: () => this.checkReviewReminder(),
+      checkFilterHasNotes: (mode) => this.checkFilterHasNotes(mode),
+      checkGroupHasNotes: (mode) => this.checkGroupHasNotes(mode)
+    }, this.plugin.settings.language);
+    const batchCallbacks = {
+      onSelectAll: () => this.handleSelectAll(),
+      onDeselectAll: () => this.handleDeselectAll(),
+      onBatchCreate: () => this.handleBatchCreate(),
+      onBatchDelete: () => this.handleBatchDelete(),
+      onCancel: () => this.handleBatchCancel()
+    };
+    this.batchActions = new BatchActions(this.state, batchCallbacks, this.toolbar, this.plugin.settings.language);
+    const cardCallbacks = {
+      onJumpToSource: (unit) => this.jumpToSource(unit),
+      onJumpToFlashcard: (card) => this.jumpToFlashcardSource(card),
+      onToggleAnnotation: (card, unit) => {
+        this.annotationEditor.toggle(card, unit);
+      },
+      onQuickFlashcard: (unit) => this.quickGenerateFlashcard(unit),
+      onShowContextMenu: (event, unit) => this.showContextMenu(event, unit),
+      onFlashcardContextMenu: (event, card) => this.showFlashcardContextMenu(event, card),
+      getAnnotationContent: (unitId) => {
+        const ann = this.plugin.annotationManager.getContentAnnotation(unitId);
+        return ann == null ? void 0 : ann.content;
+      },
+      getContentUnit: (unitId) => {
+        const allUnits = this.plugin.dataManager.getAllContentUnits();
+        const unit = this.plugin.dataManager.getContentUnit(unitId);
+        if (unit) {
+          return unit;
+        } else {
+          return void 0;
+        }
+      },
+      // mindmap 实验开启时,给 mindmap 来源的卡片渲染只读迷你导图作为预览
+      renderMindmapPreview: this.plugin.settings.experimentalMindmap ? async (container, card) => {
+        var _a, _b;
+        const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+        const mm = (_b = (_a = unit == null ? void 0 : unit.metadata) == null ? void 0 : _a.customData) == null ? void 0 : _b.mindmap;
+        if (!mm) {
+          console.debug("[ls-mm-preview] no customData.mindmap for card", card.id);
+          return false;
+        }
+        try {
+          return await renderMindmapPreviewCard(this.app, container, mm);
+        } catch (e) {
+          console.debug("[ls-mm-preview] threw", e);
+          return false;
+        }
+      } : (() => {
+        console.debug("[ls-mm-preview] callback disabled (experimentalMindmap=false)");
+        return void 0;
+      })()
+    };
+    this.contentList = new ContentList(this.state, cardCallbacks);
+    const annotationCallbacks = {
+      onSave: async (unitId, content) => {
+        if (this.savingAnnotations.has(unitId)) {
+          return;
+        }
+        this.savingAnnotations.add(unitId);
+        try {
+          await this.saveAnnotation(unitId, content);
+          requestAnimationFrame(() => {
+            this.refresh();
+          });
+        } finally {
+          setTimeout(() => {
+            this.savingAnnotations.delete(unitId);
+          }, 100);
+        }
+      },
+      onCancel: (unitId) => {
+        this.savingAnnotations.delete(unitId);
+      },
+      getAnnotationContent: (unitId) => {
+        const ann = this.plugin.annotationManager.getContentAnnotation(unitId);
+        return ann == null ? void 0 : ann.content;
+      }
+    };
+    this.annotationEditor = new AnnotationEditor(annotationCallbacks);
+  }
+  setupResizeListener() {
+    let resizeTimer;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        this.detectDisplayMode();
+        this.render();
+      }, 150);
+    });
+  }
+  registerActiveLeafChange() {
+    this.registerEvent(
+      this.app.workspace.on("active-leaf-change", () => {
+        const activeFile = this.app.workspace.getActiveFile();
+        if (activeFile && this.state.displayMode === "sidebar" && activeFile.path !== this.state.selectedFile) {
+          this.state.selectedFile = activeFile.path;
+          this.refresh();
+        }
+      })
+    );
+    this.registerEvent(
+      this.app.workspace.on("file-open", (file) => {
+        if (file && this.state.displayMode === "sidebar" && file.path !== this.state.selectedFile) {
+          this.state.selectedFile = file.path;
+          this.refresh();
+        }
+      })
+    );
+  }
+  // ==================== 显示模式检测 ====================
+  detectDisplayMode() {
+    if (this.state.forceMainMode) {
+      this.state.displayMode = "main";
+      return;
+    }
+    const leaf = this.leaf;
+    const parentSplit = leaf["parentSplit"];
+    const isLeftSidebar = (parentSplit == null ? void 0 : parentSplit["type"]) === "split" && this.app.workspace.leftSplit === parentSplit;
+    const isRightSidebar = (parentSplit == null ? void 0 : parentSplit["type"]) === "split" && this.app.workspace.rightSplit === parentSplit;
+    const width = this.containerEl.clientWidth;
+    const isNarrow = width < 500;
+    const isSidebar = isLeftSidebar || isRightSidebar || isNarrow;
+    this.state.displayMode = isSidebar ? "sidebar" : "main";
+  }
+  // ==================== 渲染方法 ====================
+  refresh() {
+    const hasActiveEditors = document.querySelector(".inline-annotation-editor") !== null;
+    if (hasActiveEditors) {
+      return;
+    }
+    if (this.state.isRendering) {
+      requestAnimationFrame(() => this.refresh());
+      return;
+    }
+    if (this.state.searchDebounceTimer !== null) {
+      window.clearTimeout(this.state.searchDebounceTimer);
+      this.state.searchDebounceTimer = null;
+    }
+    this.state.shouldRestoreScroll = true;
+    this.render();
+  }
+  render() {
+    if (this.state.isRendering)
+      return;
+    this.state.isRendering = true;
+    const container = this.containerEl.children[1];
+    if (this.state.displayMode === "sidebar") {
+      const contentList = container.querySelector(".sidebar-content-list");
+      if (contentList) {
+        this.state.savedScrollPosition = contentList.scrollTop;
+      }
+    }
+    container.empty();
+    container.addClass("learning-overview-container");
+    container.setAttribute("data-mode", this.state.displayMode);
+    if (this.state.displayMode === "sidebar") {
+      this.renderSidebarMode(container);
+    } else {
+      this.renderMainMode(container);
+    }
+    if (this.state.displayMode === "sidebar" && this.state.shouldRestoreScroll) {
+      const contentList = container.querySelector(".sidebar-content-list");
+      if (contentList) {
+        requestAnimationFrame(() => {
+          contentList.scrollTop = this.state.savedScrollPosition;
+        });
+      }
+    }
+    this.state.isRendering = false;
+  }
+  // src/ui/SidebarOverviewView.ts
+  renderSidebarMode(container) {
+    const toolbarEl = this.toolbar.renderSidebarToolbar(container);
+    let statsRow = toolbarEl.querySelector(".stats-row");
+    if (!statsRow) {
+      statsRow = toolbarEl.createDiv({ cls: "stats-row" });
+      statsRow.setAttribute("data-stats-container", "true");
+    }
+    const currentFileUnits = this.getFilteredUnits();
+    const items = this.state.viewType === "cards" ? this.getFilteredCardsForCurrentFile() : currentFileUnits;
+    const leftActions = statsRow.createDiv({ cls: "stats-left" });
+    this.batchActions.renderSelectAllButton(leftActions, items, "sidebar");
+    const centerActions = statsRow.createDiv({ cls: "stats-center" });
+    this.batchActions.renderActionButtons(centerActions, "sidebar");
+    const rightActions = statsRow.createDiv({ cls: "stats-right" });
+    this.batchActions.renderReviewCheckButton(rightActions, "sidebar");
+    const contentListEl = container.createDiv({ cls: "sidebar-content-list" });
+    this.contentList.renderCompactList(contentListEl, currentFileUnits);
+    this.insertReviewReminderAtTop(contentListEl);
+  }
+  renderMainMode(container) {
+    const layout = container.createDiv({ cls: "main-layout" });
+    const leftPanel = layout.createDiv({ cls: "left-panel" });
+    this.renderLeftPanel(leftPanel);
+    const rightPanel = layout.createDiv({ cls: "right-panel" });
+    this.renderRightPanel(rightPanel);
+  }
+  renderLeftPanel(container) {
+    this.toolbar.renderMainToolbar(container);
+    this.renderFixedEntries(container);
+    this.renderFileList(container);
+  }
+  renderRightPanel(container) {
+    if (this.state.viewType === "cards") {
+      this.renderFlashcardsView(container);
+      return;
+    }
+    if (!this.state.selectedFile) {
+      const units = this.getFilteredUnits();
+      const grouped = this.contentList.groupUnits(units);
+      if (grouped.length > 0) {
+        this.state.selectedFile = grouped[0].groupKey;
+      }
+    }
+    if (!this.state.selectedFile) {
+      this.renderEmptyRightPanel(container);
+      return;
+    }
+    const header = container.createDiv({ cls: "grid-header" });
+    header.createEl("h2", { text: this.state.selectedFile || "\u5185\u5BB9" });
+    const headerActions = header.createDiv({ cls: "header-actions" });
+    const visibleItems = this.getVisibleItems();
+    const items = visibleItems.units || [];
+    this.batchActions.renderActionButtons(headerActions, "header");
+    this.batchActions.renderSelectAllButton(headerActions, items, "header");
+    const gridContainer = container.createDiv({ cls: "content-grid" });
+    const filteredUnits = this.getFilteredUnitsForSelectedGroup();
+    this.contentList.renderContentGrid(gridContainer, filteredUnits);
+  }
+  renderFlashcardsView(container) {
+    const flashcards = this.plugin.flashcardManager.getAllFlashcards();
+    if (!this.state.selectedFile) {
+      const grouped = this.contentList.groupFlashcards(
+        flashcards,
+        (id) => this.plugin.dataManager.getContentUnit(id)
+      );
+      if (grouped.length > 0) {
+        this.state.selectedFile = grouped[0].groupKey;
+      }
+    }
+    if (!this.state.selectedFile) {
+      this.renderEmptyRightPanel(container);
+      return;
+    }
+    const header = container.createDiv({ cls: "grid-header" });
+    header.createEl("h2", { text: this.state.selectedFile || "\u95EA\u5361" });
+    const headerActions = header.createDiv({ cls: "header-actions" });
+    const visibleItems = this.getVisibleItems();
+    const items = visibleItems.cards || [];
+    this.batchActions.renderActionButtons(headerActions, "header");
+    this.batchActions.renderSelectAllButton(headerActions, items, "header");
+    const gridContainer = container.createDiv({ cls: "content-grid" });
+    const filteredCards = this.getFilteredCardsForSelectedGroup();
+    this.contentList.renderFlashcardsGrid(gridContainer, filteredCards);
+  }
+  renderFixedEntries(container) {
+    const entries = container.createDiv({ cls: "fixed-entries" });
+    const allNotesBtn = entries.createDiv({
+      cls: `entry-btn ${this.state.viewType === "notes" ? "active" : ""}`
+    });
+    allNotesBtn.appendText("\u{1F4DD} ");
+    allNotesBtn.createSpan({ text: "All notes" });
+    allNotesBtn.addEventListener("mousedown", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (this.state.setViewType("notes")) {
+        this.render();
+      }
+    });
+    const cardListBtn = entries.createDiv({
+      cls: `entry-btn ${this.state.viewType === "cards" ? "active" : ""}`
+    });
+    cardListBtn.appendText("\u{1F0CF} ");
+    cardListBtn.createSpan({ text: "Card list" });
+    cardListBtn.addEventListener("mousedown", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (this.state.setViewType("cards")) {
+        this.render();
+      }
+    });
+  }
+  renderFileList(container) {
+    container.createEl("h3", { text: this.t("fileList.title"), cls: "panel-title" });
+    const fileListContainer = container.createDiv({ cls: "file-list" });
+    this.renderFileListContent(fileListContainer);
+  }
+  renderFileListContent(container) {
+    container.empty();
+    let grouped;
+    if (this.state.viewType === "cards") {
+      const flashcards = this.plugin.flashcardManager.getAllFlashcards();
+      if (this.state.groupMode === "annotation") {
+        const annotatedCards = [];
+        const unannotatedCards = [];
+        flashcards.forEach((card) => {
+          const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+          if (unit && unit.annotationId) {
+            annotatedCards.push(card);
+          } else {
+            unannotatedCards.push(card);
+          }
+        });
+        const fileGroups = /* @__PURE__ */ new Map();
+        annotatedCards.forEach((card) => {
+          const fileName = card.sourceFile;
+          if (!fileGroups.has(fileName)) {
+            fileGroups.set(fileName, []);
+          }
+          fileGroups.get(fileName).push(card);
+        });
+        grouped = [];
+        fileGroups.forEach((cards, fileName) => {
+          grouped.push({
+            groupKey: fileName,
+            count: cards.length
+          });
+        });
+        if (unannotatedCards.length > 0) {
+          grouped.push({
+            groupKey: "filter.unannotated",
+            count: unannotatedCards.length
+          });
+        }
+      } else {
+        const cardGroups = this.contentList.groupFlashcards(
+          flashcards,
+          (id) => this.plugin.dataManager.getContentUnit(id)
+        );
+        grouped = cardGroups.map((g) => ({
+          groupKey: g.groupKey,
+          count: g.cards.length
+        }));
+      }
+    } else {
+      const units = this.getFilteredUnits();
+      if (this.state.groupMode === "annotation") {
+        const annotatedUnits = units.filter((u) => u.annotationId);
+        const unannotatedUnits = units.filter((u) => !u.annotationId);
+        const fileGroups = /* @__PURE__ */ new Map();
+        annotatedUnits.forEach((unit) => {
+          const fileName = unit.source.file;
+          if (!fileGroups.has(fileName)) {
+            fileGroups.set(fileName, []);
+          }
+          fileGroups.get(fileName).push(unit);
+        });
+        grouped = [];
+        fileGroups.forEach((units2, fileName) => {
+          grouped.push({
+            groupKey: fileName,
+            count: units2.length
+          });
+        });
+        if (unannotatedUnits.length > 0) {
+          grouped.push({
+            groupKey: "filter.unannotated",
+            count: unannotatedUnits.length
+          });
+        }
+      } else {
+        const unitGroups = this.contentList.groupUnits(units);
+        grouped = unitGroups.map((g) => ({
+          groupKey: g.groupKey,
+          count: g.units.length
+        }));
+      }
+    }
+    if (grouped.length === 0) {
+      container.createDiv({ text: this.t("empty.noDocuments"), cls: "empty-hint" });
+      return;
+    }
+    if (!this.state.selectedFile && grouped.length > 0) {
+      this.state.selectedFile = grouped[0].groupKey;
+    }
+    grouped.forEach(({ groupKey, count }) => {
+      const fileItem = container.createDiv({
+        cls: `file-item ${this.state.selectedFile === groupKey ? "selected" : ""}`
+      });
+      const displayName = groupKey === "filter.unannotated" ? this.t("filter.unannotated") : groupKey;
+      fileItem.createSpan({ cls: "file-icon", text: this.getGroupIcon() });
+      fileItem.createSpan({ cls: "file-name", text: displayName });
+      fileItem.createSpan({ cls: "file-count", text: String(count) });
+      fileItem.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (this.state.selectedFile !== groupKey) {
+          this.annotationEditor.closeAll();
+          this.state.selectedFile = groupKey;
+          const allItems = container.querySelectorAll(".file-item");
+          allItems.forEach((item) => item.removeClass("selected"));
+          fileItem.addClass("selected");
+          this.refreshRightPanel();
+        }
+      });
+    });
+  }
+  renderEmptyRightPanel(container) {
+    const empty = container.createDiv({ cls: "empty-right-panel" });
+    empty.createDiv({ cls: "empty-icon", text: "\u{1F4ED}" });
+    empty.createDiv({ cls: "empty-text", text: this.t("empty.noContent") });
+  }
+  // ==================== 事件处理方法 ====================
+  handleSearchChange(query) {
+    this.state.setSearchQuery(query);
+    if (this.state.searchDebounceTimer !== null) {
+      window.clearTimeout(this.state.searchDebounceTimer);
+    }
+    this.state.searchDebounceTimer = window.setTimeout(() => {
+      const hasActiveEditors = document.querySelector(".inline-annotation-editor") !== null;
+      if (hasActiveEditors) {
+        return;
+      }
+      this.state.clearSelection();
+      this.refreshContentOnly();
+    }, 300);
+  }
+  // 添加新方法:只刷新内容列表
+  refreshContentOnly() {
+    const hasActiveEditors = document.querySelector(".inline-annotation-editor") !== null;
+    if (hasActiveEditors) {
+      return;
+    }
+    const container = this.containerEl.children[1];
+    if (this.state.displayMode === "sidebar") {
+      const contentList = container.querySelector(".sidebar-content-list");
+      if (contentList) {
+        const scrollPos = contentList.scrollTop;
+        const editingCards = /* @__PURE__ */ new Map();
+        contentList.querySelectorAll(".inline-annotation-editor").forEach((editor) => {
+          const card = editor.closest("[data-unit-id]");
+          if (card) {
+            const unitId = card.getAttribute("data-unit-id");
+            if (unitId) {
+              editingCards.set(unitId, editor.cloneNode(true));
+            }
+          }
+        });
+        contentList.empty();
+        const currentFileUnits = this.getFilteredUnits();
+        this.contentList.renderCompactList(contentList, currentFileUnits);
+        this.insertReviewReminderAtTop(contentList);
+        if (editingCards.size > 0) {
+          requestAnimationFrame(() => {
+            editingCards.forEach((editor, unitId) => {
+              const card = contentList.querySelector(`[data-unit-id="${unitId}"]`);
+              if (card) {
+                card.setAttribute("data-editing", "true");
+                const preview = card.querySelector(".annotation-preview");
+                if (preview) {
+                  preview.replaceWith(editor);
+                  const textarea = editor.querySelector("textarea");
+                  if (textarea) {
+                    this.annotationEditor["bindEditorEvents"](textarea, unitId);
+                    requestAnimationFrame(() => {
+                      textarea.focus();
+                    });
+                  }
+                }
+              }
+            });
+          });
+        }
+        contentList.scrollTop = scrollPos;
+      }
+    } else {
+      this.refreshRightPanel();
+      const fileListContainer = container.querySelector(".file-list");
+      if (fileListContainer) {
+        this.renderFileListContent(fileListContainer);
+      }
+    }
+  }
+  handleFilterChange(mode) {
+    if (this.state.setFilterMode(mode)) {
+      this.state.shouldRestoreScroll = false;
+      this.render();
+    }
+  }
+  handleGroupChange(mode) {
+    if (this.state.setGroupMode(mode)) {
+      this.render();
+    }
+  }
+  handleSelectAll() {
+    const visible = this.getVisibleItems();
+    if (this.state.viewType === "cards") {
+      const cards = visible.cards || [];
+      if (cards.length === 0) {
+        new import_obsidian9.Notice(this.t("notice.noSelection"));
+        return;
+      }
+      this.state.selectAllCards(cards);
+    } else {
+      const units = visible.units || [];
+      if (units.length === 0) {
+        new import_obsidian9.Notice(this.t("notice.noSelection"));
+        return;
+      }
+      this.state.selectAllUnits(units);
+    }
+    this.render();
+  }
+  handleDeselectAll() {
+    const visible = this.getVisibleItems();
+    if (this.state.viewType === "cards") {
+      this.state.deselectAllCards(visible.cards || []);
+    } else {
+      this.state.deselectAllUnits(visible.units || []);
+    }
+    this.render();
+  }
+  handleBatchCreate() {
+    if (this.state.selectedUnitIds.size === 0) {
+      new import_obsidian9.Notice(this.t("notice.noSelection"));
+      return;
+    }
+    void this.batchCreateFlashcards();
+  }
+  handleBatchDelete() {
+    if (this.state.getSelectedCount() === 0) {
+      new import_obsidian9.Notice(this.t("notice.noSelection"));
+      return;
+    }
+    if (this.state.viewType === "cards") {
+      void this.batchDeleteFlashcards();
+    } else {
+      void this.batchDeleteNotes();
+    }
+  }
+  handleBatchCancel() {
+    this.state.clearSelection();
+    this.render();
+  }
+  // ==================== 数据获取方法 ====================
+  getFilteredUnits() {
+    let units = this.plugin.dataManager.getAllContentUnits();
+    if (this.state.displayMode === "sidebar" && this.state.selectedFile) {
+      units = units.filter((unit) => unit.source.file === this.state.selectedFile);
+    }
+    if (this.state.searchQuery) {
+      const query = this.state.searchQuery.toLowerCase();
+      units = units.filter(
+        (unit) => unit.content.toLowerCase().includes(query) || unit.source.file.toLowerCase().includes(query) || unit.metadata.tags.some((tag) => tag.toLowerCase().includes(query))
+      );
+    }
+    if (this.state.filterMode === "annotated") {
+      units = units.filter((u) => u.annotationId);
+    } else if (this.state.filterMode === "flashcards") {
+      units = units.filter((u) => u.flashcardIds.length > 0);
+    }
+    return units;
+  }
+  getFilteredUnitsForSelectedGroup() {
+    const units = this.getFilteredUnits();
+    const selected = this.state.selectedFile;
+    if (!selected)
+      return [];
+    return units.filter((unit) => {
+      if (this.state.groupMode === "file") {
+        return unit.source.file === selected;
+      } else if (this.state.groupMode === "annotation") {
+        if (selected === "filter.unannotated") {
+          return !unit.annotationId;
+        } else {
+          return unit.source.file === selected && !!unit.annotationId;
+        }
+      } else if (this.state.groupMode === "tag") {
+        return unit.metadata.tags.includes(selected);
+      } else if (this.state.groupMode === "date") {
+        return this.formatDate(new Date(unit.metadata.createdAt)) === selected;
+      }
+      return false;
+    });
+  }
+  getFilteredCardsForSelectedGroup() {
+    const flashcards = this.plugin.flashcardManager.getAllFlashcards();
+    const selected = this.state.selectedFile;
+    if (!selected)
+      return [];
+    return flashcards.filter((card) => {
+      if (this.state.groupMode === "file") {
+        return card.sourceFile === this.state.selectedFile;
+      } else if (this.state.groupMode === "annotation") {
+        const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+        if (selected === "filter.unannotated") {
+          return !unit || !unit.annotationId;
+        } else {
+          return card.sourceFile === selected && unit && !!unit.annotationId;
+        }
+      } else if (this.state.groupMode === "tag") {
+        const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+        return unit && unit.metadata.tags.includes(selected) || card.tags && card.tags.includes(selected) || card.deck === this.state.selectedFile || this.state.selectedFile === "group.uncategorized" && (!card.tags || card.tags.length === 0) && !card.deck && (!unit || !unit.metadata.tags || unit.metadata.tags.length === 0);
+      } else if (this.state.groupMode === "date") {
+        return this.formatDate(new Date(card.metadata.createdAt)) === this.state.selectedFile;
+      }
+      return false;
+    });
+  }
+  getVisibleItems() {
+    if (this.state.viewType === "cards") {
+      const cards = this.getFilteredCardsForSelectedGroup();
+      return { cards };
+    } else {
+      const units = this.state.displayMode === "sidebar" ? this.getFilteredUnits() : this.getFilteredUnitsForSelectedGroup();
+      return { units };
+    }
+  }
+  // ==================== 业务逻辑方法 ====================
+  async jumpToSource(unit) {
+    await this.overviewService.jumpToSource(unit, this.app);
+  }
+  async jumpToFlashcardSource(card) {
+    try {
+      const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+      if (unit) {
+        await this.jumpToSource(unit);
+        return;
+      }
+      const file = this.app.vault.getAbstractFileByPath(card.sourceFile);
+      if (!(file instanceof import_obsidian9.TFile)) {
+        new import_obsidian9.Notice(this.t("notice.fileNotFound"));
+        return;
+      }
+      const leaf = this.app.workspace.getLeaf(false);
+      await leaf.openFile(file);
+      if (card.anchorLink) {
+        const blockIdMatch = card.anchorLink.match(/\^\S+/);
+        if (blockIdMatch) {
+          const blockId = blockIdMatch[0].substring(1);
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian9.MarkdownView);
+          if (view && view.editor) {
+            const editor = view.editor;
+            const content = editor.getValue();
+            const lines = content.split("\n");
+            for (let i = 0; i < lines.length; i++) {
+              if (lines[i].includes(`^${blockId}`)) {
+                editor.setCursor({ line: i, ch: 0 });
+                editor.scrollIntoView({ from: { line: i, ch: 0 }, to: { line: i, ch: 0 } }, true);
+                break;
+              }
+            }
+          }
+        }
+      }
+      new import_obsidian9.Notice(this.t("notice.jumpedToSource"));
+    } catch (error) {
+      console.error("Error jumping to flashcard source:", error);
+      new import_obsidian9.Notice(this.t("notice.jumpFailed"));
+    }
+  }
+  async saveAnnotation(unitId, content) {
+    await this.overviewService.saveAnnotation(unitId, content);
+  }
+  async quickGenerateFlashcard(unit) {
+    await this.overviewService.quickGenerateFlashcard(unit);
+    requestAnimationFrame(() => {
+      this.refresh();
+    });
+  }
+  // ==================== 右键菜单 ====================
+  showContextMenu(event, unit) {
+    const callbacks = {
+      onJumpToSource: (unit2) => this.jumpToSource(unit2),
+      onToggleAnnotation: (unit2) => {
+        const cardEl = this.containerEl.querySelector(
+          `[data-unit-id="${unit2.id}"]`
+        );
+        if (cardEl) {
+          this.annotationEditor.toggle(cardEl, unit2);
+        }
+      },
+      onEditFlashcard: (unit2) => {
+        const cardId = unit2.flashcardIds[0];
+        const card = this.plugin.flashcardManager.getFlashcard(cardId);
+        if (card) {
+          new EditFlashcardModal(this.app, this.plugin, card).open();
+        } else {
+          new import_obsidian9.Notice(this.t("notice.flashcardNotFound"));
+        }
+      },
+      onQuickGenerate: (unit2) => this.quickGenerateFlashcard(unit2),
+      onCreateQA: (unit2) => {
+        new ManualFlashcardModal(this.app, this.plugin, unit2, "qa").open();
+      },
+      onCreateCloze: (unit2) => {
+        new ManualFlashcardModal(this.app, this.plugin, unit2, "cloze").open();
+      },
+      onViewStats: () => {
+        void this.plugin.activateStats();
+      },
+      onDelete: async (unit2) => {
+        await this.plugin.dataManager.deleteContentUnit(unit2.id, "user-deleted");
+        new import_obsidian9.Notice(this.t("notice.movedToTrash"));
+        this.refresh();
+      }
+    };
+    const menu = ContextMenuBuilder.buildContentUnitMenu(unit, callbacks, this.plugin.settings.language);
+    menu.showAtMouseEvent(event);
+  }
+  openManualFlashcardModal(unit, type) {
+    new ManualFlashcardModal(this.app, this.plugin, unit, type).open();
+  }
+  showFlashcardContextMenu(event, card) {
+    const callbacks = {
+      onJumpToSource: async (card2) => {
+        await this.overviewService.jumpToFlashcardSource(card2.id, this.app);
+      },
+      onEdit: (card2) => {
+        new EditFlashcardModal(this.app, this.plugin, card2).open();
+      },
+      onViewStats: (card2) => {
+        const statsText = ContextMenuBuilder.formatFlashcardStats(card2);
+        new import_obsidian9.Notice(statsText, 1e4);
+      },
+      onDelete: async (card2) => {
+        await this.plugin.flashcardManager.deleteCard(card2.id, "user-deleted");
+        new import_obsidian9.Notice(this.t("notice.movedToTrash"));
+        this.refresh();
+      }
+    };
+    const menu = ContextMenuBuilder.buildFlashcardMenu(card, callbacks, this.plugin.settings.language);
+    menu.showAtMouseEvent(event);
+  }
+  openEditFlashcardModal(card) {
+    new EditFlashcardModal(this.app, this.plugin, card).open();
+  }
+  // ==================== 批量操作 ====================
+  async batchCreateFlashcards() {
+    const units = Array.from(this.state.selectedUnitIds).map((id) => this.plugin.dataManager.getContentUnit(id)).filter((u) => u !== void 0 && u.flashcardIds.length === 0);
+    if (units.length === 0) {
+      new import_obsidian9.Notice(this.t("notice.alreadyHasFlashcards"));
+      return;
+    }
+    const quickCreator = new QuickFlashcardCreator(this.plugin);
+    const modal = new BatchCreateModal(
+      this.app,
+      this.plugin,
+      quickCreator,
+      units,
+      () => {
+        this.state.clearSelection();
+        this.refresh();
+      }
+    );
+    modal.open();
+  }
+  async batchDeleteNotes() {
+    const stats = this.state.getDeleteStats(this.plugin);
+    let confirmMsg = this.t("confirm.deleteItems");
+    const details = [];
+    if (stats.notes > 0) {
+      details.push(this.t("confirm.notesCount", { count: stats.notes }));
+    }
+    if (stats.cards > 0) {
+      details.push(this.t("confirm.cardsCount", { count: stats.cards }));
+    }
+    if (details.length > 0) {
+      confirmMsg += "\n\n" + details.join("\n");
+    }
+    if (!confirm(confirmMsg)) {
+      return;
+    }
+    const { success, failed } = await this.overviewService.batchDeleteNotes(
+      this.state.selectedUnitIds
+    );
+    this.state.clearSelection();
+    new import_obsidian9.Notice(this.t("notice.batchDeleted", { success, failed: failed > 0 ? failed : 0 }));
+    this.refresh();
+  }
+  async batchDeleteFlashcards() {
+    const stats = this.state.getDeleteStats(this.plugin);
+    const confirmMsg = this.t("confirm.deleteFlashcards", { count: stats.cards });
+    if (!confirm(confirmMsg)) {
+      return;
+    }
+    let success = 0;
+    let failed = 0;
+    for (const cardId of this.state.selectedCardIds) {
+      try {
+        await this.plugin.flashcardManager.deleteCard(cardId);
+        success++;
+      } catch (error) {
+        console.error("Error deleting flashcard:", error);
+        failed++;
+      }
+    }
+    this.state.clearSelection();
+    new import_obsidian9.Notice(this.t("notice.batchDeleted", { success, failed: failed > 0 ? failed : 0 }));
+    this.refresh();
+  }
+  // ==================== 工具方法 ====================
+  refreshRightPanel() {
+    const container = this.containerEl.children[1];
+    const rightPanel = container.querySelector(".right-panel");
+    if (rightPanel) {
+      rightPanel.empty();
+      this.renderRightPanel(rightPanel);
+    }
+  }
+  getFilteredCardsForCurrentFile() {
+    if (this.state.displayMode !== "sidebar" || !this.state.selectedFile) {
+      return [];
+    }
+    const flashcards = this.plugin.flashcardManager.getAllFlashcards();
+    return flashcards.filter((card) => card.sourceFile === this.state.selectedFile);
+  }
+  checkFilterHasNotes(mode) {
+    if (this.state.displayMode !== "sidebar" || !this.state.selectedFile) {
+      return true;
+    }
+    const units = this.plugin.dataManager.getAllContentUnits().filter((u) => u.source.file === this.state.selectedFile);
+    if (mode === "all") {
+      return units.length > 0;
+    } else if (mode === "annotated") {
+      return units.some((u) => u.annotationId);
+    } else if (mode === "flashcards") {
+      return units.some((u) => u.flashcardIds.length > 0);
+    }
+    return true;
+  }
+  checkGroupHasNotes(mode) {
+    if (this.state.displayMode !== "sidebar" || !this.state.selectedFile) {
+      return true;
+    }
+    const units = this.plugin.dataManager.getAllContentUnits().filter((u) => u.source.file === this.state.selectedFile);
+    if (units.length === 0)
+      return false;
+    if (mode === "file") {
+      return true;
+    } else if (mode === "tag") {
+      return units.some((u) => u.metadata.tags.length > 0);
+    } else if (mode === "date") {
+      return true;
+    } else if (mode === "annotation") {
+      return units.some((u) => u.annotationId);
+    }
+    return true;
+  }
+  getGroupIcon() {
+    switch (this.state.groupMode) {
+      case "file":
+        return "\u{1F4C4}";
+      case "annotation":
+        return "\u{1F4AC}";
+      case "tag":
+        return "\u{1F3F7}\uFE0F";
+      case "date":
+        return "\u{1F4C5}";
+      default:
+        return "\u{1F4C1}";
+    }
+  }
+  formatDate(date) {
+    if (!date)
+      return "";
+    return date.toLocaleDateString("zh-CN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    });
+  }
+  // ==================== 复习检查 ====================
+  // 每日提醒复习
+  // 手动触发复习提醒检查
+  checkReviewReminder() {
+    const isDismissed = this.isReminderDismissedToday();
+    if (isDismissed) {
+      localStorage.removeItem("learning-system-reminder-dismissed");
+    } else {
+      this.markReminderDismissed();
+    }
+    this.refresh();
+    requestAnimationFrame(() => {
+      const contentList = this.containerEl.querySelector(".sidebar-content-list");
+      if (contentList) {
+        contentList.scrollTop = 0;
+      }
+    });
+  }
+  startReview() {
+    void this.plugin.activateReview();
+  }
+  markReminderDismissed() {
+    const today = new Date().toDateString();
+    localStorage.setItem("learning-system-reminder-dismissed", today);
+  }
+  isReminderDismissedToday() {
+    const today = new Date().toDateString();
+    const dismissed = localStorage.getItem("learning-system-reminder-dismissed");
+    return dismissed === today;
+  }
+  insertReviewReminderAtTop(container) {
+    if (this.isReminderDismissedToday())
+      return;
+    const dueCount = this.plugin.flashcardManager.getDueCards().length;
+    if (dueCount === 0)
+      return;
+    const banner = this.createReviewBanner(dueCount);
+    container.insertBefore(banner, container.firstChild);
+    const divider2 = document.createElement("div");
+    divider2.className = "review-divider";
+    setCssProps(divider2, {
+      width: "100%",
+      height: "1px",
+      "background-color": "var(--background-modifier-border)",
+      margin: "12px 0"
+    });
+    if (banner.nextSibling) {
+      container.insertBefore(divider2, banner.nextSibling);
+    } else {
+      container.appendChild(divider2);
+    }
+  }
+  createReviewBanner(count) {
+    const banner = document.createElement("div");
+    banner.className = "content-list-review-reminder";
+    const dueCards = this.plugin.flashcardManager.getDueCards();
+    const actualDueCount = dueCards.length;
+    const allCards = this.plugin.flashcardManager.getAllFlashcards();
+    const today = new Date().setHours(0, 0, 0, 0);
+    const todayDueCardIds = new Set(
+      allCards.filter((card) => {
+        const dueDate = new Date(card.scheduling.due).setHours(0, 0, 0, 0);
+        return dueDate <= today;
+      }).map((card) => card.id)
+    );
+    const reviewedToday = allCards.filter((card) => {
+      if (!card.stats.lastReview)
+        return false;
+      const lastReviewDate = new Date(card.stats.lastReview).setHours(0, 0, 0, 0);
+      return lastReviewDate === today && todayDueCardIds.has(card.id);
+    }).length;
+    const totalToday = reviewedToday + actualDueCount;
+    const progressPercent = totalToday > 0 ? Math.round(reviewedToday / totalToday * 100) : 0;
+    const mostUrgent = dueCards.length > 0 ? dueCards.reduce(
+      (earliest, card) => card.scheduling.due < earliest ? card.scheduling.due : earliest,
+      Date.now()
+    ) : Date.now();
+    const hoursSinceDue = Math.floor((Date.now() - mostUrgent) / (1e3 * 60 * 60));
+    const delayText = this.getDelayText(hoursSinceDue);
+    const streakDays = this.getReviewStreak();
+    const header = banner.createDiv({ cls: "reminder-header" });
+    const headerText = header.createDiv({ cls: "reminder-text" });
+    headerText.createEl("strong", {
+      text: this.t("review.todayProgress", { reviewed: reviewedToday, total: totalToday })
+    });
+    const stats = banner.createDiv({ cls: "reminder-stats" });
+    stats.createDiv({ cls: "stat-item delay-warning", text: delayText });
+    if (streakDays > 0) {
+      stats.createDiv({
+        cls: "stat-item streak-info",
+        text: this.t("review.streak", { days: streakDays })
+      });
+    }
+    const actions = banner.createDiv({ cls: "reminder-actions" });
+    actions.createEl("button", { cls: "reminder-btn primary", text: this.t("review.start") });
+    setCssProps(banner, { "font-size": "0.85em" });
+    setCssProps(actions, { display: "flex", "justify-content": "center" });
+    banner.querySelector(".primary").addEventListener("mousedown", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      this.startReview();
+      banner.remove();
+      this.markReminderDismissed();
+    });
+    return banner;
+  }
+  // 新增辅助方法 1: 获取延后提示文本
+  getDelayText(hoursSinceDue) {
+    if (hoursSinceDue < 1) {
+      return this.t("review.justDue");
+    } else if (hoursSinceDue < 6) {
+      return this.t("review.delayedHoursShort", { hours: hoursSinceDue });
+    } else if (hoursSinceDue < 24) {
+      return this.t("review.urgentHours", { hours: hoursSinceDue });
+    } else {
+      const days = Math.floor(hoursSinceDue / 24);
+      return this.t("review.urgentDays", { days });
+    }
+  }
+  // 新增辅助方法 2: 获取连续复习天数
+  getReviewStreak() {
+    const allCards = this.plugin.flashcardManager.getAllFlashcards();
+    const reviewDates = /* @__PURE__ */ new Set();
+    allCards.forEach((card) => {
+      if (card.stats.lastReview) {
+        const dateStr = new Date(card.stats.lastReview).toLocaleDateString("zh-CN");
+        reviewDates.add(dateStr);
+      }
+    });
+    let streak = 0;
+    let checkDate = new Date();
+    while (streak < 365) {
+      const dateStr = checkDate.toLocaleDateString("zh-CN");
+      if (reviewDates.has(dateStr)) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }
+  t(key, params) {
+    return t(key, this.plugin.settings.language, params);
+  }
+};
 
 // src/ui/view/ReviewView.ts
+var import_obsidian11 = require("obsidian");
+
+// src/core/CardScheduler.ts
+var CardScheduler = class {
+  /**
+   * 计算下次复习时间（基于 SM-2 算法）
+   */
+  schedule(card, ease, timeSpent, userAnswer) {
+    const oldScheduling = { ...card.scheduling };
+    const newScheduling = { ...card.scheduling };
+    const now = Date.now();
+    card.stats.totalReviews++;
+    card.stats.lastReview = now;
+    const totalTime = card.stats.averageTime * (card.stats.totalReviews - 1) + timeSpent;
+    card.stats.averageTime = totalTime / card.stats.totalReviews;
+    switch (ease) {
+      case "again":
+        this.scheduleAgain(newScheduling, card.stats);
+        break;
+      case "hard":
+        this.scheduleHard(newScheduling, card.stats);
+        break;
+      case "good":
+        this.scheduleGood(newScheduling, card.stats);
+        break;
+      case "easy":
+        this.scheduleEasy(newScheduling, card.stats);
+        break;
+    }
+    card.scheduling = newScheduling;
+    card.metadata.updatedAt = now;
+    const reviewLog = {
+      flashcardId: card.id,
+      timestamp: now,
+      response: {
+        userAnswer,
+        timeSpent,
+        ease
+      },
+      schedulingChange: {
+        oldInterval: oldScheduling.interval,
+        newInterval: newScheduling.interval,
+        oldEase: oldScheduling.ease,
+        newEase: newScheduling.ease
+      }
+    };
+    return { updatedCard: card, reviewLog };
+  }
+  /**
+   * Again - 完全忘记
+   */
+  scheduleAgain(scheduling, stats) {
+    scheduling.interval = 1;
+    scheduling.ease = Math.max(1.3, scheduling.ease - 0.2);
+    scheduling.due = Date.now() + scheduling.interval * 60 * 1e3;
+    scheduling.lapses++;
+    scheduling.reps++;
+    if (scheduling.state === "new") {
+      scheduling.state = "learning";
+    } else {
+      scheduling.state = "relearning";
+    }
+    stats.difficulty = Math.min(1, stats.difficulty + 0.1);
+  }
+  /**
+   * Hard - 困难
+   */
+  scheduleHard(scheduling, stats) {
+    scheduling.reps++;
+    if (scheduling.state === "new" || scheduling.state === "learning") {
+      scheduling.interval = 10;
+      scheduling.due = Date.now() + 10 * 60 * 1e3;
+      scheduling.state = "learning";
+    } else {
+      scheduling.interval = Math.max(1, scheduling.interval * 1.2);
+      scheduling.ease = Math.max(1.3, scheduling.ease - 0.15);
+      scheduling.due = Date.now() + scheduling.interval * 24 * 60 * 60 * 1e3;
+      scheduling.state = "review";
+    }
+    stats.difficulty = Math.min(1, stats.difficulty + 0.05);
+    stats.correctCount += 0.5;
+  }
+  /**
+   * Good - 正确
+   */
+  scheduleGood(scheduling, stats) {
+    scheduling.reps++;
+    stats.correctCount++;
+    if (scheduling.state === "new") {
+      scheduling.interval = 1;
+      scheduling.due = Date.now() + 1 * 24 * 60 * 60 * 1e3;
+      scheduling.state = "learning";
+    } else if (scheduling.state === "learning") {
+      if (scheduling.interval < 1) {
+        scheduling.interval = 1;
+      } else {
+        scheduling.interval = 3;
+      }
+      scheduling.due = Date.now() + scheduling.interval * 24 * 60 * 60 * 1e3;
+      scheduling.state = "review";
+    } else {
+      scheduling.interval = scheduling.interval * scheduling.ease;
+      scheduling.due = Date.now() + scheduling.interval * 24 * 60 * 60 * 1e3;
+      scheduling.ease = scheduling.ease + 0.1;
+      scheduling.state = "review";
+    }
+    stats.difficulty = Math.max(0, stats.difficulty - 0.05);
+  }
+  /**
+   * Easy - 非常简单
+   */
+  scheduleEasy(scheduling, stats) {
+    scheduling.reps++;
+    stats.correctCount++;
+    if (scheduling.state === "new") {
+      scheduling.interval = 4;
+      scheduling.due = Date.now() + 4 * 24 * 60 * 60 * 1e3;
+      scheduling.state = "review";
+    } else if (scheduling.state === "learning") {
+      scheduling.interval = 7;
+      scheduling.due = Date.now() + 7 * 24 * 60 * 60 * 1e3;
+      scheduling.state = "review";
+    } else {
+      scheduling.interval = scheduling.interval * (scheduling.ease + 0.3);
+      scheduling.due = Date.now() + scheduling.interval * 24 * 60 * 60 * 1e3;
+      scheduling.ease = scheduling.ease + 0.15;
+      scheduling.state = "review";
+    }
+    stats.difficulty = Math.max(0, stats.difficulty - 0.1);
+  }
+  /**
+   * 评估用户答案（用于输入答案模式）
+   */
+  /**
+   * 评估用户答案(用于输入答案模式)
+   */
+  evaluateAnswer(correctAnswer, userAnswer) {
+    if (Array.isArray(correctAnswer) && Array.isArray(userAnswer)) {
+      let correctCount = 0;
+      const total = correctAnswer.length;
+      for (let i = 0; i < total; i++) {
+        const evaluation = this.evaluateSingleAnswer(
+          correctAnswer[i],
+          userAnswer[i] || ""
+        );
+        if (evaluation.similarity >= 0.9)
+          correctCount++;
+        else if (evaluation.similarity >= 0.6)
+          correctCount += 0.5;
+      }
+      const overallSimilarity = correctCount / total;
+      if (overallSimilarity >= 0.9) {
+        return { correctness: "correct", similarity: overallSimilarity };
+      } else if (overallSimilarity >= 0.6) {
+        return { correctness: "partial", similarity: overallSimilarity };
+      } else {
+        return { correctness: "wrong", similarity: overallSimilarity };
+      }
+    }
+    return this.evaluateSingleAnswer(
+      correctAnswer,
+      userAnswer
+    );
+  }
+  /**
+   * 🆕 评估单个答案(支持 "/" 分隔的多个正确答案)
+   */
+  evaluateSingleAnswer(correctAnswer, userAnswer) {
+    const correct = this.normalize(correctAnswer);
+    const user = this.normalize(userAnswer);
+    if (user.length === 0) {
+      return { correctness: "wrong", similarity: 0 };
+    }
+    if (correctAnswer.includes("/") || correctAnswer.includes("|")) {
+      const alternatives = correctAnswer.split(/[/|]/).map((alt) => this.normalize(alt.trim())).filter((alt) => alt.length > 0);
+      let maxSimilarity = 0;
+      for (const alternative of alternatives) {
+        if (user === alternative) {
+          return { correctness: "correct", similarity: 1 };
+        }
+        const similarity2 = this.calculateSimilarity(alternative, user);
+        maxSimilarity = Math.max(maxSimilarity, similarity2);
+      }
+      if (maxSimilarity >= 0.9) {
+        return { correctness: "correct", similarity: maxSimilarity };
+      } else if (maxSimilarity >= 0.7) {
+        return { correctness: "partial", similarity: maxSimilarity };
+      } else {
+        return { correctness: "wrong", similarity: maxSimilarity };
+      }
+    }
+    const lengthRatio = Math.min(user.length, correct.length) / Math.max(user.length, correct.length);
+    if (lengthRatio < 0.3 && user.length < 6) {
+      return { correctness: "wrong", similarity: 0 };
+    }
+    const similarity = this.calculateSimilarity(correct, user);
+    const coverage = this.calculateTokenCoverage(correct, user);
+    if (similarity >= 0.9) {
+      return { correctness: "correct", similarity };
+    }
+    if (similarity < 0.7 && coverage >= 0.6) {
+      return { correctness: "partial", similarity };
+    }
+    if (similarity >= 0.7) {
+      return { correctness: "partial", similarity };
+    }
+    return { correctness: "wrong", similarity };
+  }
+  /**
+   * 标准化文本
+   */
+  normalize(text) {
+    return text.toLowerCase().trim().replace(/\s+/g, " ").replace(/\n+/g, " ").replace(/[，。！？、；：""''（）《》【】.,!?;:"'()[\]{}]/g, "");
+  }
+  /**
+   * 计算相似度（Levenshtein 距离）
+   */
+  calculateSimilarity(str1, str2) {
+    if (str1 === str2)
+      return 1;
+    if (str1.length === 0 || str2.length === 0)
+      return 0;
+    const matrix = [];
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+    for (let j2 = 0; j2 <= str1.length; j2++) {
+      matrix[0][j2] = j2;
+    }
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j2 = 1; j2 <= str1.length; j2++) {
+        if (str2.charAt(i - 1) === str1.charAt(j2 - 1)) {
+          matrix[i][j2] = matrix[i - 1][j2 - 1];
+        } else {
+          matrix[i][j2] = Math.min(
+            matrix[i - 1][j2 - 1] + 1,
+            // 替换
+            matrix[i][j2 - 1] + 1,
+            // 插入
+            matrix[i - 1][j2] + 1
+            // 删除
+          );
+        }
+      }
+    }
+    const distance = matrix[str2.length][str1.length];
+    const maxLength = Math.max(str1.length, str2.length);
+    return 1 - distance / maxLength;
+  }
+  /**
+   * 计算关键词覆盖率
+   * 用户答案中命中了多少标准答案的词
+   */
+  calculateTokenCoverage(correct, user) {
+    const correctTokens = correct.split(" ").filter((t2) => t2.length > 1);
+    const userTokens = new Set(user.split(" "));
+    if (correctTokens.length === 0)
+      return 0;
+    let hit = 0;
+    for (const token of correctTokens) {
+      if (userTokens.has(token))
+        hit++;
+    }
+    return hit / correctTokens.length;
+  }
+  /**
+   * 根据相似度建议难度
+   */
+  suggestEase(similarity) {
+    if (similarity >= 0.8)
+      return "easy";
+    if (similarity >= 0.7)
+      return "good";
+    if (similarity >= 0.5)
+      return "hard";
+    return "again";
+  }
+};
+
+// src/ui/components/modals/FlashcardEditModal.ts
+var import_obsidian10 = require("obsidian");
+var FlashcardEditModal = class extends import_obsidian10.Modal {
+  constructor(app, plugin, card, onSubmit) {
+    super(app);
+    this.plugin = plugin;
+    this.card = card;
+    this.onSubmit = onSubmit;
+  }
+  onOpen() {
+    var _a, _b;
+    const { contentEl } = this;
+    const lang = this.plugin.settings.language;
+    contentEl.empty();
+    contentEl.createEl("h3", { text: t("flashcardEdit.title", lang) });
+    contentEl.createEl("label", { text: t("flashcardEdit.question", lang) });
+    const questionInput = contentEl.createEl("textarea");
+    questionInput.value = this.card.front;
+    contentEl.createEl("label", { text: t("flashcardEdit.answer", lang) });
+    const answerInput = contentEl.createEl("textarea");
+    answerInput.value = this.card.type === "cloze" ? (_b = (_a = this.card.back) == null ? void 0 : _a[0]) != null ? _b : "" : this.card.back;
+    const saveBtn = contentEl.createEl("button", { text: t("flashcardEdit.save", lang) });
+    saveBtn.onclick = () => {
+      this.onSubmit(
+        questionInput.value.trim(),
+        answerInput.value.trim()
+      );
+      this.close();
+    };
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+};
+
+// src/ui/stats/reviewStateManager.ts
+var ReviewStateManager = class {
+  // ✅ 新增缓存
+  constructor() {
+    this.answerCache = /* @__PURE__ */ new Map();
+    this.state = this.createInitialState();
+  }
+  createInitialState() {
+    return {
+      showAnswer: false,
+      startTime: 0,
+      userAnswers: [],
+      userAnswer: ""
+    };
+  }
+  getState() {
+    return this.state;
+  }
+  reset() {
+    this.state = this.createInitialState();
+  }
+  // ✅ 保存当前卡片的答案到缓存
+  saveAnswerToCache(cardId) {
+    this.answerCache.set(cardId, {
+      userAnswer: this.state.userAnswer,
+      userAnswers: [...this.state.userAnswers]
+    });
+  }
+  // ✅ 从缓存恢复答案
+  restoreAnswerFromCache(cardId) {
+    const cached = this.answerCache.get(cardId);
+    if (cached) {
+      this.state.userAnswer = cached.userAnswer;
+      this.state.userAnswers = [...cached.userAnswers];
+    } else {
+    }
+  }
+  // ✅ 清除指定卡片的缓存
+  clearCache(cardId) {
+    this.answerCache.delete(cardId);
+  }
+  updateForNewCard(newCard, isSameCard, direction) {
+    if (!isSameCard) {
+      if (direction === "prev") {
+        this.restoreAnswerFromCache(newCard.id);
+      } else {
+        this.state.showAnswer = false;
+        this.state.userAnswer = "";
+        if (newCard.type === "cloze" && newCard.cloze) {
+          this.state.userAnswers = new Array(
+            newCard.cloze.deletions.length
+          ).fill("");
+        } else {
+          this.state.userAnswers = [];
+        }
+      }
+    }
+    this.state.startTime = Date.now();
+  }
+  setShowAnswer(show) {
+    this.state.showAnswer = show;
+  }
+  setUserAnswer(answer) {
+    this.state.userAnswer = answer;
+  }
+  setUserAnswers(answers) {
+    this.state.userAnswers = answers;
+  }
+  updateUserAnswerAtIndex(index, value) {
+    this.state.userAnswers[index] = value;
+  }
+  ensureUserAnswersLength(length) {
+    if (this.state.userAnswers.length < length) {
+      this.state.userAnswers = new Array(length).fill("");
+    }
+  }
+  getTimeSpent() {
+    return (Date.now() - this.state.startTime) / 1e3;
+  }
+};
+
+// src/ui/components/TableRenderer.ts
+var TableRenderer = class {
+  // 检测是否为表格格式
+  static isTableFormat(text) {
+    const lines = text.trim().split("\n");
+    if (lines.length < 2)
+      return false;
+    const hasSeparator = lines.some((line) => /^\|?[\s-:|]+\|?$/.test(line.trim()));
+    const pipeLines = lines.filter((line) => line.includes("|")).length;
+    return hasSeparator || pipeLines >= lines.length * 0.7;
+  }
+  // 渲染表格
+  static renderTable(markdown, showAnswer = false) {
+    const container = document.createElement("div");
+    if (!(markdown == null ? void 0 : markdown.trim())) {
+      container.textContent = "(empty table)";
+      return container;
+    }
+    const lines = markdown.trim().split("\n");
+    if (lines.length < 2) {
+      container.textContent = markdown;
+      return container;
+    }
+    const table = container.createEl("table", {
+      cls: "learning-system-table flashcard-review-table"
+    });
+    const separatorIndex = this.findSeparatorIndex(lines);
+    if (separatorIndex > 0) {
+      this.renderTableWithHeader(table, lines, separatorIndex, showAnswer);
+    } else {
+      this.renderTableWithoutHeader(table, lines, showAnswer);
+    }
+    return container;
+  }
+  // 查找分隔符位置
+  static findSeparatorIndex(lines) {
+    return lines.findIndex((line) => {
+      const cleaned = line.replace(/[\s|]/g, "");
+      return cleaned.length >= 3 && /^[-:]+$/.test(cleaned);
+    });
+  }
+  // 渲染带表头的表格
+  static renderTableWithHeader(table, lines, separatorIndex, showAnswer) {
+    const headerCells = this.parseCells(lines[separatorIndex - 1]);
+    const thead = table.createEl("thead");
+    const headerRow = thead.createEl("tr");
+    headerCells.forEach((cell) => {
+      const th = headerRow.createEl("th");
+      this.appendCellInto(th, cell, showAnswer);
+    });
+    const tbody = table.createEl("tbody");
+    for (let i = separatorIndex + 1; i < lines.length; i++) {
+      this.renderTableRow(tbody, lines[i], showAnswer);
+    }
+  }
+  // 渲染无表头的表格
+  static renderTableWithoutHeader(table, lines, showAnswer) {
+    const tbody = table.createEl("tbody");
+    lines.forEach((line) => this.renderTableRow(tbody, line, showAnswer));
+  }
+  // 渲染单行
+  static renderTableRow(tbody, line, showAnswer) {
+    if (!line.trim())
+      return;
+    const cells = this.parseCells(line);
+    if (cells.length === 0)
+      return;
+    const row = tbody.createEl("tr");
+    cells.forEach((cell) => {
+      const td = row.createEl("td");
+      this.appendCellInto(td, cell, showAnswer);
+    });
+  }
+  // 解析单元格
+  static parseCells(line) {
+    let trimmed = line.trim();
+    if (trimmed.startsWith("|"))
+      trimmed = trimmed.slice(1);
+    if (trimmed.endsWith("|"))
+      trimmed = trimmed.slice(0, -1);
+    const cells = trimmed.split("|").map((c) => c.trim()).filter((c) => c.length > 0);
+    return cells;
+  }
+  // 把单元格内容渲染进目标元素(用 DOM API,不走 innerHTML,避免 XSS)。
+  // - 不含 == 标记 → 纯文本;
+  // - 含 ==X==:showAnswer 时渲染 .revealed 文本,否则渲染 .cloze-blank 空 span。
+  static appendCellInto(el, cell, showAnswer) {
+    if (!cell.includes("==")) {
+      el.setText(cell);
+      return;
+    }
+    const re2 = /==([^=]+)==/g;
+    let last = 0;
+    let m;
+    while ((m = re2.exec(cell)) !== null) {
+      if (m.index > last)
+        el.appendText(cell.slice(last, m.index));
+      if (showAnswer) {
+        el.createSpan({ cls: "revealed", text: m[1] });
+      } else {
+        el.createSpan({ cls: "cloze-blank" });
+      }
+      last = m.index + m[0].length;
+    }
+    if (last < cell.length)
+      el.appendText(cell.slice(last));
+  }
+  // 渲染带用户答案的表格（完形填空用）
+  static renderTableWithUserAnswers(originalMarkdown, deletions, userAnswers, scheduler) {
+    const container = document.createElement("div");
+    const lines = originalMarkdown.trim().split("\n");
+    if (lines.length < 2) {
+      container.textContent = originalMarkdown;
+      return container;
+    }
+    const table = container.createEl("table", {
+      cls: "learning-system-table flashcard-review-table user-answer-table"
+    });
+    const separatorIndex = this.findSeparatorIndex(lines);
+    let deletionIndex = 0;
+    if (separatorIndex > 0) {
+      const headerCells = this.parseCells(lines[separatorIndex - 1]);
+      const thead = table.createEl("thead");
+      const headerRow = thead.createEl("tr");
+      let headerIndex = 0;
+      headerCells.forEach((cell) => {
+        const th = headerRow.createEl("th");
+        const correctnessClass = this.appendUserAnswerCellInto(
+          th,
+          cell,
+          deletions,
+          userAnswers,
+          deletionIndex,
+          scheduler
+        );
+        if (correctnessClass)
+          th.classList.add(correctnessClass);
+        if (cell.includes("==")) {
+          deletionIndex++;
+        }
+      });
+    }
+    const tbody = table.createEl("tbody");
+    const startRow = separatorIndex > 0 ? separatorIndex + 1 : 0;
+    for (let i = startRow; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.trim())
+        continue;
+      const cells = this.parseCells(line);
+      if (cells.length === 0)
+        continue;
+      const row = tbody.createEl("tr");
+      cells.forEach((cell) => {
+        const td = row.createEl("td");
+        const correctnessClass = this.appendUserAnswerCellInto(
+          td,
+          cell,
+          deletions,
+          userAnswers,
+          deletionIndex,
+          scheduler
+        );
+        if (correctnessClass)
+          td.classList.add(correctnessClass);
+        if (cell.includes("==")) {
+          deletionIndex++;
+        }
+      });
+    }
+    return container;
+  }
+  /**
+   * 把带用户答案的单元格内容渲染进目标元素(DOM API,无 innerHTML),
+   * 返回单元格整体正确性 class(供调用方加到 td/th 上)。
+   */
+  static appendUserAnswerCellInto(el, cell, deletions, userAnswers, deletionIndex, scheduler) {
+    if (!cell.includes("==")) {
+      el.setText(cell);
+      return null;
+    }
+    if (deletionIndex >= deletions.length) {
+      const re3 = /==([^=]+)==/g;
+      let last2 = 0;
+      let m2;
+      while ((m2 = re3.exec(cell)) !== null) {
+        if (m2.index > last2)
+          el.appendText(cell.slice(last2, m2.index));
+        el.createSpan({ cls: "cloze-blank" });
+        last2 = m2.index + m2[0].length;
+      }
+      if (last2 < cell.length)
+        el.appendText(cell.slice(last2));
+      return null;
+    }
+    const correctAnswer = deletions[deletionIndex].answer;
+    const userAnswer = userAnswers[deletionIndex] || "";
+    const evaluation = scheduler.evaluateAnswer(correctAnswer, userAnswer);
+    const displayText2 = userAnswer || "(empty)";
+    const correctnessClass = evaluation.correctness;
+    const re2 = /==([^=]+)==/g;
+    let last = 0;
+    let m;
+    while ((m = re2.exec(cell)) !== null) {
+      if (m.index > last)
+        el.appendText(cell.slice(last, m.index));
+      el.createSpan({ cls: `user-answer-cell ${correctnessClass}`, text: displayText2 });
+      last = m.index + m[0].length;
+    }
+    if (last < cell.length)
+      el.appendText(cell.slice(last));
+    return `cell-${correctnessClass}`;
+  }
+};
+
+// src/ui/components/reviewCardRender.ts
+init_setCssProps();
+function appendTextLines(el, text) {
+  const lines = text.split("\n");
+  lines.forEach((line, i) => {
+    el.appendText(line);
+    if (i < lines.length - 1)
+      el.createEl("br");
+  });
+}
+function appendClozeLines(el, text, clozeClass) {
+  const lines = text.split("\n");
+  lines.forEach((line, lineIdx) => {
+    let last = 0;
+    const re2 = /==([^=]+)==/g;
+    let m;
+    while ((m = re2.exec(line)) !== null) {
+      if (m.index > last)
+        el.appendText(line.slice(last, m.index));
+      el.createSpan({ cls: clozeClass, text: m[1] });
+      last = m.index + m[0].length;
+    }
+    if (last < line.length)
+      el.appendText(line.slice(last));
+    if (lineIdx < lines.length - 1)
+      el.createEl("br");
+  });
+}
+function appendClozeBlanksWithUnderline(el, text) {
+  const lines = text.split("\n");
+  lines.forEach((line, lineIdx) => {
+    let last = 0;
+    const re2 = /==([^=]+)==/g;
+    let m;
+    while ((m = re2.exec(line)) !== null) {
+      if (m.index > last)
+        el.appendText(line.slice(last, m.index));
+      const span = el.createSpan({ cls: "cloze-underline" });
+      const widthEm = Math.max(m[1].length * 0.6, 3);
+      setCssProps(span, { "min-width": `${widthEm}em` });
+      span.appendText("\xA0");
+      last = m.index + m[0].length;
+    }
+    if (last < line.length)
+      el.appendText(line.slice(last));
+    if (lineIdx < lines.length - 1)
+      el.createEl("br");
+  });
+}
+var ClozeCardRenderer = class {
+  normalizeOriginal(card) {
+    var _a;
+    const original = ((_a = card.cloze) == null ? void 0 : _a.original) || "";
+    if (/==[^=]+==/.test(original))
+      return original;
+    const answer = Array.isArray(card.back) ? card.back[0] : card.back;
+    if (answer && original.includes(answer)) {
+      return original.replace(answer, `==${answer}==`);
+    }
+    return original;
+  }
+  renderQuestion(container, card, state, updateState) {
+    var _a, _b;
+    const questionText = container.createDiv({ cls: "question-text" });
+    const isTable = TableRenderer.isTableFormat(card.front);
+    if (isTable) {
+      const tableEl = this.renderTableWithInputPreview(
+        card.front,
+        ((_a = card.cloze) == null ? void 0 : _a.deletions) || [],
+        state
+      );
+      questionText.appendChild(tableEl);
+      questionText.classList.add("table-question");
+    } else {
+      const sourceText = ((_b = card.cloze) == null ? void 0 : _b.original) || card.front;
+      appendClozeBlanksWithUnderline(questionText, sourceText);
+    }
+    if (card.cloze) {
+      const normalizedOriginal = this.normalizeOriginal(card);
+      const actualBlankCount = (normalizedOriginal.match(/==[^=]+==/g) || []).length;
+      const blankCount = Math.max(actualBlankCount, card.cloze.deletions.length);
+      if (state.userAnswers.length !== blankCount) {
+        state.userAnswers = new Array(blankCount).fill("");
+      }
+      const inputArea = container.createDiv({ cls: "cloze-input-area" });
+      inputArea.createEl("h4", { text: `Fill in the blanks (${blankCount} total):` });
+      const singleInputGroup = inputArea.createDiv({ cls: "single-input-group" });
+      const initialValue = state.userAnswers.filter((a) => a).join(" | ");
+      const input = singleInputGroup.createEl("input", {
+        type: "text",
+        placeholder: `Enter all ${blankCount} answers separated by |, comma, or spaces...`,
+        cls: "cloze-single-input",
+        value: initialValue
+      });
+      const updatePreview = (inputValue) => {
+        var _a2;
+        const parts = this.parseMultipleAnswers(inputValue, blankCount);
+        updateState.setUserAnswers(parts);
+        if (isTable) {
+          questionText.empty();
+          const updatedTableEl = this.renderTableWithInputPreview(
+            card.front,
+            ((_a2 = card.cloze) == null ? void 0 : _a2.deletions) || [],
+            state
+          );
+          questionText.appendChild(updatedTableEl);
+        }
+      };
+      input.addEventListener("input", (e) => {
+        const inputValue = e.target.value;
+        updatePreview(inputValue);
+      });
+      updatePreview(initialValue);
+      setTimeout(() => input.focus(), 50);
+    }
+  }
+  // ← 添加新方法:渲染带输入预览的表格
+  renderTableWithInputPreview(markdown, deletions, state) {
+    const container = document.createElement("div");
+    if (!(markdown == null ? void 0 : markdown.trim())) {
+      container.textContent = "(empty table)";
+      return container;
+    }
+    const lines = markdown.trim().split("\n");
+    if (lines.length < 2) {
+      container.textContent = markdown;
+      return container;
+    }
+    const table = container.createEl("table", {
+      cls: "learning-system-table flashcard-review-table preview-table"
+    });
+    const separatorIndex = lines.findIndex((line) => {
+      const cleaned = line.replace(/[\s|]/g, "");
+      return cleaned.length >= 3 && /^[-:]+$/.test(cleaned);
+    });
+    let deletionIndex = 0;
+    if (separatorIndex > 0) {
+      const headerCells = this.parseCells(lines[separatorIndex - 1]);
+      const thead = table.createEl("thead");
+      const headerRow = thead.createEl("tr");
+      headerCells.forEach((cell) => {
+        const th = headerRow.createEl("th");
+        const hasBlank = this.appendCellWithPreviewInto(th, cell, state.userAnswers, deletionIndex);
+        if (hasBlank)
+          deletionIndex++;
+      });
+    }
+    const tbody = table.createEl("tbody");
+    const startRow = separatorIndex > 0 ? separatorIndex + 1 : 0;
+    for (let i = startRow; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.trim())
+        continue;
+      const cells = this.parseCells(line);
+      if (cells.length === 0)
+        continue;
+      const row = tbody.createEl("tr");
+      cells.forEach((cell) => {
+        const td = row.createEl("td");
+        const hasBlank = this.appendCellWithPreviewInto(td, cell, state.userAnswers, deletionIndex);
+        if (hasBlank)
+          deletionIndex++;
+      });
+    }
+    return container;
+  }
+  // ← 添加辅助方法:解析单元格
+  parseCells(line) {
+    let trimmed = line.trim();
+    if (trimmed.startsWith("|"))
+      trimmed = trimmed.slice(1);
+    if (trimmed.endsWith("|"))
+      trimmed = trimmed.slice(0, -1);
+    return trimmed.split("|").map((c) => c.trim()).filter((c) => c.length > 0);
+  }
+  // 把带预览的单元格内容写入元素(DOM 构造,无 innerHTML),返回是否含挖空。
+  appendCellWithPreviewInto(el, cell, userAnswers, deletionIndex) {
+    if (!cell.includes("==")) {
+      el.setText(cell);
+      return false;
+    }
+    const userAnswer = userAnswers[deletionIndex] || "";
+    const re2 = /==([^=]+)==/g;
+    let last = 0;
+    let m;
+    while ((m = re2.exec(cell)) !== null) {
+      if (m.index > last)
+        el.appendText(cell.slice(last, m.index));
+      if (userAnswer) {
+        el.createSpan({ cls: "preview-answer", text: userAnswer });
+      } else {
+        el.createSpan({ cls: "cloze-blank" });
+      }
+      last = m.index + m[0].length;
+    }
+    if (last < cell.length)
+      el.appendText(cell.slice(last));
+    return true;
+  }
+  // ← 添加新的辅助方法:解析多答案输入
+  parseMultipleAnswers(input, expectedCount) {
+    if (!input.trim()) {
+      return new Array(expectedCount).fill("");
+    }
+    let normalized = input.replace(/,/g, "|").replace(/,/g, "|").replace(/\s{2,}/g, "|");
+    const parts = normalized.split("|").map((s) => s.trim());
+    const result = new Array(expectedCount).fill("");
+    for (let i = 0; i < Math.min(parts.length, expectedCount); i++) {
+      result[i] = parts[i];
+    }
+    return result;
+  }
+  renderAnswer(container, card, state, scheduler) {
+    if (!card.cloze)
+      return;
+    const answerArea = container.createDiv({ cls: "answer-area" });
+    const isOriginalTable = TableRenderer.isTableFormat(card.cloze.original);
+    if (isOriginalTable) {
+      this.renderTableAnswer(answerArea, card, state, scheduler);
+    } else {
+      this.renderTextAnswer(answerArea, card, state, scheduler);
+    }
+  }
+  renderTableAnswer(answerArea, card, state, scheduler) {
+    const columnsContainer = answerArea.createDiv({ cls: "cloze-table-columns" });
+    const correctColumn = columnsContainer.createDiv({ cls: "qa-column" });
+    correctColumn.createEl("h4", { text: "Correct answer:", cls: "column-label" });
+    const correctDiv = correctColumn.createDiv({ cls: "comparison-item" });
+    const tableEl = TableRenderer.renderTable(card.cloze.original, true);
+    correctDiv.appendChild(tableEl);
+    correctDiv.classList.add("table-answer");
+    const userColumn = columnsContainer.createDiv({ cls: "qa-column" });
+    userColumn.createEl("h4", { text: "Your answer:", cls: "column-label" });
+    const userDiv = userColumn.createDiv({ cls: "comparison-item" });
+    const actualAnswers = this.extractClozeAnswers(this.normalizeOriginal(card));
+    const constructedDeletions = actualAnswers.map((answer) => ({ answer }));
+    const normalizedAnswers = new Array(actualAnswers.length).fill("");
+    for (let i = 0; i < Math.min(state.userAnswers.length, normalizedAnswers.length); i++) {
+      normalizedAnswers[i] = state.userAnswers[i] || "";
+    }
+    const userTableEl = TableRenderer.renderTableWithUserAnswers(
+      card.cloze.original,
+      constructedDeletions,
+      // ← 使用构建的 deletions
+      normalizedAnswers,
+      scheduler
+    );
+    userDiv.appendChild(userTableEl);
+    userDiv.classList.add("table-answer");
+    this.renderDetailedComparison(answerArea, card, state, scheduler);
+  }
+  renderTextAnswer(answerArea, card, state, scheduler) {
+    const fullText = answerArea.createDiv({ cls: "full-text" });
+    const normalized = this.normalizeOriginal(card);
+    appendClozeLines(fullText, normalized, "cloze-highlight");
+    this.renderDetailedComparison(answerArea, card, state, scheduler);
+  }
+  renderDetailedComparison(answerArea, card, state, scheduler) {
+    const comparison = answerArea.createDiv({ cls: "answer-comparison" });
+    comparison.createEl("h4", { text: "Answer details:" });
+    const actualAnswers = this.extractClozeAnswers(this.normalizeOriginal(card));
+    const maxCount = Math.max(actualAnswers.length, state.userAnswers.length);
+    for (let index = 0; index < maxCount; index++) {
+      const item = comparison.createDiv({ cls: "comparison-item" });
+      item.createSpan({ text: `${index + 1}. ` });
+      const userAnswer = state.userAnswers[index] || "";
+      const correctAnswer = actualAnswers[index] || "";
+      if (!correctAnswer) {
+        item.createEl("span", {
+          text: userAnswer || "(empty)",
+          cls: "user-answer  ${evaluation.correctness}"
+        });
+        item.createSpan({ text: " \u2192 " });
+        item.createEl("span", {
+          text: "(no blank here)",
+          cls: "correct-answer"
+        });
+        continue;
+      }
+      const evaluation = scheduler.evaluateAnswer(correctAnswer, userAnswer);
+      item.createEl("span", {
+        text: userAnswer || "(empty)",
+        cls: `user-answer ${evaluation.correctness}`
+      });
+      item.createSpan({ text: " \u2192 " });
+      item.createEl("span", {
+        text: correctAnswer,
+        cls: "correct-answer"
+      });
+      if (evaluation.correctness === "partial") {
+        item.createEl("small", {
+          text: ` (${Math.round(evaluation.similarity * 100)}% match)`,
+          cls: "similarity-info"
+        });
+      }
+    }
+  }
+  // ← 添加新方法:从原始文本提取所有挖空答案
+  extractClozeAnswers(originalText) {
+    const matches = originalText.match(/==([^=]+)==/g);
+    if (!matches)
+      return [];
+    return matches.map((match) => {
+      return match.replace(/==/g, "").trim();
+    });
+  }
+};
+var QACardRenderer = class {
+  renderQuestion(container, card, state, updateState) {
+    const questionText = container.createDiv({ cls: "question-text" });
+    const isTable = TableRenderer.isTableFormat(card.front);
+    if (isTable) {
+      const tableEl = TableRenderer.renderTable(card.front, false);
+      questionText.appendChild(tableEl);
+      questionText.classList.add("table-question");
+    } else {
+      appendTextLines(questionText, card.front);
+    }
+    const inputArea = container.createDiv({ cls: "qa-input-area" });
+    inputArea.createEl("h4", { text: "Your answer:" });
+    const textarea = inputArea.createEl("textarea", {
+      placeholder: "Type your answer here...",
+      cls: "qa-input",
+      value: state.userAnswer
+    });
+    textarea.addEventListener("input", (e) => {
+      updateState.setUserAnswer(e.target.value);
+    });
+    setTimeout(() => textarea.focus(), 50);
+  }
+  renderAnswer(container, card, state, scheduler) {
+    const answerArea = container.createDiv({ cls: "answer-area" });
+    const correctAnswer = Array.isArray(card.back) ? card.back[0] || card.back.join("\n") : card.back;
+    const isTable = TableRenderer.isTableFormat(correctAnswer);
+    const evaluation = state.userAnswer.trim() ? scheduler.evaluateAnswer(correctAnswer, state.userAnswer) : null;
+    const comparison = answerArea.createDiv({
+      cls: "answer-comparison qa-comparison"
+    });
+    const columnsContainer = comparison.createDiv({ cls: "qa-columns-container" });
+    this.renderCorrectAnswerColumn(columnsContainer, correctAnswer, isTable);
+    this.renderUserAnswerColumn(
+      columnsContainer,
+      state.userAnswer,
+      isTable,
+      evaluation
+    );
+    if ((evaluation == null ? void 0 : evaluation.correctness) === "partial") {
+      const similarityInfo = comparison.createEl("div", {
+        cls: "similarity-info qa-similarity"
+      });
+      similarityInfo.textContent = `Similarity: ${Math.round(evaluation.similarity * 100)}%`;
+    }
+  }
+  renderCorrectAnswerColumn(container, correctAnswer, isTable) {
+    const correctColumn = container.createDiv({ cls: "qa-column" });
+    correctColumn.createEl("h4", { text: "Correct answer:", cls: "column-label" });
+    const correctAnswerDiv = correctColumn.createDiv({ cls: "comparison-item" });
+    if (isTable) {
+      const tableEl = TableRenderer.renderTable(correctAnswer, true);
+      correctAnswerDiv.appendChild(tableEl);
+      correctAnswerDiv.classList.add("table-answer");
+    } else {
+      const el = correctAnswerDiv.createEl("div", { cls: "correct-answer qa-correct-answer" });
+      appendTextLines(el, correctAnswer);
+    }
+  }
+  renderUserAnswerColumn(container, userAnswer, isTable, evaluation) {
+    const userColumn = container.createDiv({ cls: "qa-column" });
+    userColumn.createEl("h4", { text: "Your answer:", cls: "column-label" });
+    const userAnswerDiv = userColumn.createDiv({ cls: "comparison-item" });
+    const isUserAnswerTable = TableRenderer.isTableFormat(userAnswer.trim());
+    const shouldRenderAsTable = isUserAnswerTable || isTable && userAnswer.trim();
+    if (shouldRenderAsTable && userAnswer.trim()) {
+      try {
+        const userTableEl = TableRenderer.renderTable(userAnswer, true);
+        userAnswerDiv.appendChild(userTableEl);
+        userAnswerDiv.classList.add("table-answer");
+        if (evaluation) {
+          userAnswerDiv.classList.add("user-answer", evaluation.correctness);
+        }
+      } catch (error) {
+        this.renderTextUserAnswer(userAnswerDiv, userAnswer, evaluation);
+      }
+    } else {
+      this.renderTextUserAnswer(userAnswerDiv, userAnswer, evaluation);
+    }
+  }
+  renderTextUserAnswer(container, userAnswer, evaluation) {
+    const userAnswerElement = container.createEl("div", { cls: "qa-user-answer" });
+    const displayText2 = userAnswer.trim() || "(no answer provided)";
+    appendTextLines(userAnswerElement, displayText2);
+    if (evaluation) {
+      userAnswerElement.classList.add("user-answer", evaluation.correctness);
+    } else {
+      userAnswerElement.classList.add("no-answer");
+    }
+  }
+};
+var CardRendererFactory = class {
+  static getRenderer(cardType) {
+    const renderer = this.renderers.get(cardType);
+    if (!renderer) {
+      throw new Error(`Unknown card type: ${cardType}`);
+    }
+    return renderer;
+  }
+};
+CardRendererFactory.renderers = /* @__PURE__ */ new Map([
+  ["cloze", new ClozeCardRenderer()],
+  ["qa", new QACardRenderer()]
+]);
+
+// src/ui/view/ReviewView.ts
+init_setCssProps();
 var VIEW_TYPE_REVIEW = "learning-system-review";
 var ReviewView = class extends import_obsidian11.ItemView {
   constructor(leaf, plugin) {
@@ -10463,7 +10592,7 @@ var StatsView = class extends import_obsidian12.ItemView {
     content.createDiv({ text: config.value, cls: "metric-value" });
   }
   createComparisonItem(container, config) {
-    const item = container.createDiv({ cls: "comparison-item" });
+    const item = container.createDiv({ cls: "stat-comparison-item" });
     item.createDiv({ text: config.label, cls: "comparison-label" });
     const values = item.createDiv({ cls: "comparison-values" });
     values.createSpan({
@@ -11109,6 +11238,8 @@ var MindmapView = class extends import_obsidian14.ItemView {
       editable: true,
       toolBar: true,
       allowUndo: true,
+      theme: OBSIDIAN_MINDMAP_THEME,
+      // 让颜色跟随 Obsidian 主题
       contextMenu: {
         // Mind Elixir 的拖拽不支持把深层节点拖回一级(根的直接子节点),
         // 这里用 moveNodeIn API 补一个右键菜单项实现「提升为一级节点」。
@@ -13510,13 +13641,10 @@ var UnlockSystem = class {
   async levelUp(newLevel) {
     this.progress.currentLevel = newLevel;
     this.progress.levelUnlockedAt[newLevel] = Date.now();
-    const message = t(`unlock.levelUp.${newLevel}`, this.language);
-    const milestone = {
+    this.progress.milestones.push({
       level: newLevel,
       unlockedAt: Date.now()
-    };
-    this.progress.milestones.push(milestone);
-    new import_obsidian16.Notice(message, 1e4);
+    });
     await this.saveProgress();
   }
   // ==================== 日常连续天数 ====================

@@ -13,6 +13,7 @@ import { Toolbar }  from '../components/Toolbar';
 import { BatchActions, BatchActionCallbacks } from '../components/BatchActions';
 import { ContentList } from '../components/ContentList';
 import { ContentCard, CardCallbacks } from '../components/ContentCard';
+import { renderMindmapPreviewCard, type MindmapCardMeta } from './MindmapReview';
 import { AnnotationEditor, AnnotationEditorCallbacks } from '../components/AnnotationEditor';
 import { sideOverviewService } from '../service/sideOverviewService';
 import { ManualFlashcardModal } from '../components/modals/ManualFlashcardModal';
@@ -168,13 +169,27 @@ export class SidebarOverviewView extends ItemView {
       getContentUnit: (unitId) => {
         const allUnits = this.plugin.dataManager.getAllContentUnits();
         const unit = this.plugin.dataManager.getContentUnit(unitId);
-        
+
         if (unit) {
           return unit;
         } else {
           return undefined;
         }
-      }
+      },
+      // mindmap 实验开启时,给 mindmap 来源的卡片渲染只读迷你导图作为预览
+      renderMindmapPreview: this.plugin.settings.experimentalMindmap
+        ? async (container, card) => {
+            const unit = this.plugin.dataManager.getContentUnit(card.sourceContentId);
+            const mm = unit?.metadata?.customData?.mindmap as MindmapCardMeta | undefined;
+            if (!mm) { console.debug('[ls-mm-preview] no customData.mindmap for card', card.id); return false; }
+            try {
+              return await renderMindmapPreviewCard(this.app, container, mm);
+            } catch (e) {
+              console.debug('[ls-mm-preview] threw', e);
+              return false;
+            }
+          }
+        : (() => { console.debug('[ls-mm-preview] callback disabled (experimentalMindmap=false)'); return undefined; })(),
     };
     
     this.contentList = new ContentList(this.state, cardCallbacks);

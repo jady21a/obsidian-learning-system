@@ -46,7 +46,7 @@ function appendClozeBlanksWithUnderline(el: HTMLElement, text: string): void {
     let m: RegExpExecArray | null;
     while ((m = re.exec(line)) !== null) {
       if (m.index > last) el.appendText(line.slice(last, m.index));
-      const span = el.createSpan({ cls: 'cloze-underline-blank' });
+      const span = el.createSpan({ cls: 'cloze-underline' });
       const widthEm = Math.max(m[1].length * 0.6, 3);
       setCssProps(span, { 'min-width': `${widthEm}em` });
       // 占位非断行空格,保证 span 在视觉上撑开
@@ -134,9 +134,9 @@ export class ClozeCardRenderer implements CardRenderStrategy {
       
           const inputArea = container.createDiv({ cls: 'cloze-input-area' });
           inputArea.createEl('h4', { text: `Fill in the blanks (${blankCount} total):` });
-          
-          const hint = inputArea.createEl('div', { cls: 'cloze-input-hint' });
-          
+          // (此处原本会创建空的 .cloze-input-hint 提示框,但从未塞入文本,
+          //  导致只显示一条带左边竖线的蓝色空横条 — 直接去掉。)
+
           const singleInputGroup = inputArea.createDiv({ cls: 'single-input-group' });
           const initialValue = state.userAnswers.filter(a => a).join(' | ');
           
@@ -389,8 +389,8 @@ const updatePreview = (inputValue: string) => {
     state: ReviewState,
     scheduler: CardScheduler
   ) {
-    if (state.userAnswers.length === 0) return;
-  
+    // 即便用户没填任何答案,也要展示 Answer details(每一项显示 (empty) → 正确答案,
+    // 计为错误),让用户看清各空的正解。
     const comparison = answerArea.createDiv({ cls: 'answer-comparison' });
     comparison.createEl('h4', { text: 'Answer details:' });
   
