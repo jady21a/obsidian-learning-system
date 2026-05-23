@@ -72,17 +72,19 @@ Use data to reflect your learning effort and review progress
 
 ---
 
-## Progressive Learning Path
+## Milestones
 
-A gamified **level system** to guide your learning journey:
+All features are available from day one — no gating. As you use the plugin you
+collect **milestones** (achievements) that celebrate progress:
 
-|Level|Title|Unlocks|
-|---|---|---|
-|Lv1|Collector|Basic extraction|
-|Lv2|Thinker|Annotation system|
-|Lv3|Memorizer|Review system|
-|Lv4|Trainer|Learning statistics|
-|Lv5|Analyst|Full feature set|
+- 🌱 First extraction · 📊 Visit statistics page
+- 📄 Extract as Text ×5 · ❓ Extract as Q&A ×5 · ⬛ Extract as Cloze ×5 · 🔍 Scan 10 notes
+- 📦 Extract 30 cards · 📝 Add 10 annotations · 📋 Scan 5 tables · 🔥 7-day streak
+- 🔄 Review 50 cards · 📅 21 active days
+- 🎯 Review 150 cards
+
+When you reach a milestone you get a one-time congratulation notice. Run the
+**Learning System: Show milestones** command to view the full list with progress.
 
 ---
 
@@ -140,7 +142,7 @@ selection as an editable mindmap and review cloze cards in mindmap form.
 
 -  **Think Tank / Community Learning System**  
     👉 [Learn more](https://jz-quartz.pages.dev/6.about/%E6%99%BA%E5%9B%A2%E5%9B%A2)
--  Mind-map style review
+-  Mind-map style review *(shipped as experimental — enable in Settings)*
 -  Mobile experience optimization
 
 ---
