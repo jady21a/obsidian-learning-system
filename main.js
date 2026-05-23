@@ -1561,7 +1561,7 @@ var Toolbar = class {
       const btn = groupSwitcher.createDiv({
         cls: `${isMain ? "group-btn-main" : "group-btn"} ${isActive ? "active" : ""} ${!hasNotes ? "disabled" : ""}`
       });
-      btn.innerHTML = isMain ? `${icon} ` : icon;
+      btn.setText(isMain ? `${icon} ` : icon);
       if (!hasNotes) {
         btn.setAttribute("title", "Notes in the current file cannot be grouped this way");
         setCssProps(btn, { opacity: "0.4", cursor: "not-allowed" });
@@ -1589,7 +1589,7 @@ var Toolbar = class {
         "aria-label": "Check for cards to review"
       }
     });
-    reviewBtn.innerHTML = "\u{1F514}";
+    reviewBtn.setText("\u{1F514}");
     reviewBtn.addEventListener("mousedown", (e) => {
       var _a;
       e.stopPropagation();
@@ -1856,7 +1856,7 @@ var ContentCard = class {
     });
     const tools = header.createDiv({ cls: "grid-card-tools" });
     const moreBtn = tools.createDiv({ cls: "tool-btn-grid" });
-    moreBtn.innerHTML = "\u22EE";
+    moreBtn.setText("\u22EE");
     moreBtn.addEventListener("mousedown", (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -1924,7 +1924,7 @@ var ContentCard = class {
     });
     if (!this.state.batchMode) {
       const flashcardBtn = tools.createDiv({ cls: "tool-btn flashcard-btn" });
-      flashcardBtn.innerHTML = "\u26A1";
+      flashcardBtn.setText("\u26A1");
       flashcardBtn.setAttribute("aria-label", "Generate flashcards");
       flashcardBtn.addEventListener("mousedown", (e) => {
         e.stopPropagation();
@@ -1932,7 +1932,7 @@ var ContentCard = class {
       });
     }
     const moreBtn = tools.createDiv({ cls: "tool-btn more-btn" });
-    moreBtn.innerHTML = "\u22EE";
+    moreBtn.setText("\u22EE");
     moreBtn.addEventListener("mousedown", (e) => {
       e.stopPropagation();
       this.callbacks.onShowContextMenu(e, unit);
@@ -1943,30 +1943,65 @@ var ContentCard = class {
     if (this.isTableContent(unit.fullContext || unit.content)) {
       this.renderMarkdownContent(noteText, unit);
     } else {
-      let displayHTML = this.formatContent(unit);
-      noteText.innerHTML = displayHTML;
+      this.formatInto(noteText, unit);
     }
     setCssProps(noteText, { cursor: "pointer" });
   }
-  formatContent(unit) {
+  /**
+   * 把 unit 的内容渲染到目标元素(用 DOM API,不走 innerHTML 拼接,避免 XSS 风险)。
+   * - QA:question / :: / answer 三段 span;
+   * - cloze:把 ==X== 包裹的片段渲染为 .cloze-highlight 高亮 span;
+   * - 手工提取的内容保留换行(转 <br>)。
+   */
+  formatInto(el, unit) {
     var _a;
+    el.empty();
     const isManual = ((_a = unit.extractRule) == null ? void 0 : _a.extractedBy) === "manual";
-    const nl2br = (str) => {
-      const escaped = str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      return isManual ? escaped.replace(/\n/g, "<br>") : escaped;
+    const appendWithBreaks = (parent, text) => {
+      if (!isManual) {
+        parent.appendText(text);
+        return;
+      }
+      const lines = text.split("\n");
+      lines.forEach((line, i) => {
+        parent.appendText(line);
+        if (i < lines.length - 1)
+          parent.createEl("br");
+      });
+    };
+    const appendClozeText = (parent, text) => {
+      const re2 = /==([^=]+)==/g;
+      let last = 0;
+      let m;
+      while ((m = re2.exec(text)) !== null) {
+        if (m.index > last)
+          appendWithBreaks(parent, text.slice(last, m.index));
+        const span = parent.createSpan({ cls: "cloze-highlight" });
+        appendWithBreaks(span, m[1]);
+        last = m.index + m[0].length;
+      }
+      if (last < text.length)
+        appendWithBreaks(parent, text.slice(last));
     };
     if (unit.type === "QA" && unit.answer) {
-      return `<span class="qa-question">${nl2br(unit.content)}</span> <span class="qa-separator">::</span> <span class="qa-answer">${nl2br(unit.answer)}</span>`;
-    } else if (unit.type === "cloze") {
-      if (unit.fullContext) {
-        return nl2br(unit.fullContext).replace(
-          /==([^=]+)==/g,
-          '<span class="cloze-highlight">$1</span>'
-        );
-      }
-      return nl2br(unit.content).replace(/==/g, "");
+      const q2 = el.createSpan({ cls: "qa-question" });
+      appendWithBreaks(q2, unit.content);
+      el.appendText(" ");
+      el.createSpan({ cls: "qa-separator", text: "::" });
+      el.appendText(" ");
+      const a = el.createSpan({ cls: "qa-answer" });
+      appendWithBreaks(a, unit.answer);
+      return;
     }
-    return nl2br(unit.content);
+    if (unit.type === "cloze") {
+      if (unit.fullContext) {
+        appendClozeText(el, unit.fullContext);
+      } else {
+        appendWithBreaks(el, unit.content.replace(/==/g, ""));
+      }
+      return;
+    }
+    appendWithBreaks(el, unit.content);
   }
   renderSideLine(meta, unit) {
     meta.createSpan({ text: `L${unit.source.position.line}`, cls: "line-info" });
@@ -2050,7 +2085,7 @@ var ContentCard = class {
     const tools = header.createDiv({ cls: "grid-card-tools" });
     if (!this.state.batchMode) {
       const flashcardBtn = tools.createDiv({ cls: "tool-btn-grid" });
-      flashcardBtn.innerHTML = "\u26A1";
+      flashcardBtn.setText("\u26A1");
       flashcardBtn.setAttribute("aria-label", "Generate flashcards");
       flashcardBtn.addEventListener("mousedown", (e) => {
         e.stopPropagation();
@@ -2059,7 +2094,7 @@ var ContentCard = class {
       });
     }
     const moreBtn = tools.createDiv({ cls: "tool-btn-grid" });
-    moreBtn.innerHTML = "\u22EE";
+    moreBtn.setText("\u22EE");
     moreBtn.addEventListener("mousedown", (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -2071,7 +2106,7 @@ var ContentCard = class {
     if (this.isTableContent(unit.fullContext || unit.content)) {
       this.renderMarkdownContent(noteText, unit);
     } else {
-      noteText.innerHTML = this.formatContent(unit);
+      this.formatInto(noteText, unit);
     }
     noteText.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -2085,7 +2120,7 @@ var ContentCard = class {
     const annotationContent = this.callbacks.getAnnotationContent(unit.id);
     if (annotationContent) {
       const annEl = content.createDiv({ cls: "grid-annotation" });
-      annEl.innerHTML = `\u{1F4AC} ${annotationContent}`;
+      annEl.setText(`\u{1F4AC} ${annotationContent}`);
       annEl.addEventListener("mousedown", (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -2117,10 +2152,12 @@ var ContentCard = class {
   renderFlashcardContent(content, card) {
     const lang = this.getLanguage();
     const question = content.createDiv({ cls: "flashcard-question" });
-    question.innerHTML = `<strong>${t("card.question", lang)}\uFF1A</strong>${card.front}`;
+    question.createEl("strong", { text: `${t("card.question", lang)}\uFF1A` });
+    question.appendText(card.front);
     const answer = content.createDiv({ cls: "flashcard-answer" });
     const answerText = Array.isArray(card.back) ? card.back.join(", ") : card.back;
-    answer.innerHTML = `<strong>${t("card.answer", lang)}\uFF1A</strong>${answerText}`;
+    answer.createEl("strong", { text: `${t("card.answer", lang)}\uFF1A` });
+    answer.appendText(answerText);
   }
   renderFlashcardMeta(meta, card) {
     meta.createSpan({
@@ -2132,11 +2169,8 @@ var ContentCard = class {
     const now = new Date();
     const isOverdue = dueDate < now;
     const timeText = this.formatReviewTime(dueDate, now, isOverdue);
-    reviewInfo.innerHTML = `
-      <span class="review-time ${isOverdue ? "overdue" : "upcoming"}">
-        <span class="review-text">${timeText}</span>
-      </span>
-    `;
+    const wrap = reviewInfo.createSpan({ cls: `review-time ${isOverdue ? "overdue" : "upcoming"}` });
+    wrap.createSpan({ cls: "review-text", text: timeText });
   }
   formatDate(date) {
     return date.toLocaleDateString("zh-CN", {
@@ -2194,19 +2228,28 @@ var ContentCard = class {
     const lines = markdown.trim().split("\n");
     const table = container.createEl("table", { cls: "learning-system-table" });
     const headerCells = lines[0].split("|").map((c) => c.trim()).filter((c) => c);
+    const renderCellInto = (parent, cell) => {
+      if (!cell.includes("==")) {
+        parent.setText(cell);
+        return;
+      }
+      const re2 = /==([^=]+)==/g;
+      let last = 0;
+      let m;
+      while ((m = re2.exec(cell)) !== null) {
+        if (m.index > last)
+          parent.appendText(cell.slice(last, m.index));
+        parent.createSpan({ cls: "cloze-highlight", text: m[1] });
+        last = m.index + m[0].length;
+      }
+      if (last < cell.length)
+        parent.appendText(cell.slice(last));
+    };
     const thead = table.createEl("thead");
     const headerRow = thead.createEl("tr");
-    headerCells.forEach((cell, index) => {
+    headerCells.forEach((cell) => {
       const th = headerRow.createEl("th");
-      if (cell.includes("==")) {
-        const processed = cell.replace(
-          /==([^=]+)==/g,
-          '<span style="background-color: rgba(255, 140, 0, 0.25); padding: 2px 4px; border-radius: 3px; font-weight: 500;">$1</span>'
-        );
-        th.innerHTML = processed;
-      } else {
-        th.textContent = cell;
-      }
+      renderCellInto(th, cell);
     });
     const tbody = table.createEl("tbody");
     for (let i = 2; i < lines.length; i++) {
@@ -2214,17 +2257,9 @@ var ContentCard = class {
       if (cells.length === 0)
         continue;
       const row = tbody.createEl("tr");
-      cells.forEach((cell, index) => {
+      cells.forEach((cell) => {
         const td = row.createEl("td");
-        if (cell.includes("==")) {
-          const processed = cell.replace(
-            /==([^=]+)==/g,
-            '<span style="background-color: rgba(255, 140, 0, 0.25); padding: 2px 4px; border-radius: 3px; font-weight: 500;">$1</span>'
-          );
-          td.innerHTML = processed;
-        } else {
-          td.textContent = cell;
-        }
+        renderCellInto(td, cell);
       });
     }
   }
@@ -2457,17 +2492,15 @@ var ContentList = class {
   renderEmptyState(container) {
     const emptyDiv = container.createDiv({ cls: "empty-state" });
     if (this.state.selectedFile && this.state.displayMode === "sidebar") {
-      emptyDiv.innerHTML = `
-        <div style="padding: 20px; text-align: center;">
-          <div style="font-size: 32px; margin-bottom: 10px;">\u{1F4ED}</div>
-          <div style="color: var(--text-muted);">${t("contentList.empty.noNotes", this.language)}</div>
-          <div style="font-size: 12px; color: var(--text-faint); margin-top: 8px;">
-            ${this.state.filterMode !== "all" ? t("contentList.empty.tryFilter", this.language) : t("contentList.empty.startHighlight", this.language)}
-          </div>
-        </div>
-      `;
+      const box = emptyDiv.createDiv({ cls: "empty-state-box" });
+      box.createDiv({ cls: "empty-state-icon", text: "\u{1F4ED}" });
+      box.createDiv({ cls: "empty-state-main", text: t("contentList.empty.noNotes", this.language) });
+      box.createDiv({
+        cls: "empty-state-hint",
+        text: this.state.filterMode !== "all" ? t("contentList.empty.tryFilter", this.language) : t("contentList.empty.startHighlight", this.language)
+      });
     } else {
-      emptyDiv.textContent = t("contentList.empty.noContent", this.language);
+      emptyDiv.setText(t("contentList.empty.noContent", this.language));
     }
   }
   /**
@@ -2725,7 +2758,7 @@ var AnnotationEditor = class {
     const annEl = document.createElement("div");
     annEl.className = isGridCard ? "grid-annotation" : "annotation-preview";
     if (isGridCard) {
-      annEl.innerHTML = `\u{1F4AC} ${annotationText}`;
+      annEl.setText(`\u{1F4AC} ${annotationText}`);
     } else {
       const displayText2 = annotationText.length > 60 ? annotationText.substring(0, 60) + "..." : annotationText;
       annEl.textContent = `\u{1F4AC} ${displayText2}`;
@@ -3025,6 +3058,7 @@ var EditFlashcardModal = class extends import_obsidian5.Modal {
     this.back = Array.isArray(card.back) ? card.back.join(", ") : card.back;
   }
   onOpen() {
+    var _a;
     const { contentEl } = this;
     const lang = this.plugin.settings.language;
     contentEl.empty();
@@ -3037,15 +3071,16 @@ var EditFlashcardModal = class extends import_obsidian5.Modal {
       cls: "modal-description"
     });
     const infoDiv = contentEl.createDiv({ cls: "card-info" });
-    infoDiv.innerHTML = `
-      <div style="background: var(--background-secondary); padding: 10px; border-radius: 6px; margin-bottom: 15px;">
-        <div style="font-size: 0.9em; color: var(--text-muted);">
-          ${t("editCard.info.file", lang)}: ${this.card.sourceFile.split("/").pop()}<br>
-          ${t("editCard.info.deck", lang)}: ${this.card.deck}<br>
-          ${t("editCard.info.reviews", lang)}: ${this.card.stats.totalReviews}${t("editCard.info.correct", lang)}: ${this.card.stats.correctCount}\u6B21
-        </div>
-      </div>
-    `;
+    const box = infoDiv.createDiv({ cls: "card-info-box" });
+    const lines = box.createDiv({ cls: "card-info-lines" });
+    const fileName = (_a = this.card.sourceFile.split("/").pop()) != null ? _a : this.card.sourceFile;
+    lines.appendText(`${t("editCard.info.file", lang)}: ${fileName}`);
+    lines.createEl("br");
+    lines.appendText(`${t("editCard.info.deck", lang)}: ${this.card.deck}`);
+    lines.createEl("br");
+    lines.appendText(
+      `${t("editCard.info.reviews", lang)}: ${this.card.stats.totalReviews}${t("editCard.info.correct", lang)}: ${this.card.stats.correctCount}\u6B21`
+    );
     new import_obsidian5.Setting(contentEl).setName(t(this.card.type === "qa" ? "editCard.front.qa" : "editCard.front.cloze", lang)).setDesc(t("editCard.front.desc", lang)).addTextArea((text) => {
       text.setValue(this.front).onChange((value) => this.front = value);
       text.inputEl.rows = 4;
@@ -3309,29 +3344,6 @@ var SidebarOverviewView = class extends import_obsidian8.ItemView {
   }
   async onOpen() {
     this.detectDisplayMode();
-    const editor = document.querySelector(".cm-editor");
-    if (editor) {
-      const stopEditorCapture = (e) => {
-        const target = e.target;
-        if (target.closest(".learning-overview-container")) {
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-        }
-      };
-      editor.addEventListener("mousedown", stopEditorCapture, true);
-      editor.addEventListener("click", stopEditorCapture, true);
-    }
-    const editorContainer = document.querySelector(".cm-content");
-    if (editorContainer) {
-      setCssProps(editorContainer, { "pointer-events": "auto" });
-      editorContainer.addEventListener("mousedown", (e) => {
-        const searchBox = document.querySelector(".search-container");
-        if (searchBox && searchBox.contains(e.target)) {
-          e.stopPropagation();
-          e.preventDefault();
-        }
-      }, true);
-    }
     if (this.state.displayMode === "sidebar") {
       const activeFile = this.app.workspace.getActiveFile();
       if (activeFile) {
@@ -3604,7 +3616,8 @@ var SidebarOverviewView = class extends import_obsidian8.ItemView {
     const allNotesBtn = entries.createDiv({
       cls: `entry-btn ${this.state.viewType === "notes" ? "active" : ""}`
     });
-    allNotesBtn.innerHTML = "\u{1F4DD} <span>All Notes</span>";
+    allNotesBtn.appendText("\u{1F4DD} ");
+    allNotesBtn.createSpan({ text: "All notes" });
     allNotesBtn.addEventListener("mousedown", (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -3615,7 +3628,8 @@ var SidebarOverviewView = class extends import_obsidian8.ItemView {
     const cardListBtn = entries.createDiv({
       cls: `entry-btn ${this.state.viewType === "cards" ? "active" : ""}`
     });
-    cardListBtn.innerHTML = "\u{1F0CF} <span>Card List</span>";
+    cardListBtn.appendText("\u{1F0CF} ");
+    cardListBtn.createSpan({ text: "Card list" });
     cardListBtn.addEventListener("mousedown", (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -3722,11 +3736,9 @@ var SidebarOverviewView = class extends import_obsidian8.ItemView {
         cls: `file-item ${this.state.selectedFile === groupKey ? "selected" : ""}`
       });
       const displayName = groupKey === "filter.unannotated" ? this.t("filter.unannotated") : groupKey;
-      fileItem.innerHTML = `
-        <span class="file-icon">${this.getGroupIcon()}</span>
-        <span class="file-name">${displayName}</span>
-        <span class="file-count">${count}</span>
-      `;
+      fileItem.createSpan({ cls: "file-icon", text: this.getGroupIcon() });
+      fileItem.createSpan({ cls: "file-name", text: displayName });
+      fileItem.createSpan({ cls: "file-count", text: String(count) });
       fileItem.addEventListener("mousedown", (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -3743,10 +3755,8 @@ var SidebarOverviewView = class extends import_obsidian8.ItemView {
   }
   renderEmptyRightPanel(container) {
     const empty = container.createDiv({ cls: "empty-right-panel" });
-    empty.innerHTML = `
-      <div class="empty-icon">\u{1F4ED}</div>
-      <div class="empty-text">${this.t("empty.noContent")}</div>
-    `;
+    empty.createDiv({ cls: "empty-icon", text: "\u{1F4ED}" });
+    empty.createDiv({ cls: "empty-text", text: this.t("empty.noContent") });
   }
   // ==================== 事件处理方法 ====================
   handleSearchChange(query) {
@@ -4292,33 +4302,23 @@ var SidebarOverviewView = class extends import_obsidian8.ItemView {
     const hoursSinceDue = Math.floor((Date.now() - mostUrgent) / (1e3 * 60 * 60));
     const delayText = this.getDelayText(hoursSinceDue);
     const streakDays = this.getReviewStreak();
-    banner.innerHTML = `
-  <div class="reminder-header">
-    <div class="reminder-text">
- <strong>${this.t("review.todayProgress", { reviewed: reviewedToday, total: totalToday })}</strong>  
-    </div>
-  </div>
-  
-  <div class="reminder-stats">
-    <div class="stat-item delay-warning">
-      ${delayText}
-    </div>
-    ${streakDays > 0 ? `
-      <div class="stat-item streak-info">
-         ${this.t("review.streak", { days: streakDays })}
-      </div>
-    ` : ""}
-  </div>
-  
-  <div class="reminder-actions">
-    <button class="reminder-btn primary">${this.t("review.start")}</button>
-  </div>
-`;
-    setCssProps(banner, { "font-size": "0.85em" });
-    const actions = banner.querySelector(".reminder-actions");
-    if (actions) {
-      setCssProps(actions, { display: "flex", "justify-content": "center" });
+    const header = banner.createDiv({ cls: "reminder-header" });
+    const headerText = header.createDiv({ cls: "reminder-text" });
+    headerText.createEl("strong", {
+      text: this.t("review.todayProgress", { reviewed: reviewedToday, total: totalToday })
+    });
+    const stats = banner.createDiv({ cls: "reminder-stats" });
+    stats.createDiv({ cls: "stat-item delay-warning", text: delayText });
+    if (streakDays > 0) {
+      stats.createDiv({
+        cls: "stat-item streak-info",
+        text: this.t("review.streak", { days: streakDays })
+      });
     }
+    const actions = banner.createDiv({ cls: "reminder-actions" });
+    actions.createEl("button", { cls: "reminder-btn primary", text: this.t("review.start") });
+    setCssProps(banner, { "font-size": "0.85em" });
+    setCssProps(actions, { display: "flex", "justify-content": "center" });
     banner.querySelector(".primary").addEventListener("mousedown", (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -4813,7 +4813,7 @@ var TableRenderer = class {
     const headerRow = thead.createEl("tr");
     headerCells.forEach((cell) => {
       const th = headerRow.createEl("th");
-      th.innerHTML = this.processCellContent(cell, showAnswer);
+      this.appendCellInto(th, cell, showAnswer);
     });
     const tbody = table.createEl("tbody");
     for (let i = separatorIndex + 1; i < lines.length; i++) {
@@ -4835,7 +4835,7 @@ var TableRenderer = class {
     const row = tbody.createEl("tr");
     cells.forEach((cell) => {
       const td = row.createEl("td");
-      td.innerHTML = this.processCellContent(cell, showAnswer);
+      this.appendCellInto(td, cell, showAnswer);
     });
   }
   // 解析单元格
@@ -4848,18 +4848,29 @@ var TableRenderer = class {
     const cells = trimmed.split("|").map((c) => c.trim()).filter((c) => c.length > 0);
     return cells;
   }
-  // 处理单元格内容
-  static processCellContent(cell, showAnswer) {
+  // 把单元格内容渲染进目标元素(用 DOM API,不走 innerHTML,避免 XSS)。
+  // - 不含 == 标记 → 纯文本;
+  // - 含 ==X==:showAnswer 时渲染 .revealed 文本,否则渲染 .cloze-blank 空 span。
+  static appendCellInto(el, cell, showAnswer) {
     if (!cell.includes("==")) {
-      return cell;
+      el.setText(cell);
+      return;
     }
-    if (showAnswer) {
-      const result = cell.replace(/==([^=]+)==/g, '<span class="revealed">$1</span>');
-      return result;
-    } else {
-      const result = cell.replace(/==([^=]+)==/g, '<span class="cloze-blank"></span>');
-      return result;
+    const re2 = /==([^=]+)==/g;
+    let last = 0;
+    let m;
+    while ((m = re2.exec(cell)) !== null) {
+      if (m.index > last)
+        el.appendText(cell.slice(last, m.index));
+      if (showAnswer) {
+        el.createSpan({ cls: "revealed", text: m[1] });
+      } else {
+        el.createSpan({ cls: "cloze-blank" });
+      }
+      last = m.index + m[0].length;
     }
+    if (last < cell.length)
+      el.appendText(cell.slice(last));
   }
   // 渲染带用户答案的表格（完形填空用）
   static renderTableWithUserAnswers(originalMarkdown, deletions, userAnswers, scheduler) {
@@ -4881,17 +4892,16 @@ var TableRenderer = class {
       let headerIndex = 0;
       headerCells.forEach((cell) => {
         const th = headerRow.createEl("th");
-        const result = this.processCellWithUserAnswerAndClass(
+        const correctnessClass = this.appendUserAnswerCellInto(
+          th,
           cell,
           deletions,
           userAnswers,
           deletionIndex,
           scheduler
         );
-        th.innerHTML = result.html;
-        if (result.correctnessClass) {
-          th.classList.add(result.correctnessClass);
-        }
+        if (correctnessClass)
+          th.classList.add(correctnessClass);
         if (cell.includes("==")) {
           deletionIndex++;
         }
@@ -4909,17 +4919,16 @@ var TableRenderer = class {
       const row = tbody.createEl("tr");
       cells.forEach((cell) => {
         const td = row.createEl("td");
-        const result = this.processCellWithUserAnswerAndClass(
+        const correctnessClass = this.appendUserAnswerCellInto(
+          td,
           cell,
           deletions,
           userAnswers,
           deletionIndex,
           scheduler
         );
-        td.innerHTML = result.html;
-        if (result.correctnessClass) {
-          td.classList.add(result.correctnessClass);
-        }
+        if (correctnessClass)
+          td.classList.add(correctnessClass);
         if (cell.includes("==")) {
           deletionIndex++;
         }
@@ -4927,50 +4936,98 @@ var TableRenderer = class {
     }
     return container;
   }
-  // 处理带用户答案的单元格
-  static processCellWithUserAnswer(cell, deletions, userAnswers, deletionIndex, scheduler) {
-    if (!cell.includes("=="))
-      return cell;
-    const match = cell.match(/==([^=]+)==/);
-    if (!match || deletionIndex >= deletions.length) {
-      return cell.replace(/==([^=]+)==/g, '<span class="cloze-blank"></span>');
+  /**
+   * 把带用户答案的单元格内容渲染进目标元素(DOM API,无 innerHTML),
+   * 返回单元格整体正确性 class(供调用方加到 td/th 上)。
+   */
+  static appendUserAnswerCellInto(el, cell, deletions, userAnswers, deletionIndex, scheduler) {
+    if (!cell.includes("==")) {
+      el.setText(cell);
+      return null;
+    }
+    if (deletionIndex >= deletions.length) {
+      const re3 = /==([^=]+)==/g;
+      let last2 = 0;
+      let m2;
+      while ((m2 = re3.exec(cell)) !== null) {
+        if (m2.index > last2)
+          el.appendText(cell.slice(last2, m2.index));
+        el.createSpan({ cls: "cloze-blank" });
+        last2 = m2.index + m2[0].length;
+      }
+      if (last2 < cell.length)
+        el.appendText(cell.slice(last2));
+      return null;
     }
     const correctAnswer = deletions[deletionIndex].answer;
     const userAnswer = userAnswers[deletionIndex] || "";
     const evaluation = scheduler.evaluateAnswer(correctAnswer, userAnswer);
     const displayText2 = userAnswer || "(empty)";
     const correctnessClass = evaluation.correctness;
-    return cell.replace(
-      /==([^=]+)==/g,
-      `<span class="user-answer-cell ${correctnessClass}">${displayText2}</span>`
-    );
-  }
-  // 处理带用户答案的单元格(返回 HTML 和正确性类)
-  static processCellWithUserAnswerAndClass(cell, deletions, userAnswers, deletionIndex, scheduler) {
-    const match = cell.match(/==([^=]+)==/);
-    if (!match) {
-      return { html: cell, correctnessClass: null };
+    const re2 = /==([^=]+)==/g;
+    let last = 0;
+    let m;
+    while ((m = re2.exec(cell)) !== null) {
+      if (m.index > last)
+        el.appendText(cell.slice(last, m.index));
+      el.createSpan({ cls: `user-answer-cell ${correctnessClass}`, text: displayText2 });
+      last = m.index + m[0].length;
     }
-    if (!match || deletionIndex >= deletions.length) {
-      return {
-        html: cell.replace(/==([^=]+)==/g, '<span class="cloze-blank"></span>'),
-        correctnessClass: null
-      };
-    }
-    const correctAnswer = deletions[deletionIndex].answer;
-    const userAnswer = userAnswers[deletionIndex] || "";
-    const evaluation = scheduler.evaluateAnswer(correctAnswer, userAnswer);
-    const displayText2 = userAnswer || "(empty)";
-    const correctnessClass = evaluation.correctness;
-    const html = cell.replace(
-      /==([^=]+)==/g,
-      `<span class="user-answer-cell ${correctnessClass}">${displayText2}</span>`
-    );
-    return { html, correctnessClass: `cell-${correctnessClass}` };
+    if (last < cell.length)
+      el.appendText(cell.slice(last));
+    return `cell-${correctnessClass}`;
   }
 };
 
 // src/ui/components/reviewCardRender.ts
+init_setCssProps();
+function appendTextLines(el, text) {
+  const lines = text.split("\n");
+  lines.forEach((line, i) => {
+    el.appendText(line);
+    if (i < lines.length - 1)
+      el.createEl("br");
+  });
+}
+function appendClozeLines(el, text, clozeClass) {
+  const lines = text.split("\n");
+  lines.forEach((line, lineIdx) => {
+    let last = 0;
+    const re2 = /==([^=]+)==/g;
+    let m;
+    while ((m = re2.exec(line)) !== null) {
+      if (m.index > last)
+        el.appendText(line.slice(last, m.index));
+      el.createSpan({ cls: clozeClass, text: m[1] });
+      last = m.index + m[0].length;
+    }
+    if (last < line.length)
+      el.appendText(line.slice(last));
+    if (lineIdx < lines.length - 1)
+      el.createEl("br");
+  });
+}
+function appendClozeBlanksWithUnderline(el, text) {
+  const lines = text.split("\n");
+  lines.forEach((line, lineIdx) => {
+    let last = 0;
+    const re2 = /==([^=]+)==/g;
+    let m;
+    while ((m = re2.exec(line)) !== null) {
+      if (m.index > last)
+        el.appendText(line.slice(last, m.index));
+      const span = el.createSpan({ cls: "cloze-underline-blank" });
+      const widthEm = Math.max(m[1].length * 0.6, 3);
+      setCssProps(span, { "min-width": `${widthEm}em` });
+      span.appendText("\xA0");
+      last = m.index + m[0].length;
+    }
+    if (last < line.length)
+      el.appendText(line.slice(last));
+    if (lineIdx < lines.length - 1)
+      el.createEl("br");
+  });
+}
 var ClozeCardRenderer = class {
   normalizeOriginal(card) {
     var _a;
@@ -4984,7 +5041,7 @@ var ClozeCardRenderer = class {
     return original;
   }
   renderQuestion(container, card, state, updateState) {
-    var _a, _b, _c;
+    var _a, _b;
     const questionText = container.createDiv({ cls: "question-text" });
     const isTable = TableRenderer.isTableFormat(card.front);
     if (isTable) {
@@ -4996,13 +5053,8 @@ var ClozeCardRenderer = class {
       questionText.appendChild(tableEl);
       questionText.classList.add("table-question");
     } else {
-      let deletionIdx = 0;
-      const deletions = ((_b = card.cloze) == null ? void 0 : _b.deletions) || [];
-      const sourceText = ((_c = card.cloze) == null ? void 0 : _c.original) || card.front;
-      questionText.innerHTML = sourceText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>").replace(/==([^=]+)==/g, (_fullMatch, innerText) => {
-        const underlineWidth = Math.max(innerText.length * 0.6, 3);
-        return `<span class="cloze-underline" style="display:inline-block;min-width:${underlineWidth}em;border-bottom:2px solid currentColor;color:transparent;">&nbsp;</span>`;
-      });
+      const sourceText = ((_b = card.cloze) == null ? void 0 : _b.original) || card.front;
+      appendClozeBlanksWithUnderline(questionText, sourceText);
     }
     if (card.cloze) {
       const normalizedOriginal = this.normalizeOriginal(card);
@@ -5070,9 +5122,8 @@ var ClozeCardRenderer = class {
       const headerRow = thead.createEl("tr");
       headerCells.forEach((cell) => {
         const th = headerRow.createEl("th");
-        const rendered = this.renderCellWithPreview(cell, state.userAnswers, deletionIndex);
-        th.innerHTML = rendered.html;
-        if (rendered.hasBlank)
+        const hasBlank = this.appendCellWithPreviewInto(th, cell, state.userAnswers, deletionIndex);
+        if (hasBlank)
           deletionIndex++;
       });
     }
@@ -5088,9 +5139,8 @@ var ClozeCardRenderer = class {
       const row = tbody.createEl("tr");
       cells.forEach((cell) => {
         const td = row.createEl("td");
-        const rendered = this.renderCellWithPreview(cell, state.userAnswers, deletionIndex);
-        td.innerHTML = rendered.html;
-        if (rendered.hasBlank)
+        const hasBlank = this.appendCellWithPreviewInto(td, cell, state.userAnswers, deletionIndex);
+        if (hasBlank)
           deletionIndex++;
       });
     }
@@ -5105,16 +5155,29 @@ var ClozeCardRenderer = class {
       trimmed = trimmed.slice(0, -1);
     return trimmed.split("|").map((c) => c.trim()).filter((c) => c.length > 0);
   }
-  // ← 添加辅助方法:渲染带预览的单元格
-  renderCellWithPreview(cell, userAnswers, deletionIndex) {
-    const match = cell.match(/==([^=]+)==/);
-    if (!match) {
-      return { html: cell, hasBlank: false };
+  // 把带预览的单元格内容写入元素(DOM 构造,无 innerHTML),返回是否含挖空。
+  appendCellWithPreviewInto(el, cell, userAnswers, deletionIndex) {
+    if (!cell.includes("==")) {
+      el.setText(cell);
+      return false;
     }
     const userAnswer = userAnswers[deletionIndex] || "";
-    const displayText2 = userAnswer ? `<span class="preview-answer">${userAnswer}</span>` : '<span class="cloze-blank"></span>';
-    const html = cell.replace(/==([^=]+)==/g, displayText2);
-    return { html, hasBlank: true };
+    const re2 = /==([^=]+)==/g;
+    let last = 0;
+    let m;
+    while ((m = re2.exec(cell)) !== null) {
+      if (m.index > last)
+        el.appendText(cell.slice(last, m.index));
+      if (userAnswer) {
+        el.createSpan({ cls: "preview-answer", text: userAnswer });
+      } else {
+        el.createSpan({ cls: "cloze-blank" });
+      }
+      last = m.index + m[0].length;
+    }
+    if (last < cell.length)
+      el.appendText(cell.slice(last));
+    return true;
   }
   // ← 添加新的辅助方法:解析多答案输入
   parseMultipleAnswers(input, expectedCount) {
@@ -5171,7 +5234,7 @@ var ClozeCardRenderer = class {
   renderTextAnswer(answerArea, card, state, scheduler) {
     const fullText = answerArea.createDiv({ cls: "full-text" });
     const normalized = this.normalizeOriginal(card);
-    fullText.innerHTML = normalized.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>").replace(/==([^=]+)==/g, '<span class="cloze-highlight">$1</span>');
+    appendClozeLines(fullText, normalized, "cloze-highlight");
     this.renderDetailedComparison(answerArea, card, state, scheduler);
   }
   renderDetailedComparison(answerArea, card, state, scheduler) {
@@ -5235,7 +5298,7 @@ var QACardRenderer = class {
       questionText.appendChild(tableEl);
       questionText.classList.add("table-question");
     } else {
-      questionText.innerHTML = card.front.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+      appendTextLines(questionText, card.front);
     }
     const inputArea = container.createDiv({ cls: "qa-input-area" });
     inputArea.createEl("h4", { text: "Your answer:" });
@@ -5282,7 +5345,7 @@ var QACardRenderer = class {
       correctAnswerDiv.classList.add("table-answer");
     } else {
       const el = correctAnswerDiv.createEl("div", { cls: "correct-answer qa-correct-answer" });
-      el.innerHTML = correctAnswer.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+      appendTextLines(el, correctAnswer);
     }
   }
   renderUserAnswerColumn(container, userAnswer, isTable, evaluation) {
@@ -5309,7 +5372,7 @@ var QACardRenderer = class {
   renderTextUserAnswer(container, userAnswer, evaluation) {
     const userAnswerElement = container.createEl("div", { cls: "qa-user-answer" });
     const displayText2 = userAnswer.trim() || "(no answer provided)";
-    userAnswerElement.innerHTML = displayText2.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+    appendTextLines(userAnswerElement, displayText2);
     if (evaluation) {
       userAnswerElement.classList.add("user-answer", evaluation.correctness);
     } else {
@@ -8817,7 +8880,7 @@ var ReviewView = class extends import_obsidian11.ItemView {
       cls: "top-action-btn jump-icon-btn",
       attr: { "aria-label": "Jump to source" }
     });
-    jumpBtn.innerHTML = "\u2197";
+    jumpBtn.setText("\u2197");
     jumpBtn.addEventListener("click", () => this.jumpToSource());
     this.renderMoreMenu(actionsBar);
   }
@@ -8826,7 +8889,7 @@ var ReviewView = class extends import_obsidian11.ItemView {
       cls: "top-action-btn more-btn",
       attr: { "aria-label": "More actions" }
     });
-    moreBtn.innerHTML = "\u22EF";
+    moreBtn.setText("\u22EF");
     const dropdown = actionsBar.createDiv({ cls: "more-dropdown" });
     setCssProps(dropdown, { display: "none" });
     const menuItems = [
@@ -8870,7 +8933,7 @@ var ReviewView = class extends import_obsidian11.ItemView {
       const menuItem = dropdown.createEl("div", {
         cls: `dropdown-item ${item.className || ""}`
       });
-      menuItem.innerHTML = item.label;
+      menuItem.setText(item.label);
       menuItem.addEventListener("click", () => {
         void item.onClick();
         setCssProps(dropdown, { display: "none" });
@@ -9166,10 +9229,18 @@ var ReviewView = class extends import_obsidian11.ItemView {
       reviewTextDiv.appendChild(tableEl);
       reviewTextDiv.classList.add("table-question");
     } else {
-      reviewTextDiv.innerHTML = (((_a = this.currentCard.cloze) == null ? void 0 : _a.original) || this.currentCard.front).replace(
-        /==([^=]+)==/g,
-        '<span class="cloze-underline">$1</span>'
-      );
+      const src = ((_a = this.currentCard.cloze) == null ? void 0 : _a.original) || this.currentCard.front;
+      const re2 = /==([^=]+)==/g;
+      let last = 0;
+      let m;
+      while ((m = re2.exec(src)) !== null) {
+        if (m.index > last)
+          reviewTextDiv.appendText(src.slice(last, m.index));
+        reviewTextDiv.createSpan({ cls: "cloze-underline", text: m[1] });
+        last = m.index + m[0].length;
+      }
+      if (last < src.length)
+        reviewTextDiv.appendText(src.slice(last));
     }
   }
   renderShowAnswerButton(container) {
@@ -10536,113 +10607,45 @@ var StatsView = class extends import_obsidian12.ItemView {
     }
   }
   showClearStatsModal() {
-    var _a, _b, _c, _d, _e2;
-    const modal = document.createElement("div");
-    modal.className = "modal-container";
-    modal.innerHTML = `
-      <div class="modal-bg"></div>
-      <div class="modal">
-        <div class="modal-title">Clear Statistics</div>
-        <div class="modal-content">
-          <p>Choose what statistics to clear:</p>
-          <div class="clear-options">
-            <button class="clear-option-btn" data-action="all">
-              \u{1F5D1}\uFE0F Clear All Statistics
-              <span class="option-desc">Reset all cards and review logs</span>
-            </button>
-            <button class="clear-option-btn" data-action="old">
-              \u{1F4C5} Clear Old Data (30+ days)
-              <span class="option-desc">Keep recent 30 days only</span>
-            </button>
-            <button class="clear-option-btn" data-action="deck">
-              \u{1F4DA} Clear Specific Deck
-              <span class="option-desc">Choose a deck to reset</span>
-            </button>
-          </div>
-        </div>
-        <div class="modal-button-container">
-          <button class="mod-cta cancel-btn">Cancel</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-    (_a = modal.querySelector(".cancel-btn")) == null ? void 0 : _a.addEventListener("click", () => {
-      modal.remove();
-    });
-    (_b = modal.querySelector('[data-action="all"]')) == null ? void 0 : _b.addEventListener("click", async () => {
-      if (confirm("\u26A0\uFE0F This will reset ALL statistics and card progress. Are you sure?")) {
-        await this.analytics.clearAllStats();
-        new import_obsidian12.Notice("\u2705 all statistics cleared.");
-        modal.remove();
-        this.render();
+    const modal = new ClearStatsModal(this.app, {
+      onAll: async () => {
+        if (confirm("\u26A0\uFE0F This will reset ALL statistics and card progress. Are you sure?")) {
+          await this.analytics.clearAllStats();
+          new import_obsidian12.Notice("\u2705 all statistics cleared.");
+          modal.close();
+          this.render();
+        }
+      },
+      onOld: async () => {
+        if (confirm("Clear statistics older than 30 days?")) {
+          await this.analytics.clearStatsBeforeDate(30);
+          new import_obsidian12.Notice("\u2705 old statistics cleared.");
+          modal.close();
+          this.render();
+        }
+      },
+      onDeck: () => {
+        modal.close();
+        this.showDeckSelectionModal();
       }
     });
-    (_c = modal.querySelector('[data-action="old"]')) == null ? void 0 : _c.addEventListener("click", async () => {
-      if (confirm("Clear statistics older than 30 days?")) {
-        await this.analytics.clearStatsBeforeDate(30);
-        new import_obsidian12.Notice("\u2705 old statistics cleared.");
-        modal.remove();
-        this.render();
-      }
-    });
-    (_d = modal.querySelector('[data-action="deck"]')) == null ? void 0 : _d.addEventListener("click", () => {
-      modal.remove();
-      this.showDeckSelectionModal();
-    });
-    (_e2 = modal.querySelector(".modal-bg")) == null ? void 0 : _e2.addEventListener("click", () => {
-      modal.remove();
-    });
+    modal.open();
   }
   showDeckSelectionModal() {
-    var _a, _b;
     const deckStats = this.analytics.getDeckStats();
     if (deckStats.length === 0) {
       new import_obsidian12.Notice("No decks available");
       return;
     }
-    const modal = document.createElement("div");
-    modal.className = "modal-container";
-    let optionsHtml = "";
-    deckStats.forEach((deck) => {
-      optionsHtml += `
-        <button class="clear-option-btn deck-option" data-deck="${deck.deckName}">
-          \u{1F4DA} ${deck.deckName}
-          <span class="option-desc">${deck.totalCards} cards</span>
-        </button>
-      `;
+    const modal = new DeckSelectionModal(this.app, deckStats, async (deckName) => {
+      if (confirm(`Clear statistics for deck "${deckName}"?`)) {
+        await this.analytics.clearDeckStats(deckName);
+        new import_obsidian12.Notice(`\u2705 Statistics cleared for ${deckName}`);
+        modal.close();
+        this.render();
+      }
     });
-    modal.innerHTML = `
-      <div class="modal-bg"></div>
-      <div class="modal">
-        <div class="modal-title">Select Deck to Clear</div>
-        <div class="modal-content">
-          <div class="clear-options">
-            ${optionsHtml}
-          </div>
-        </div>
-        <div class="modal-button-container">
-          <button class="mod-cta cancel-btn">Cancel</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-    (_a = modal.querySelector(".cancel-btn")) == null ? void 0 : _a.addEventListener("click", () => {
-      modal.remove();
-    });
-    modal.querySelectorAll(".deck-option").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const deckName = btn.dataset.deck;
-        if (deckName && confirm(`Clear statistics for deck "${deckName}"?`)) {
-          await this.analytics.clearDeckStats(deckName);
-          new import_obsidian12.Notice(`\u2705 Statistics cleared for ${deckName}`);
-          modal.remove();
-          this.render();
-        }
-      });
-    });
-    (_b = modal.querySelector(".modal-bg")) == null ? void 0 : _b.addEventListener("click", () => {
-      modal.remove();
-    });
+    modal.open();
   }
   async generateAndShowReport() {
     const report = this.analytics.generateReport(30);
@@ -10684,38 +10687,14 @@ var StatsView = class extends import_obsidian12.ItemView {
     btn.addEventListener("click", () => this.confirmStartNewCycle());
   }
   confirmStartNewCycle() {
-    var _a, _b, _c;
-    const modal = document.createElement("div");
-    modal.className = "modal-container";
-    modal.innerHTML = `
-      <div class="modal-bg"></div>
-      <div class="modal">
-        <div class="modal-title">\u{1F504} Start New Learning Cycle</div>
-        <div class="modal-content">
-          <p>This will:</p>
-          <ul>
-            <li>\u2705 Archive current cycle data (read-only)</li>
-            <li>\u2705 Reset current stats to zero</li>
-            <li>\u2705 Keep all flashcard progress</li>
-            <li>\u26A0\uFE0F Cannot be undone</li>
-          </ul>
-          <p>Start fresh with Cycle ${this.analytics.getCurrentCycleNumber() + 1}?</p>
-        </div>
-        <div class="modal-button-container">
-          <button class="mod-warning cancel-btn">Cancel</button>
-          <button class="mod-cta confirm-btn">Start New Cycle</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-    (_a = modal.querySelector(".cancel-btn")) == null ? void 0 : _a.addEventListener("click", () => modal.remove());
-    (_b = modal.querySelector(".confirm-btn")) == null ? void 0 : _b.addEventListener("click", async () => {
+    const nextCycle = this.analytics.getCurrentCycleNumber() + 1;
+    const modal = new ConfirmNewCycleModal(this.app, nextCycle, async () => {
       await this.analytics.startNewCycle();
       new import_obsidian12.Notice("\u2728 new learning cycle started!");
-      modal.remove();
+      modal.close();
       this.render();
     });
-    (_c = modal.querySelector(".modal-bg")) == null ? void 0 : _c.addEventListener("click", () => modal.remove());
+    modal.open();
   }
   renderCycleHistory(container) {
     container.createEl("h3", { text: "\u{1F4DC} learning cycle history" });
@@ -10762,85 +10741,160 @@ var StatsView = class extends import_obsidian12.ItemView {
     return `${startDate.toLocaleDateString("en-US", formatOpts)} - ${endDate.toLocaleDateString("en-US", formatOpts)} (${days}d)`;
   }
   showCycleDetails(cycleNumber) {
-    var _a, _b;
     const details = this.analytics.getCycleDetails(cycleNumber);
     if (!details) {
       new import_obsidian12.Notice("Cycle data not found");
       return;
     }
     const { cycle, dailyStats, deckStats } = details;
-    const modal = document.createElement("div");
-    modal.className = "modal-container cycle-details-modal";
     const avgCorrectRate = dailyStats.length > 0 ? dailyStats.reduce((sum, d) => sum + d.correctRate, 0) / dailyStats.length : 0;
-    modal.innerHTML = `
-      <div class="modal-bg"></div>
-      <div class="modal modal-large">
-        <div class="modal-title">\u{1F4CA} Cycle ${cycleNumber} Details</div>
-        <div class="modal-content">
-          
-          <div class="cycle-detail-section">
-            <h4>\u{1F4C5} Duration</h4>
-            <p>${this.formatDateRange(cycle.startDate, cycle.endDate)}</p>
-          </div>
-  
-          <div class="cycle-detail-section">
-            <h4>\u{1F4C8} Key Metrics</h4>
-            <div class="metrics-grid-small">
-              <div class="metric-small">
-                <span class="metric-label">Total Reviews</span>
-                <span class="metric-value">${cycle.totalReviews}</span>
-              </div>
-              <div class="metric-small">
-                <span class="metric-label">Avg Correct Rate</span>
-                <span class="metric-value">${(avgCorrectRate * 100).toFixed(1)}%</span>
-              </div>
-              <div class="metric-small">
-                <span class="metric-label">Total Cards</span>
-                <span class="metric-value">${cycle.totalCards}</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="cycle-detail-section">
-            <h4>\u{1F4CA} Daily Activity</h4>
-            <div id="cycle-daily-chart"></div>
-          </div>
-          
-          <div class="cycle-detail-section">
-            <h4>\u{1F4DA} Deck Breakdown</h4>
-            <div id="cycle-deck-stats"></div>
-          </div>
-  
-        </div>
-        <div class="modal-button-container">
-          <button class="mod-cta close-btn">Close</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-    const dailyChart = modal.querySelector("#cycle-daily-chart");
-    if (dailyChart) {
-      this.renderSimpleBarChart(dailyChart, dailyStats.slice(-14));
+    new CycleDetailsModal(
+      this.app,
+      {
+        cycleNumber,
+        durationText: this.formatDateRange(cycle.startDate, cycle.endDate),
+        totalReviews: cycle.totalReviews,
+        avgCorrectRate,
+        totalCards: cycle.totalCards,
+        dailyStats: dailyStats.slice(-14),
+        deckStats
+      },
+      (chartEl, recentDays) => this.renderSimpleBarChart(chartEl, recentDays)
+    ).open();
+  }
+};
+var ClearStatsModal = class extends import_obsidian12.Modal {
+  constructor(app, callbacks) {
+    super(app);
+    this.callbacks = callbacks;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl("h2", { text: "Clear statistics" });
+    contentEl.createEl("p", { text: "Choose what statistics to clear:" });
+    const opts = contentEl.createDiv({ cls: "clear-options" });
+    const all = opts.createEl("button", { cls: "clear-option-btn" });
+    all.appendText("\u{1F5D1}\uFE0F Clear all statistics");
+    all.createSpan({ cls: "option-desc", text: "Reset all cards and review logs" });
+    all.addEventListener("click", () => void this.callbacks.onAll());
+    const old = opts.createEl("button", { cls: "clear-option-btn" });
+    old.appendText("\u{1F4C5} Clear old data (30+ days)");
+    old.createSpan({ cls: "option-desc", text: "Keep recent 30 days only" });
+    old.addEventListener("click", () => void this.callbacks.onOld());
+    const deck = opts.createEl("button", { cls: "clear-option-btn" });
+    deck.appendText("\u{1F4DA} Clear specific deck");
+    deck.createSpan({ cls: "option-desc", text: "Choose a deck to reset" });
+    deck.addEventListener("click", () => this.callbacks.onDeck());
+    const btns = contentEl.createDiv({ cls: "modal-button-container" });
+    const cancel = btns.createEl("button", { cls: "mod-cta", text: "Cancel" });
+    cancel.addEventListener("click", () => this.close());
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+};
+var DeckSelectionModal = class extends import_obsidian12.Modal {
+  constructor(app, decks, onPick) {
+    super(app);
+    this.decks = decks;
+    this.onPick = onPick;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl("h2", { text: "Select deck to clear" });
+    const opts = contentEl.createDiv({ cls: "clear-options" });
+    for (const deck of this.decks) {
+      const btn = opts.createEl("button", { cls: "clear-option-btn deck-option" });
+      btn.appendText(`\u{1F4DA} ${deck.deckName}`);
+      btn.createSpan({ cls: "option-desc", text: `${deck.totalCards} cards` });
+      btn.addEventListener("click", () => void this.onPick(deck.deckName));
     }
-    const deckStatsEl = modal.querySelector("#cycle-deck-stats");
-    if (deckStatsEl) {
-      if (deckStats.length === 0) {
-        deckStatsEl.textContent = "No deck data available";
-      } else {
-        deckStats.forEach((deck) => {
-          const row = deckStatsEl.createDiv({ cls: "deck-stat-row" });
-          row.createSpan({ text: deck.deckName, cls: "deck-name" });
-          const info = row.createDiv({ cls: "deck-info" });
-          info.createSpan({ text: `${deck.totalCards} cards`, cls: "deck-detail" });
-          info.createSpan({
-            text: `${(deck.correctRate * 100).toFixed(1)}% correct`,
-            cls: "deck-detail"
-          });
-        });
+    const btns = contentEl.createDiv({ cls: "modal-button-container" });
+    const cancel = btns.createEl("button", { cls: "mod-cta", text: "Cancel" });
+    cancel.addEventListener("click", () => this.close());
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+};
+var ConfirmNewCycleModal = class extends import_obsidian12.Modal {
+  constructor(app, nextCycle, onConfirm) {
+    super(app);
+    this.nextCycle = nextCycle;
+    this.onConfirm = onConfirm;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl("h2", { text: "\u{1F504} start new learning cycle" });
+    contentEl.createEl("p", { text: "This will:" });
+    const ul = contentEl.createEl("ul");
+    ul.createEl("li", { text: "\u2705 archive current cycle data (read-only)" });
+    ul.createEl("li", { text: "\u2705 reset current stats to zero" });
+    ul.createEl("li", { text: "\u2705 keep all flashcard progress" });
+    ul.createEl("li", { text: "\u26A0\uFE0F cannot be undone" });
+    contentEl.createEl("p", { text: `Start fresh with Cycle ${this.nextCycle}?` });
+    const btns = contentEl.createDiv({ cls: "modal-button-container" });
+    const cancel = btns.createEl("button", { cls: "mod-warning", text: "Cancel" });
+    cancel.addEventListener("click", () => this.close());
+    const confirm2 = btns.createEl("button", { cls: "mod-cta", text: "Start new cycle" });
+    confirm2.addEventListener("click", () => void this.onConfirm());
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+};
+var CycleDetailsModal = class extends import_obsidian12.Modal {
+  constructor(app, data, renderChart) {
+    super(app);
+    this.data = data;
+    this.renderChart = renderChart;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("cycle-details-modal");
+    contentEl.createEl("h2", { text: `\u{1F4CA} cycle ${this.data.cycleNumber} details` });
+    const dur = contentEl.createDiv({ cls: "cycle-detail-section" });
+    dur.createEl("h4", { text: "\u{1F4C5} duration" });
+    dur.createEl("p", { text: this.data.durationText });
+    const metrics = contentEl.createDiv({ cls: "cycle-detail-section" });
+    metrics.createEl("h4", { text: "\u{1F4C8} key metrics" });
+    const grid = metrics.createDiv({ cls: "metrics-grid-small" });
+    const add = (label, value) => {
+      const m = grid.createDiv({ cls: "metric-small" });
+      m.createSpan({ cls: "metric-label", text: label });
+      m.createSpan({ cls: "metric-value", text: value });
+    };
+    add("Total reviews", String(this.data.totalReviews));
+    add("Avg correct rate", `${(this.data.avgCorrectRate * 100).toFixed(1)}%`);
+    add("Total cards", String(this.data.totalCards));
+    const activity = contentEl.createDiv({ cls: "cycle-detail-section" });
+    activity.createEl("h4", { text: "\u{1F4CA} daily activity" });
+    const chartEl = activity.createDiv({ cls: "cycle-daily-chart" });
+    this.renderChart(chartEl, this.data.dailyStats);
+    const decks = contentEl.createDiv({ cls: "cycle-detail-section" });
+    decks.createEl("h4", { text: "\u{1F4DA} deck breakdown" });
+    const deckEl = decks.createDiv({ cls: "cycle-deck-stats" });
+    if (this.data.deckStats.length === 0) {
+      deckEl.setText("No deck data available");
+    } else {
+      for (const d of this.data.deckStats) {
+        const row = deckEl.createDiv({ cls: "deck-stat-row" });
+        row.createSpan({ text: d.deckName, cls: "deck-name" });
+        const info = row.createDiv({ cls: "deck-info" });
+        info.createSpan({ text: `${d.totalCards} cards`, cls: "deck-detail" });
+        info.createSpan({ text: `${(d.correctRate * 100).toFixed(1)}% correct`, cls: "deck-detail" });
       }
     }
-    (_a = modal.querySelector(".close-btn")) == null ? void 0 : _a.addEventListener("click", () => modal.remove());
-    (_b = modal.querySelector(".modal-bg")) == null ? void 0 : _b.addEventListener("click", () => modal.remove());
+    const btns = contentEl.createDiv({ cls: "modal-button-container" });
+    const close = btns.createEl("button", { cls: "mod-cta", text: "Close" });
+    close.addEventListener("click", () => this.close());
+  }
+  onClose() {
+    this.contentEl.empty();
   }
 };
 
@@ -13637,10 +13691,9 @@ var RecentlyDeletedModal = class extends import_obsidian17.Modal {
     const toolbar = contentEl.createDiv({ cls: "recently-deleted-toolbar" });
     const stats = this.getStats();
     const statsText = toolbar.createDiv({ cls: "deleted-stats" });
-    statsText.innerHTML = `
-      \u{1F4DD} ${stats.notes} ${t("confirm.notes", this.plugin.settings.language)} \u2022 
-      \u{1F0CF} ${stats.cards} ${t("confirm.flashcards", this.plugin.settings.language)}
-    `;
+    statsText.setText(
+      `\u{1F4DD} ${stats.notes} ${t("confirm.notes", this.plugin.settings.language)} \u2022 \u{1F0CF} ${stats.cards} ${t("confirm.flashcards", this.plugin.settings.language)}`
+    );
     const actions = toolbar.createDiv({ cls: "deleted-actions" });
     new import_obsidian17.ButtonComponent(actions).setButtonText(t("recentDelete.clearAll", this.plugin.settings.language)).setWarning().onClick(async () => {
       if (confirm(t("confirm.clearAllDeleted", this.plugin.settings.language))) {
@@ -13663,31 +13716,34 @@ var RecentlyDeletedModal = class extends import_obsidian17.Modal {
   }
   renderEmpty(container) {
     const empty = container.createDiv({ cls: "empty-deleted" });
-    empty.innerHTML = `
-      <div class="empty-icon">\u{1F389}</div>
-      <div class="empty-text">${t("recentDelete.empty", this.plugin.settings.language)}</div>
-      <div class="empty-hint">${t("recentDelete.emptyHint", this.plugin.settings.language)}</div>
-    `;
+    const lang = this.plugin.settings.language;
+    empty.createDiv({ cls: "empty-icon", text: "\u{1F389}" });
+    empty.createDiv({ cls: "empty-text", text: t("recentDelete.empty", lang) });
+    empty.createDiv({ cls: "empty-hint", text: t("recentDelete.emptyHint", lang) });
   }
   renderDeletedNotes(container, items) {
     const section = container.createDiv({ cls: "deleted-section" });
+    const lang = this.plugin.settings.language;
     const header = section.createDiv({ cls: "section-header" });
-    header.innerHTML = `
-      <h3>\u{1F4DD} ${t("confirm.notes", this.plugin.settings.language)} (${items.length})</h3>
-    `;
+    header.createEl("h3", { text: `\u{1F4DD} ${t("confirm.notes", lang)} (${items.length})` });
     const list = section.createDiv({ cls: "deleted-list" });
     items.forEach((item) => {
       const itemEl = list.createDiv({ cls: "deleted-item" });
       const info = itemEl.createDiv({ cls: "deleted-item-info" });
       const content = info.createDiv({ cls: "deleted-item-content" });
-      content.textContent = item.unit.content.substring(0, 150) + (item.unit.content.length > 150 ? "..." : "");
+      content.setText(
+        item.unit.content.substring(0, 150) + (item.unit.content.length > 150 ? "..." : "")
+      );
       const meta = info.createDiv({ cls: "deleted-item-meta" });
-      meta.innerHTML = `
-        <span class="deleted-time">${this.formatTime(item.deletedAt)}</span>
-        <span class="deleted-source">\u{1F4C4} ${item.unit.source.file}</span>
-        ${item.associatedCardIds.length > 0 ? `<span class="deleted-cards">\u{1F0CF} ${item.associatedCardIds.length} ${t("confirm.flashcards", this.plugin.settings.language)}</span>` : ""}
-        <span class="deleted-reason">${this.getDeleteReason(item.deletedBy)}</span>
-      `;
+      meta.createSpan({ cls: "deleted-time", text: this.formatTime(item.deletedAt) });
+      meta.createSpan({ cls: "deleted-source", text: `\u{1F4C4} ${item.unit.source.file}` });
+      if (item.associatedCardIds.length > 0) {
+        meta.createSpan({
+          cls: "deleted-cards",
+          text: `\u{1F0CF} ${item.associatedCardIds.length} ${t("confirm.flashcards", lang)}`
+        });
+      }
+      meta.createSpan({ cls: "deleted-reason", text: this.getDeleteReason(item.deletedBy) });
       const actions = itemEl.createDiv({ cls: "deleted-item-actions" });
       new import_obsidian17.ButtonComponent(actions).setButtonText(t("recentDelete.restore", this.plugin.settings.language)).setIcon("rotate-ccw").onClick(async () => {
         await this.restoreNote(item);
@@ -13699,26 +13755,29 @@ var RecentlyDeletedModal = class extends import_obsidian17.Modal {
   }
   renderDeletedCards(container, items) {
     const section = container.createDiv({ cls: "deleted-section" });
+    const lang = this.plugin.settings.language;
     const header = section.createDiv({ cls: "section-header" });
-    header.innerHTML = `
-      <h3>\u{1F0CF} ${t("confirm.flashcards", this.plugin.settings.language)} (${items.length})</h3>
-    `;
+    header.createEl("h3", { text: `\u{1F0CF} ${t("confirm.flashcards", lang)} (${items.length})` });
     const list = section.createDiv({ cls: "deleted-list" });
     items.forEach((item) => {
       const itemEl = list.createDiv({ cls: "deleted-item" });
       const info = itemEl.createDiv({ cls: "deleted-item-info" });
       const content = info.createDiv({ cls: "deleted-item-content" });
-      content.innerHTML = `
-        <div class="card-front"><strong>Q:</strong> ${item.content.front.substring(0, 100)}</div>
-        <div class="card-back"><strong>A:</strong> ${typeof item.content.back === "string" ? item.content.back.substring(0, 100) : item.content.back}</div>
-      `;
+      const front = content.createDiv({ cls: "card-front" });
+      front.createEl("strong", { text: "Q:" });
+      front.appendText(` ${item.content.front.substring(0, 100)}`);
+      const back = content.createDiv({ cls: "card-back" });
+      back.createEl("strong", { text: "A:" });
+      const backText = typeof item.content.back === "string" ? item.content.back.substring(0, 100) : String(item.content.back);
+      back.appendText(` ${backText}`);
       const meta = info.createDiv({ cls: "deleted-item-meta" });
-      meta.innerHTML = `
-        <span class="deleted-time">${this.formatTime(item.deletedAt)}</span>
-        <span class="deleted-source">\u{1F4C4} ${item.content.sourceFile}</span>
-        <span class="deleted-type">${item.content.cardType === "qa" ? "Q&A" : t("stats.type.cloze", this.plugin.settings.language)}</span>
-        <span class="deleted-reason">${this.getDeleteReason(item.deletedBy)}</span>
-      `;
+      meta.createSpan({ cls: "deleted-time", text: this.formatTime(item.deletedAt) });
+      meta.createSpan({ cls: "deleted-source", text: `\u{1F4C4} ${item.content.sourceFile}` });
+      meta.createSpan({
+        cls: "deleted-type",
+        text: item.content.cardType === "qa" ? "Q&A" : t("stats.type.cloze", lang)
+      });
+      meta.createSpan({ cls: "deleted-reason", text: this.getDeleteReason(item.deletedBy) });
       const actions = itemEl.createDiv({ cls: "deleted-item-actions" });
       new import_obsidian17.ButtonComponent(actions).setButtonText(t("recentDelete.restore", this.plugin.settings.language)).setIcon("rotate-ccw").onClick(async () => {
         await this.restoreCard(item);

@@ -174,7 +174,7 @@ export class ReviewView extends ItemView {
       cls: 'top-action-btn jump-icon-btn',
       attr: { 'aria-label': 'Jump to source' }
     });
-    jumpBtn.innerHTML = '↗';
+    jumpBtn.setText('↗');
     jumpBtn.addEventListener('click', () => this.jumpToSource());
 
     // More 菜单
@@ -186,7 +186,7 @@ export class ReviewView extends ItemView {
       cls: 'top-action-btn more-btn',
       attr: { 'aria-label': 'More actions' }
     });
-    moreBtn.innerHTML = '⋯';
+    moreBtn.setText('⋯');
     
     const dropdown = actionsBar.createDiv({ cls: 'more-dropdown' });
     setCssProps(dropdown, { display: 'none' });
@@ -235,7 +235,7 @@ export class ReviewView extends ItemView {
       const menuItem = dropdown.createEl('div', {
         cls: `dropdown-item ${item.className || ''}`
       });
-      menuItem.innerHTML = item.label;
+      menuItem.setText(item.label);
       menuItem.addEventListener('click', () => {
         void item.onClick();
         setCssProps(dropdown, { display: 'none' });
@@ -587,10 +587,16 @@ export class ReviewView extends ItemView {
       reviewTextDiv.appendChild(tableEl);
       reviewTextDiv.classList.add('table-question');
     } else {
-      reviewTextDiv.innerHTML = (this.currentCard.cloze?.original || this.currentCard.front).replace(
-        /==([^=]+)==/g,
-        '<span class="cloze-underline">$1</span>'
-      );
+      const src = this.currentCard.cloze?.original || this.currentCard.front;
+      const re = /==([^=]+)==/g;
+      let last = 0;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(src)) !== null) {
+        if (m.index > last) reviewTextDiv.appendText(src.slice(last, m.index));
+        reviewTextDiv.createSpan({ cls: 'cloze-underline', text: m[1] });
+        last = m.index + m[0].length;
+      }
+      if (last < src.length) reviewTextDiv.appendText(src.slice(last));
     }
   }
 

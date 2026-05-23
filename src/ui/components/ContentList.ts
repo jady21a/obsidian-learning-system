@@ -293,20 +293,17 @@ renderCompactListWithoutGrouping(container: HTMLElement, units: ContentUnit[]): 
     const emptyDiv = container.createDiv({ cls: 'empty-state' });
     
     if (this.state.selectedFile && this.state.displayMode === 'sidebar') {
-      emptyDiv.innerHTML = `
-        <div style="padding: 20px; text-align: center;">
-          <div style="font-size: 32px; margin-bottom: 10px;">📭</div>
-          <div style="color: var(--text-muted);">${t('contentList.empty.noNotes', this.language)}</div>
-          <div style="font-size: 12px; color: var(--text-faint); margin-top: 8px;">
-            ${this.state.filterMode !== 'all' 
-              ? t('contentList.empty.tryFilter', this.language)
-              : t('contentList.empty.startHighlight', this.language)
-            }
-          </div>
-        </div>
-      `;
+      const box = emptyDiv.createDiv({ cls: 'empty-state-box' });
+      box.createDiv({ cls: 'empty-state-icon', text: '📭' });
+      box.createDiv({ cls: 'empty-state-main', text: t('contentList.empty.noNotes', this.language) });
+      box.createDiv({
+        cls: 'empty-state-hint',
+        text: this.state.filterMode !== 'all'
+          ? t('contentList.empty.tryFilter', this.language)
+          : t('contentList.empty.startHighlight', this.language),
+      });
     } else {
-      emptyDiv.textContent = t('contentList.empty.noContent', this.language);
+      emptyDiv.setText(t('contentList.empty.noContent', this.language));
     }
   }
 

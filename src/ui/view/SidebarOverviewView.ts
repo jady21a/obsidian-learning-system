@@ -86,36 +86,13 @@ export class SidebarOverviewView extends ItemView {
   }
 
   async onOpen() {
-    
-        this.detectDisplayMode();
-        
-        const editor = document.querySelector('.cm-editor');
-        if (editor) {
-          const stopEditorCapture = (e: Event) => {
-            const target = e.target as HTMLElement;
-            if (target.closest('.learning-overview-container')) {
-              e.stopPropagation();
-              e.stopImmediatePropagation();
-            }
-          };
-          
-          editor.addEventListener('mousedown', stopEditorCapture, true);
-          editor.addEventListener('click', stopEditorCapture, true);
-        }
-    // 禁用编辑器自动聚焦
-    const editorContainer = document.querySelector('.cm-content');
-    if (editorContainer) {
-      setCssProps(editorContainer as HTMLElement, { 'pointer-events': 'auto' });
-      editorContainer.addEventListener('mousedown', (e) => {
-        // 如果点击的是搜索框区域，不让编辑器处理
-        const searchBox = document.querySelector('.search-container');
-        if (searchBox && searchBox.contains(e.target as Node)) {
-          e.stopPropagation();
-          e.preventDefault();
-        }
-      }, true);
-    }
-    
+    this.detectDisplayMode();
+
+    // 移除了对 .cm-editor / .cm-content / .search-container 的全局 querySelector +
+    // 永不解绑的全局事件监听:这些既违反社区规范(不应访问 Obsidian 内部 DOM),
+    // 又会泄漏监听器,且原逻辑判定(.learning-overview-container 嵌入 .cm-editor 内)
+    // 也不成立。如确需阻止冒泡,在本插件自有元素上做即可。
+
     // 确保侧边栏模式下设置当前活动文件
     if (this.state.displayMode === 'sidebar') {
       const activeFile = this.app.workspace.getActiveFile();
@@ -512,7 +489,8 @@ this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
     const allNotesBtn = entries.createDiv({
       cls: `entry-btn ${this.state.viewType === 'notes' ? 'active' : ''}`
     });
-    allNotesBtn.innerHTML = '📝 <span>All Notes</span>';
+    allNotesBtn.appendText('📝 ');
+    allNotesBtn.createSpan({ text: 'All notes' });
     allNotesBtn.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -524,7 +502,8 @@ this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
     const cardListBtn = entries.createDiv({
       cls: `entry-btn ${this.state.viewType === 'cards' ? 'active' : ''}`
     });
-    cardListBtn.innerHTML = '🃏 <span>Card List</span>';
+    cardListBtn.appendText('🃏 ');
+    cardListBtn.createSpan({ text: 'Card list' });
     cardListBtn.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -669,11 +648,9 @@ this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
         ? this.t('filter.unannotated')
         : groupKey;
       
-      fileItem.innerHTML = `
-        <span class="file-icon">${this.getGroupIcon()}</span>
-        <span class="file-name">${displayName}</span>
-        <span class="file-count">${count}</span>
-      `;
+      fileItem.createSpan({ cls: 'file-icon', text: this.getGroupIcon() });
+      fileItem.createSpan({ cls: 'file-name', text: displayName });
+      fileItem.createSpan({ cls: 'file-count', text: String(count) });
       
       fileItem.addEventListener('mousedown', (e) => {
         e.stopPropagation();
@@ -694,10 +671,8 @@ this.batchActions.renderReviewCheckButton(rightActions, 'sidebar');
   
   private renderEmptyRightPanel(container: HTMLElement): void {
     const empty = container.createDiv({ cls: 'empty-right-panel' });
-    empty.innerHTML = `
-      <div class="empty-icon">📭</div>
-      <div class="empty-text">${this.t('empty.noContent')}</div>
-    `;
+    empty.createDiv({ cls: 'empty-icon', text: '📭' });
+    empty.createDiv({ cls: 'empty-text', text: this.t('empty.noContent') });
   }
 
   // ==================== 事件处理方法 ====================
@@ -1438,37 +1413,29 @@ private createReviewBanner(count: number): HTMLElement {
   // 获取连续复习天数
   const streakDays = this.getReviewStreak();
   
-  banner.innerHTML = `
-  <div class="reminder-header">
-    <div class="reminder-text">
- <strong>${this.t('review.todayProgress', { reviewed: reviewedToday, total: totalToday })}</strong>  
-    </div>
-  </div>
-  
-  <div class="reminder-stats">
-    <div class="stat-item delay-warning">
-      ${delayText}
-    </div>
-    ${streakDays > 0 ? `
-      <div class="stat-item streak-info">
-         ${this.t('review.streak', { days: streakDays })}
-      </div>
-    ` : ''}
-  </div>
-  
-  <div class="reminder-actions">
-    <button class="reminder-btn primary">${this.t('review.start')}</button>
-  </div>
-`;
+  const header = banner.createDiv({ cls: 'reminder-header' });
+  const headerText = header.createDiv({ cls: 'reminder-text' });
+  headerText.createEl('strong', {
+    text: this.t('review.todayProgress', { reviewed: reviewedToday, total: totalToday })
+  });
 
-// 设置字体大小
-setCssProps(banner, { 'font-size': '0.85em' });
-// 设置按钮居中
-const actions = banner.querySelector('.reminder-actions') as HTMLElement;
-if (actions) {
+  const stats = banner.createDiv({ cls: 'reminder-stats' });
+  stats.createDiv({ cls: 'stat-item delay-warning', text: delayText });
+  if (streakDays > 0) {
+    stats.createDiv({
+      cls: 'stat-item streak-info',
+      text: this.t('review.streak', { days: streakDays })
+    });
+  }
+
+  const actions = banner.createDiv({ cls: 'reminder-actions' });
+  actions.createEl('button', { cls: 'reminder-btn primary', text: this.t('review.start') });
+
+  // 设置字体大小
+  setCssProps(banner, { 'font-size': '0.85em' });
+  // 设置按钮居中
   setCssProps(actions, { display: 'flex', 'justify-content': 'center' });
-}
-  
+
   banner.querySelector('.primary')!.addEventListener('mousedown', (e) => {
     e.stopPropagation();
     e.preventDefault();

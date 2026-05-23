@@ -38,15 +38,17 @@ export class EditFlashcardModal extends Modal {
     
     // 卡片信息
     const infoDiv = contentEl.createDiv({ cls: 'card-info' });
-    infoDiv.innerHTML = `
-      <div style="background: var(--background-secondary); padding: 10px; border-radius: 6px; margin-bottom: 15px;">
-        <div style="font-size: 0.9em; color: var(--text-muted);">
-          ${t('editCard.info.file', lang)}: ${this.card.sourceFile.split('/').pop()}<br>
-          ${t('editCard.info.deck', lang)}: ${this.card.deck}<br>
-          ${t('editCard.info.reviews', lang)}: ${this.card.stats.totalReviews}${t('editCard.info.correct', lang)}: ${this.card.stats.correctCount}次
-        </div>
-      </div>
-    `;
+    const box = infoDiv.createDiv({ cls: 'card-info-box' });
+    const lines = box.createDiv({ cls: 'card-info-lines' });
+    const fileName = this.card.sourceFile.split('/').pop() ?? this.card.sourceFile;
+    lines.appendText(`${t('editCard.info.file', lang)}: ${fileName}`);
+    lines.createEl('br');
+    lines.appendText(`${t('editCard.info.deck', lang)}: ${this.card.deck}`);
+    lines.createEl('br');
+    lines.appendText(
+      `${t('editCard.info.reviews', lang)}: ${this.card.stats.totalReviews}` +
+      `${t('editCard.info.correct', lang)}: ${this.card.stats.correctCount}次`
+    );
     // 问题/前面
     new Setting(contentEl)
     .setName(t(this.card.type === 'qa' ? 'editCard.front.qa' : 'editCard.front.cloze', lang))

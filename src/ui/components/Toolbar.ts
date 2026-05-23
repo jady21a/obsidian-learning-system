@@ -183,7 +183,7 @@ export class Toolbar {
       } ${!hasNotes ? 'disabled' : ''}`
     });
     
-    btn.innerHTML = isMain ? `${icon} ` : icon;
+    btn.setText(isMain ? `${icon} ` : icon);
     
     // ⭐ 设置提示文本
     if (!hasNotes) {
@@ -218,7 +218,7 @@ renderReviewCheckButton(container: HTMLElement): HTMLElement | null {
       'aria-label': 'Check for cards to review'
     }
   });
-  reviewBtn.innerHTML = '🔔'; 
+  reviewBtn.setText('🔔');
   reviewBtn.addEventListener('mousedown', (e) => {
     e.stopPropagation();
     e.preventDefault();

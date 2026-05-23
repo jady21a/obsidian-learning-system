@@ -39,10 +39,10 @@ export class RecentlyDeletedModal extends Modal {
     
     const stats = this.getStats();
     const statsText = toolbar.createDiv({ cls: 'deleted-stats' });
-    statsText.innerHTML = `
-      📝 ${stats.notes} ${t('confirm.notes', this.plugin.settings.language)} • 
-      🃏 ${stats.cards} ${t('confirm.flashcards', this.plugin.settings.language)}
-    `;
+    statsText.setText(
+      `📝 ${stats.notes} ${t('confirm.notes', this.plugin.settings.language)} • ` +
+      `🃏 ${stats.cards} ${t('confirm.flashcards', this.plugin.settings.language)}`
+    );
 
     const actions = toolbar.createDiv({ cls: 'deleted-actions' });
     
@@ -79,42 +79,43 @@ export class RecentlyDeletedModal extends Modal {
 
   private renderEmpty(container: HTMLElement) {
     const empty = container.createDiv({ cls: 'empty-deleted' });
-    empty.innerHTML = `
-      <div class="empty-icon">🎉</div>
-      <div class="empty-text">${t('recentDelete.empty', this.plugin.settings.language)}</div>
-      <div class="empty-hint">${t('recentDelete.emptyHint', this.plugin.settings.language)}</div>
-    `;
+    const lang = this.plugin.settings.language;
+    empty.createDiv({ cls: 'empty-icon', text: '🎉' });
+    empty.createDiv({ cls: 'empty-text', text: t('recentDelete.empty', lang) });
+    empty.createDiv({ cls: 'empty-hint', text: t('recentDelete.emptyHint', lang) });
   }
 
   private renderDeletedNotes(container: HTMLElement, items: DeletedContentUnit[]) {
     const section = container.createDiv({ cls: 'deleted-section' });
     
+    const lang = this.plugin.settings.language;
     const header = section.createDiv({ cls: 'section-header' });
-    header.innerHTML = `
-      <h3>📝 ${t('confirm.notes', this.plugin.settings.language)} (${items.length})</h3>
-    `;
+    header.createEl('h3', { text: `📝 ${t('confirm.notes', lang)} (${items.length})` });
 
     const list = section.createDiv({ cls: 'deleted-list' });
 
     items.forEach((item) => {
       const itemEl = list.createDiv({ cls: 'deleted-item' });
-      
+
       // 左侧信息
       const info = itemEl.createDiv({ cls: 'deleted-item-info' });
-      
+
       const content = info.createDiv({ cls: 'deleted-item-content' });
-      content.textContent = item.unit.content.substring(0, 150) + 
-        (item.unit.content.length > 150 ? '...' : '');
-      
+      content.setText(
+        item.unit.content.substring(0, 150) +
+        (item.unit.content.length > 150 ? '...' : '')
+      );
+
       const meta = info.createDiv({ cls: 'deleted-item-meta' });
-      meta.innerHTML = `
-        <span class="deleted-time">${this.formatTime(item.deletedAt)}</span>
-        <span class="deleted-source">📄 ${item.unit.source.file}</span>
-        ${item.associatedCardIds.length > 0 ? 
-          `<span class="deleted-cards">🃏 ${item.associatedCardIds.length} ${t('confirm.flashcards', this.plugin.settings.language)}</span>` 
-          : ''}
-        <span class="deleted-reason">${this.getDeleteReason(item.deletedBy)}</span>
-      `;
+      meta.createSpan({ cls: 'deleted-time', text: this.formatTime(item.deletedAt) });
+      meta.createSpan({ cls: 'deleted-source', text: `📄 ${item.unit.source.file}` });
+      if (item.associatedCardIds.length > 0) {
+        meta.createSpan({
+          cls: 'deleted-cards',
+          text: `🃏 ${item.associatedCardIds.length} ${t('confirm.flashcards', lang)}`,
+        });
+      }
+      meta.createSpan({ cls: 'deleted-reason', text: this.getDeleteReason(item.deletedBy) });
 
       // 右侧操作
       const actions = itemEl.createDiv({ cls: 'deleted-item-actions' });
@@ -139,36 +140,37 @@ export class RecentlyDeletedModal extends Modal {
   private renderDeletedCards(container: HTMLElement, items: DeletedItem[]) {
     const section = container.createDiv({ cls: 'deleted-section' });
     
+    const lang = this.plugin.settings.language;
     const header = section.createDiv({ cls: 'section-header' });
-    header.innerHTML = `
-      <h3>🃏 ${t('confirm.flashcards', this.plugin.settings.language)} (${items.length})</h3>
-    `;
+    header.createEl('h3', { text: `🃏 ${t('confirm.flashcards', lang)} (${items.length})` });
 
     const list = section.createDiv({ cls: 'deleted-list' });
 
     items.forEach((item) => {
       const itemEl = list.createDiv({ cls: 'deleted-item' });
-      
+
       // 左侧信息
       const info = itemEl.createDiv({ cls: 'deleted-item-info' });
-      
+
       const content = info.createDiv({ cls: 'deleted-item-content' });
-      content.innerHTML = `
-        <div class="card-front"><strong>Q:</strong> ${item.content.front.substring(0, 100)}</div>
-        <div class="card-back"><strong>A:</strong> ${
-          typeof item.content.back === 'string' 
-            ? item.content.back.substring(0, 100) 
-            : item.content.back
-        }</div>
-      `;
-      
+      const front = content.createDiv({ cls: 'card-front' });
+      front.createEl('strong', { text: 'Q:' });
+      front.appendText(` ${item.content.front.substring(0, 100)}`);
+      const back = content.createDiv({ cls: 'card-back' });
+      back.createEl('strong', { text: 'A:' });
+      const backText = typeof item.content.back === 'string'
+        ? item.content.back.substring(0, 100)
+        : String(item.content.back);
+      back.appendText(` ${backText}`);
+
       const meta = info.createDiv({ cls: 'deleted-item-meta' });
-      meta.innerHTML = `
-        <span class="deleted-time">${this.formatTime(item.deletedAt)}</span>
-        <span class="deleted-source">📄 ${item.content.sourceFile}</span>
-        <span class="deleted-type">${item.content.cardType === 'qa' ? 'Q&A' : t('stats.type.cloze', this.plugin.settings.language)}</span>
-        <span class="deleted-reason">${this.getDeleteReason(item.deletedBy)}</span>
-      `;
+      meta.createSpan({ cls: 'deleted-time', text: this.formatTime(item.deletedAt) });
+      meta.createSpan({ cls: 'deleted-source', text: `📄 ${item.content.sourceFile}` });
+      meta.createSpan({
+        cls: 'deleted-type',
+        text: item.content.cardType === 'qa' ? 'Q&A' : t('stats.type.cloze', lang),
+      });
+      meta.createSpan({ cls: 'deleted-reason', text: this.getDeleteReason(item.deletedBy) });
 
       // 右侧操作
       const actions = itemEl.createDiv({ cls: 'deleted-item-actions' });

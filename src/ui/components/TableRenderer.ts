@@ -65,7 +65,7 @@ export class TableRenderer {
     
     headerCells.forEach(cell => {
       const th = headerRow.createEl('th');
-      th.innerHTML = this.processCellContent(cell, showAnswer);
+      this.appendCellInto(th, cell, showAnswer);
     });
 
     // 数据行
@@ -99,7 +99,7 @@ export class TableRenderer {
     const row = tbody.createEl('tr');
     cells.forEach(cell => {
       const td = row.createEl('td');
-      td.innerHTML = this.processCellContent(cell, showAnswer);
+      this.appendCellInto(td, cell, showAnswer);
     });
   }
 
@@ -118,18 +118,27 @@ export class TableRenderer {
     return cells;
   }
 
-// 处理单元格内容
-private static processCellContent(cell: string, showAnswer: boolean): string {
+// 把单元格内容渲染进目标元素(用 DOM API,不走 innerHTML,避免 XSS)。
+// - 不含 == 标记 → 纯文本;
+// - 含 ==X==:showAnswer 时渲染 .revealed 文本,否则渲染 .cloze-blank 空 span。
+private static appendCellInto(el: HTMLElement, cell: string, showAnswer: boolean): void {
   if (!cell.includes('==')) {
-    return cell;
+    el.setText(cell);
+    return;
   }
-  if (showAnswer) {
-    const result = cell.replace(/==([^=]+)==/g, '<span class="revealed">$1</span>');
-    return result;
-  } else {
-    const result = cell.replace(/==([^=]+)==/g, '<span class="cloze-blank"></span>');
-    return result;
+  const re = /==([^=]+)==/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(cell)) !== null) {
+    if (m.index > last) el.appendText(cell.slice(last, m.index));
+    if (showAnswer) {
+      el.createSpan({ cls: 'revealed', text: m[1] });
+    } else {
+      el.createSpan({ cls: 'cloze-blank' });
+    }
+    last = m.index + m[0].length;
   }
+  if (last < cell.length) el.appendText(cell.slice(last));
 }
 
   // 渲染带用户答案的表格（完形填空用）
@@ -165,13 +174,10 @@ if (separatorIndex > 0) {
   let headerIndex = 0;  // ← 表头独立计数
 headerCells.forEach(cell => {
   const th = headerRow.createEl('th');
-  const result = this.processCellWithUserAnswerAndClass(
-    cell, deletions, userAnswers, deletionIndex, scheduler
+  const correctnessClass = this.appendUserAnswerCellInto(
+    th, cell, deletions, userAnswers, deletionIndex, scheduler
   );
-  th.innerHTML = result.html;
-  if (result.correctnessClass) {
-    th.classList.add(result.correctnessClass);
-  }
+  if (correctnessClass) th.classList.add(correctnessClass);
   if (cell.includes('==')) {
     deletionIndex++;
   }
@@ -195,14 +201,11 @@ for (let i = startRow; i < lines.length; i++) {
   const row = tbody.createEl('tr');
   cells.forEach(cell => {
     const td = row.createEl('td');
-    const result = this.processCellWithUserAnswerAndClass(
-      cell, deletions, userAnswers, deletionIndex, scheduler
+    const correctnessClass = this.appendUserAnswerCellInto(
+      td, cell, deletions, userAnswers, deletionIndex, scheduler
     );
-    td.innerHTML = result.html;
-    if (result.correctnessClass) {
-      td.classList.add(result.correctnessClass);
-    }
-    if (cell.includes('==')) {  // ← 改成这样,与表头逻辑一致
+    if (correctnessClass) td.classList.add(correctnessClass);
+    if (cell.includes('==')) {  // ← 与表头逻辑一致
       deletionIndex++;
     }
   });
@@ -211,68 +214,52 @@ for (let i = startRow; i < lines.length; i++) {
     return container;
   }
 
-  // 处理带用户答案的单元格
-  private static processCellWithUserAnswer(
+  /**
+   * 把带用户答案的单元格内容渲染进目标元素(DOM API,无 innerHTML),
+   * 返回单元格整体正确性 class(供调用方加到 td/th 上)。
+   */
+  private static appendUserAnswerCellInto(
+    el: HTMLElement,
     cell: string,
     deletions: Array<{ answer: string }>,
     userAnswers: string[],
     deletionIndex: number,
     scheduler: CardScheduler
-  ): string {
-    if (!cell.includes('==')) return cell;
-    
-    const match = cell.match(/==([^=]+)==/);
-    if (!match || deletionIndex >= deletions.length) {
-      return cell.replace(/==([^=]+)==/g, '<span class="cloze-blank"></span>');
+  ): string | null {
+    if (!cell.includes('==')) {
+      el.setText(cell);
+      return null;
     }
-    
-    const correctAnswer = deletions[deletionIndex].answer;
-    const userAnswer = userAnswers[deletionIndex] || '';
-    const evaluation = scheduler.evaluateAnswer(correctAnswer, userAnswer);
-    
-    const displayText = userAnswer || '(empty)';
-    const correctnessClass = evaluation.correctness;
-    
-    return cell.replace(
-      /==([^=]+)==/g,
-      `<span class="user-answer-cell ${correctnessClass}">${displayText}</span>`
-    );
-  }
+    if (deletionIndex >= deletions.length) {
+      // 没有对应答案信息 → 渲染空白挖空
+      const re = /==([^=]+)==/g;
+      let last = 0;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(cell)) !== null) {
+        if (m.index > last) el.appendText(cell.slice(last, m.index));
+        el.createSpan({ cls: 'cloze-blank' });
+        last = m.index + m[0].length;
+      }
+      if (last < cell.length) el.appendText(cell.slice(last));
+      return null;
+    }
 
-  // 处理带用户答案的单元格(返回 HTML 和正确性类)
-  private static processCellWithUserAnswerAndClass(
-    cell: string,
-    deletions: Array<{ answer: string }>,
-    userAnswers: string[],
-    deletionIndex: number,
-    scheduler: CardScheduler
-  ): { html: string; correctnessClass: string | null } {
-    
-    const match = cell.match(/==([^=]+)==/);
-    if (!match) {  // ← 如果没有匹配到完整的挖空标记
-      return { html: cell, correctnessClass: null };
-    }
-  
-    if (!match || deletionIndex >= deletions.length) {
-      return { 
-        html: cell.replace(/==([^=]+)==/g, '<span class="cloze-blank"></span>'),
-        correctnessClass: null
-      };
-    }
-    
     const correctAnswer = deletions[deletionIndex].answer;
     const userAnswer = userAnswers[deletionIndex] || '';
     const evaluation = scheduler.evaluateAnswer(correctAnswer, userAnswer);
-    
     const displayText = userAnswer || '(empty)';
     const correctnessClass = evaluation.correctness;
-    
-    const html = cell.replace(
-      /==([^=]+)==/g,
-      `<span class="user-answer-cell ${correctnessClass}">${displayText}</span>`
-    );
-    
-    
-    return { html, correctnessClass: `cell-${correctnessClass}` };
+
+    const re = /==([^=]+)==/g;
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(cell)) !== null) {
+      if (m.index > last) el.appendText(cell.slice(last, m.index));
+      el.createSpan({ cls: `user-answer-cell ${correctnessClass}`, text: displayText });
+      last = m.index + m[0].length;
+    }
+    if (last < cell.length) el.appendText(cell.slice(last));
+
+    return `cell-${correctnessClass}`;
   }
 }

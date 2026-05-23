@@ -1,5 +1,5 @@
 // stasView.ts
-import { ItemView, WorkspaceLeaf, TFile, Notice } from 'obsidian';
+import { App, ItemView, Modal, WorkspaceLeaf, TFile, Notice } from 'obsidian';
 import type LearningSystemPlugin from '../../main';
 import { AnalyticsEngine } from '../../core/AnalyticsEngine';
 import { t ,Language} from '../../i18n/translations';
@@ -584,135 +584,48 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
     }
   }
   private showClearStatsModal() {
-    const modal = document.createElement('div');
-    modal.className = 'modal-container';
-    modal.innerHTML = `
-      <div class="modal-bg"></div>
-      <div class="modal">
-        <div class="modal-title">Clear Statistics</div>
-        <div class="modal-content">
-          <p>Choose what statistics to clear:</p>
-          <div class="clear-options">
-            <button class="clear-option-btn" data-action="all">
-              🗑️ Clear All Statistics
-              <span class="option-desc">Reset all cards and review logs</span>
-            </button>
-            <button class="clear-option-btn" data-action="old">
-              📅 Clear Old Data (30+ days)
-              <span class="option-desc">Keep recent 30 days only</span>
-            </button>
-            <button class="clear-option-btn" data-action="deck">
-              📚 Clear Specific Deck
-              <span class="option-desc">Choose a deck to reset</span>
-            </button>
-          </div>
-        </div>
-        <div class="modal-button-container">
-          <button class="mod-cta cancel-btn">Cancel</button>
-        </div>
-      </div>
-    `;
-  
-    document.body.appendChild(modal);
-  
-    // 取消按钮
-    modal.querySelector('.cancel-btn')?.addEventListener('click', () => {
-      modal.remove();
+    const modal = new ClearStatsModal(this.app, {
+      onAll: async () => {
+        if (confirm('⚠️ This will reset ALL statistics and card progress. Are you sure?')) {
+          await this.analytics.clearAllStats();
+          new Notice('✅ all statistics cleared.');
+          modal.close();
+          this.render();
+        }
+      },
+      onOld: async () => {
+        if (confirm('Clear statistics older than 30 days?')) {
+          await this.analytics.clearStatsBeforeDate(30);
+          new Notice('✅ old statistics cleared.');
+          modal.close();
+          this.render();
+        }
+      },
+      onDeck: () => {
+        modal.close();
+        this.showDeckSelectionModal();
+      },
     });
-  
-    // 清除所有统计
-    modal.querySelector('[data-action="all"]')?.addEventListener('click', async () => {
-      if (confirm('⚠️ This will reset ALL statistics and card progress. Are you sure?')) {
-        await this.analytics.clearAllStats();
-        new Notice('✅ all statistics cleared.');
-        modal.remove();
-        this.render();
-      }
-    });
-  
-    // 清除旧数据
-    modal.querySelector('[data-action="old"]')?.addEventListener('click', async () => {
-      if (confirm('Clear statistics older than 30 days?')) {
-        await this.analytics.clearStatsBeforeDate(30);
-        new Notice('✅ old statistics cleared.');
-        modal.remove();
-        this.render();
-      }
-    });
-  
-    // 清除特定卡组
-    modal.querySelector('[data-action="deck"]')?.addEventListener('click', () => {
-      modal.remove();
-      this.showDeckSelectionModal();
-    });
-  
-    // 点击背景关闭
-    modal.querySelector('.modal-bg')?.addEventListener('click', () => {
-      modal.remove();
-    });
+    modal.open();
   }
   
   private showDeckSelectionModal() {
     const deckStats = this.analytics.getDeckStats();
-    
+
     if (deckStats.length === 0) {
       new Notice('No decks available');
       return;
     }
-  
-    const modal = document.createElement('div');
-    modal.className = 'modal-container';
-    
-    let optionsHtml = '';
-    deckStats.forEach(deck => {
-      optionsHtml += `
-        <button class="clear-option-btn deck-option" data-deck="${deck.deckName}">
-          📚 ${deck.deckName}
-          <span class="option-desc">${deck.totalCards} cards</span>
-        </button>
-      `;
+
+    const modal = new DeckSelectionModal(this.app, deckStats, async (deckName) => {
+      if (confirm(`Clear statistics for deck "${deckName}"?`)) {
+        await this.analytics.clearDeckStats(deckName);
+        new Notice(`✅ Statistics cleared for ${deckName}`);
+        modal.close();
+        this.render();
+      }
     });
-  
-    modal.innerHTML = `
-      <div class="modal-bg"></div>
-      <div class="modal">
-        <div class="modal-title">Select Deck to Clear</div>
-        <div class="modal-content">
-          <div class="clear-options">
-            ${optionsHtml}
-          </div>
-        </div>
-        <div class="modal-button-container">
-          <button class="mod-cta cancel-btn">Cancel</button>
-        </div>
-      </div>
-    `;
-  
-    document.body.appendChild(modal);
-  
-    // 取消按钮
-    modal.querySelector('.cancel-btn')?.addEventListener('click', () => {
-      modal.remove();
-    });
-  
-    // 卡组选项
-    modal.querySelectorAll('.deck-option').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const deckName = (btn as HTMLElement).dataset.deck;
-        if (deckName && confirm(`Clear statistics for deck "${deckName}"?`)) {
-          await this.analytics.clearDeckStats(deckName);
-          new Notice(`✅ Statistics cleared for ${deckName}`);
-          modal.remove();
-          this.render();
-        }
-      });
-    });
-  
-    // 点击背景关闭
-    modal.querySelector('.modal-bg')?.addEventListener('click', () => {
-      modal.remove();
-    });
-    
+    modal.open();
   }
   private async generateAndShowReport() {
     const report = this.analytics.generateReport(30);
@@ -771,40 +684,14 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
   }
 
   private confirmStartNewCycle() {
-    const modal = document.createElement('div');
-    modal.className = 'modal-container';
-    modal.innerHTML = `
-      <div class="modal-bg"></div>
-      <div class="modal">
-        <div class="modal-title">🔄 Start New Learning Cycle</div>
-        <div class="modal-content">
-          <p>This will:</p>
-          <ul>
-            <li>✅ Archive current cycle data (read-only)</li>
-            <li>✅ Reset current stats to zero</li>
-            <li>✅ Keep all flashcard progress</li>
-            <li>⚠️ Cannot be undone</li>
-          </ul>
-          <p>Start fresh with Cycle ${this.analytics.getCurrentCycleNumber() + 1}?</p>
-        </div>
-        <div class="modal-button-container">
-          <button class="mod-warning cancel-btn">Cancel</button>
-          <button class="mod-cta confirm-btn">Start New Cycle</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    modal.querySelector('.cancel-btn')?.addEventListener('click', () => modal.remove());
-    modal.querySelector('.confirm-btn')?.addEventListener('click', async () => {
+    const nextCycle = this.analytics.getCurrentCycleNumber() + 1;
+    const modal = new ConfirmNewCycleModal(this.app, nextCycle, async () => {
       await this.analytics.startNewCycle();
       new Notice('✨ new learning cycle started!');
-      modal.remove();
+      modal.close();
       this.render();
     });
-    
-    modal.querySelector('.modal-bg')?.addEventListener('click', () => modal.remove());
+    modal.open();
   }
 
   private renderCycleHistory(container: HTMLElement) {
@@ -871,93 +758,180 @@ clearBtn.addEventListener('click', () => this.showClearStatsModal());
       new Notice('Cycle data not found');
       return;
     }
-  
+
     const { cycle, dailyStats, deckStats } = details;
-  
-    const modal = document.createElement('div');
-    modal.className = 'modal-container cycle-details-modal';
-    
     const avgCorrectRate = dailyStats.length > 0
       ? dailyStats.reduce((sum, d) => sum + d.correctRate, 0) / dailyStats.length
       : 0;
-  
-    modal.innerHTML = `
-      <div class="modal-bg"></div>
-      <div class="modal modal-large">
-        <div class="modal-title">📊 Cycle ${cycleNumber} Details</div>
-        <div class="modal-content">
-          
-          <div class="cycle-detail-section">
-            <h4>📅 Duration</h4>
-            <p>${this.formatDateRange(cycle.startDate, cycle.endDate)}</p>
-          </div>
-  
-          <div class="cycle-detail-section">
-            <h4>📈 Key Metrics</h4>
-            <div class="metrics-grid-small">
-              <div class="metric-small">
-                <span class="metric-label">Total Reviews</span>
-                <span class="metric-value">${cycle.totalReviews}</span>
-              </div>
-              <div class="metric-small">
-                <span class="metric-label">Avg Correct Rate</span>
-                <span class="metric-value">${(avgCorrectRate * 100).toFixed(1)}%</span>
-              </div>
-              <div class="metric-small">
-                <span class="metric-label">Total Cards</span>
-                <span class="metric-value">${cycle.totalCards}</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="cycle-detail-section">
-            <h4>📊 Daily Activity</h4>
-            <div id="cycle-daily-chart"></div>
-          </div>
-          
-          <div class="cycle-detail-section">
-            <h4>📚 Deck Breakdown</h4>
-            <div id="cycle-deck-stats"></div>
-          </div>
-  
-        </div>
-        <div class="modal-button-container">
-          <button class="mod-cta close-btn">Close</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // 渲染图表
-    const dailyChart = modal.querySelector('#cycle-daily-chart');
-    if (dailyChart) {
-      this.renderSimpleBarChart(dailyChart as HTMLElement, dailyStats.slice(-14)); // 最后14天
-    }
-    
-    // 渲染卡组统计
-    const deckStatsEl = modal.querySelector('#cycle-deck-stats');
-    if (deckStatsEl) {
-      if (deckStats.length === 0) {
-        (deckStatsEl as HTMLElement).textContent = 'No deck data available';
-      } else {
-        deckStats.forEach(deck => {
-          const row = (deckStatsEl as HTMLElement).createDiv({ cls: 'deck-stat-row' });
-          row.createSpan({ text: deck.deckName, cls: 'deck-name' });
-          
-          const info = row.createDiv({ cls: 'deck-info' });
-          info.createSpan({ text: `${deck.totalCards} cards`, cls: 'deck-detail' });
-          info.createSpan({ 
-            text: `${(deck.correctRate * 100).toFixed(1)}% correct`,
-            cls: 'deck-detail'
-          });
-        });
-      }
-    }
-    
-    modal.querySelector('.close-btn')?.addEventListener('click', () => modal.remove());
-    modal.querySelector('.modal-bg')?.addEventListener('click', () => modal.remove());
+
+    new CycleDetailsModal(
+      this.app,
+      {
+        cycleNumber,
+        durationText: this.formatDateRange(cycle.startDate, cycle.endDate),
+        totalReviews: cycle.totalReviews,
+        avgCorrectRate,
+        totalCards: cycle.totalCards,
+        dailyStats: dailyStats.slice(-14),
+        deckStats,
+      },
+      (chartEl, recentDays) => this.renderSimpleBarChart(chartEl, recentDays),
+    ).open();
   }
 
 
+}
+
+// ==================== Modal 子类(取代自建 div + document.body.appendChild)====================
+
+interface ClearStatsCallbacks {
+  onAll: () => void | Promise<void>;
+  onOld: () => void | Promise<void>;
+  onDeck: () => void;
+}
+
+class ClearStatsModal extends Modal {
+  constructor(app: App, private callbacks: ClearStatsCallbacks) {
+    super(app);
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl('h2', { text: 'Clear statistics' });
+    contentEl.createEl('p', { text: 'Choose what statistics to clear:' });
+    const opts = contentEl.createDiv({ cls: 'clear-options' });
+    const all = opts.createEl('button', { cls: 'clear-option-btn' });
+    all.appendText('🗑️ Clear all statistics');
+    all.createSpan({ cls: 'option-desc', text: 'Reset all cards and review logs' });
+    all.addEventListener('click', () => void this.callbacks.onAll());
+
+    const old = opts.createEl('button', { cls: 'clear-option-btn' });
+    old.appendText('📅 Clear old data (30+ days)');
+    old.createSpan({ cls: 'option-desc', text: 'Keep recent 30 days only' });
+    old.addEventListener('click', () => void this.callbacks.onOld());
+
+    const deck = opts.createEl('button', { cls: 'clear-option-btn' });
+    deck.appendText('📚 Clear specific deck');
+    deck.createSpan({ cls: 'option-desc', text: 'Choose a deck to reset' });
+    deck.addEventListener('click', () => this.callbacks.onDeck());
+
+    const btns = contentEl.createDiv({ cls: 'modal-button-container' });
+    const cancel = btns.createEl('button', { cls: 'mod-cta', text: 'Cancel' });
+    cancel.addEventListener('click', () => this.close());
+  }
+  onClose() { this.contentEl.empty(); }
+}
+
+class DeckSelectionModal extends Modal {
+  constructor(
+    app: App,
+    private decks: { deckName: string; totalCards: number }[],
+    private onPick: (deckName: string) => void | Promise<void>,
+  ) { super(app); }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl('h2', { text: 'Select deck to clear' });
+    const opts = contentEl.createDiv({ cls: 'clear-options' });
+    for (const deck of this.decks) {
+      const btn = opts.createEl('button', { cls: 'clear-option-btn deck-option' });
+      btn.appendText(`📚 ${deck.deckName}`);
+      btn.createSpan({ cls: 'option-desc', text: `${deck.totalCards} cards` });
+      btn.addEventListener('click', () => void this.onPick(deck.deckName));
+    }
+    const btns = contentEl.createDiv({ cls: 'modal-button-container' });
+    const cancel = btns.createEl('button', { cls: 'mod-cta', text: 'Cancel' });
+    cancel.addEventListener('click', () => this.close());
+  }
+  onClose() { this.contentEl.empty(); }
+}
+
+class ConfirmNewCycleModal extends Modal {
+  constructor(app: App, private nextCycle: number, private onConfirm: () => void | Promise<void>) {
+    super(app);
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl('h2', { text: '🔄 start new learning cycle' });
+    contentEl.createEl('p', { text: 'This will:' });
+    const ul = contentEl.createEl('ul');
+    ul.createEl('li', { text: '✅ archive current cycle data (read-only)' });
+    ul.createEl('li', { text: '✅ reset current stats to zero' });
+    ul.createEl('li', { text: '✅ keep all flashcard progress' });
+    ul.createEl('li', { text: '⚠️ cannot be undone' });
+    contentEl.createEl('p', { text: `Start fresh with Cycle ${this.nextCycle}?` });
+
+    const btns = contentEl.createDiv({ cls: 'modal-button-container' });
+    const cancel = btns.createEl('button', { cls: 'mod-warning', text: 'Cancel' });
+    cancel.addEventListener('click', () => this.close());
+    const confirm = btns.createEl('button', { cls: 'mod-cta', text: 'Start new cycle' });
+    confirm.addEventListener('click', () => void this.onConfirm());
+  }
+  onClose() { this.contentEl.empty(); }
+}
+
+interface CycleDetailsData {
+  cycleNumber: number;
+  durationText: string;
+  totalReviews: number;
+  avgCorrectRate: number;
+  totalCards: number;
+  dailyStats: DailyStat[];
+  deckStats: { deckName: string; totalCards: number; correctRate: number }[];
+}
+
+class CycleDetailsModal extends Modal {
+  constructor(
+    app: App,
+    private data: CycleDetailsData,
+    private renderChart: (el: HTMLElement, days: DailyStat[]) => void,
+  ) { super(app); }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass('cycle-details-modal');
+    contentEl.createEl('h2', { text: `📊 cycle ${this.data.cycleNumber} details` });
+
+    const dur = contentEl.createDiv({ cls: 'cycle-detail-section' });
+    dur.createEl('h4', { text: '📅 duration' });
+    dur.createEl('p', { text: this.data.durationText });
+
+    const metrics = contentEl.createDiv({ cls: 'cycle-detail-section' });
+    metrics.createEl('h4', { text: '📈 key metrics' });
+    const grid = metrics.createDiv({ cls: 'metrics-grid-small' });
+    const add = (label: string, value: string) => {
+      const m = grid.createDiv({ cls: 'metric-small' });
+      m.createSpan({ cls: 'metric-label', text: label });
+      m.createSpan({ cls: 'metric-value', text: value });
+    };
+    add('Total reviews', String(this.data.totalReviews));
+    add('Avg correct rate', `${(this.data.avgCorrectRate * 100).toFixed(1)}%`);
+    add('Total cards', String(this.data.totalCards));
+
+    const activity = contentEl.createDiv({ cls: 'cycle-detail-section' });
+    activity.createEl('h4', { text: '📊 daily activity' });
+    const chartEl = activity.createDiv({ cls: 'cycle-daily-chart' });
+    this.renderChart(chartEl, this.data.dailyStats);
+
+    const decks = contentEl.createDiv({ cls: 'cycle-detail-section' });
+    decks.createEl('h4', { text: '📚 deck breakdown' });
+    const deckEl = decks.createDiv({ cls: 'cycle-deck-stats' });
+    if (this.data.deckStats.length === 0) {
+      deckEl.setText('No deck data available');
+    } else {
+      for (const d of this.data.deckStats) {
+        const row = deckEl.createDiv({ cls: 'deck-stat-row' });
+        row.createSpan({ text: d.deckName, cls: 'deck-name' });
+        const info = row.createDiv({ cls: 'deck-info' });
+        info.createSpan({ text: `${d.totalCards} cards`, cls: 'deck-detail' });
+        info.createSpan({ text: `${(d.correctRate * 100).toFixed(1)}% correct`, cls: 'deck-detail' });
+      }
+    }
+
+    const btns = contentEl.createDiv({ cls: 'modal-button-container' });
+    const close = btns.createEl('button', { cls: 'mod-cta', text: 'Close' });
+    close.addEventListener('click', () => this.close());
+  }
+  onClose() { this.contentEl.empty(); }
 }

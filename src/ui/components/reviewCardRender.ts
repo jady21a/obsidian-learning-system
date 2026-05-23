@@ -3,11 +3,59 @@ import { Flashcard } from '../../core/FlashcardManager';
 import { CardScheduler } from '../../core/CardScheduler';
 import { TableRenderer } from './TableRenderer';
 import type { ReviewState } from '../stats/reviewStateManager';
+import { setCssProps } from '../utils/setCssProps';
 
 
 interface AnswerEvaluation {
   correctness: 'correct' | 'partial' | 'incorrect';
   similarity: number;
+}
+
+/** 把多行文本写入元素,\n 用 <br> 隔开(纯文本,无 HTML 解释)。 */
+function appendTextLines(el: HTMLElement, text: string): void {
+  const lines = text.split('\n');
+  lines.forEach((line, i) => {
+    el.appendText(line);
+    if (i < lines.length - 1) el.createEl('br');
+  });
+}
+
+/** 与 appendTextLines 类似,但把 ==X== 包裹片段渲染为指定 class 的 span。 */
+function appendClozeLines(el: HTMLElement, text: string, clozeClass: string): void {
+  const lines = text.split('\n');
+  lines.forEach((line, lineIdx) => {
+    let last = 0;
+    const re = /==([^=]+)==/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(line)) !== null) {
+      if (m.index > last) el.appendText(line.slice(last, m.index));
+      el.createSpan({ cls: clozeClass, text: m[1] });
+      last = m.index + m[0].length;
+    }
+    if (last < line.length) el.appendText(line.slice(last));
+    if (lineIdx < lines.length - 1) el.createEl('br');
+  });
+}
+
+/** 题面挖空:每个 ==X== 渲染为带下划线的空白 span(宽度按字数动态)。 */
+function appendClozeBlanksWithUnderline(el: HTMLElement, text: string): void {
+  const lines = text.split('\n');
+  lines.forEach((line, lineIdx) => {
+    let last = 0;
+    const re = /==([^=]+)==/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(line)) !== null) {
+      if (m.index > last) el.appendText(line.slice(last, m.index));
+      const span = el.createSpan({ cls: 'cloze-underline-blank' });
+      const widthEm = Math.max(m[1].length * 0.6, 3);
+      setCssProps(span, { 'min-width': `${widthEm}em` });
+      // 占位非断行空格,保证 span 在视觉上撑开
+      span.appendText(' ');
+      last = m.index + m[0].length;
+    }
+    if (last < line.length) el.appendText(line.slice(last));
+    if (lineIdx < lines.length - 1) el.createEl('br');
+  });
 }
 // ============================================================================
 // 卡片渲染策略接口
@@ -69,17 +117,8 @@ export class ClozeCardRenderer implements CardRenderStrategy {
           questionText.appendChild(tableEl);
           questionText.classList.add('table-question');
         } else {
-          let deletionIdx = 0;
-          const deletions = card.cloze?.deletions || [];
-          
           const sourceText = card.cloze?.original || card.front;
-          questionText.innerHTML = sourceText
-          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-          .replace(/\n/g, '<br>')
-          .replace(/==([^=]+)==/g, (_fullMatch, innerText) => {
-            const underlineWidth = Math.max(innerText.length * 0.6, 3);
-            return `<span class="cloze-underline" style="display:inline-block;min-width:${underlineWidth}em;border-bottom:2px solid currentColor;color:transparent;">&nbsp;</span>`;
-          });
+          appendClozeBlanksWithUnderline(questionText, sourceText);
         }
       
         // 输入框(移到表格下方或保持在原位)
@@ -174,9 +213,8 @@ const updatePreview = (inputValue: string) => {
           
           headerCells.forEach(cell => {
             const th = headerRow.createEl('th');
-            const rendered = this.renderCellWithPreview(cell, state.userAnswers, deletionIndex);
-            th.innerHTML = rendered.html;
-            if (rendered.hasBlank) deletionIndex++;
+            const hasBlank = this.appendCellWithPreviewInto(th, cell, state.userAnswers, deletionIndex);
+            if (hasBlank) deletionIndex++;
           });
         }
       
@@ -194,9 +232,8 @@ const updatePreview = (inputValue: string) => {
           const row = tbody.createEl('tr');
           cells.forEach(cell => {
             const td = row.createEl('td');
-            const rendered = this.renderCellWithPreview(cell, state.userAnswers, deletionIndex);
-            td.innerHTML = rendered.html;
-            if (rendered.hasBlank) deletionIndex++;
+            const hasBlank = this.appendCellWithPreviewInto(td, cell, state.userAnswers, deletionIndex);
+            if (hasBlank) deletionIndex++;
           });
         }
       
@@ -215,27 +252,32 @@ const updatePreview = (inputValue: string) => {
           .filter(c => c.length > 0);
       }
       
-      // ← 添加辅助方法:渲染带预览的单元格
-      private renderCellWithPreview(
+      // 把带预览的单元格内容写入元素(DOM 构造,无 innerHTML),返回是否含挖空。
+      private appendCellWithPreviewInto(
+        el: HTMLElement,
         cell: string,
         userAnswers: string[],
-        deletionIndex: number
-      ): { html: string; hasBlank: boolean } {
-        const match = cell.match(/==([^=]+)==/);
-        
-        if (!match) {
-          return { html: cell, hasBlank: false };
+        deletionIndex: number,
+      ): boolean {
+        if (!cell.includes('==')) {
+          el.setText(cell);
+          return false;
         }
-        
-        // 有挖空标记
         const userAnswer = userAnswers[deletionIndex] || '';
-        const displayText = userAnswer 
-          ? `<span class="preview-answer">${userAnswer}</span>` 
-          : '<span class="cloze-blank"></span>';
-        
-        const html = cell.replace(/==([^=]+)==/g, displayText);
-        
-        return { html, hasBlank: true };
+        const re = /==([^=]+)==/g;
+        let last = 0;
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(cell)) !== null) {
+          if (m.index > last) el.appendText(cell.slice(last, m.index));
+          if (userAnswer) {
+            el.createSpan({ cls: 'preview-answer', text: userAnswer });
+          } else {
+            el.createSpan({ cls: 'cloze-blank' });
+          }
+          last = m.index + m[0].length;
+        }
+        if (last < cell.length) el.appendText(cell.slice(last));
+        return true;
       }
       
       // ← 添加新的辅助方法:解析多答案输入
@@ -335,10 +377,7 @@ const updatePreview = (inputValue: string) => {
   ) {
     const fullText = answerArea.createDiv({ cls: 'full-text' });
     const normalized = this.normalizeOriginal(card);
-    fullText.innerHTML = normalized
-  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  .replace(/\n/g, '<br>')
-  .replace(/==([^=]+)==/g, '<span class="cloze-highlight">$1</span>');
+    appendClozeLines(fullText, normalized, 'cloze-highlight');
 
     // ← 这里已经会调用 renderDetailedComparison,它会使用新的逻辑
     this.renderDetailedComparison(answerArea, card, state, scheduler);
@@ -442,9 +481,7 @@ export class QACardRenderer implements CardRenderStrategy {
           questionText.appendChild(tableEl);
           questionText.classList.add('table-question');
         } else {
-          questionText.innerHTML = card.front
-          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-          .replace(/\n/g, '<br>');
+          appendTextLines(questionText, card.front);
         }
     
         // 输入框
@@ -522,9 +559,7 @@ export class QACardRenderer implements CardRenderStrategy {
       correctAnswerDiv.classList.add('table-answer');
     } else {
       const el = correctAnswerDiv.createEl('div', { cls: 'correct-answer qa-correct-answer' });
-      el.innerHTML = correctAnswer
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/\n/g, '<br>');
+      appendTextLines(el, correctAnswer);
     }
   }
 
@@ -565,9 +600,7 @@ export class QACardRenderer implements CardRenderStrategy {
   ) {
     const userAnswerElement = container.createEl('div', { cls: 'qa-user-answer' });
     const displayText = userAnswer.trim() || '(no answer provided)';
-    userAnswerElement.innerHTML = displayText
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/\n/g, '<br>');
+    appendTextLines(userAnswerElement, displayText);
     
     if (evaluation) {
       userAnswerElement.classList.add('user-answer', evaluation.correctness);

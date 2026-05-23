@@ -3304,6 +3304,41 @@ color: var(--text-muted);
   margin-right: 1px;
 }
 
+/* Cloze underline blank for question rendering (width set via setCssProps) */
+.cloze-underline-blank {
+  display: inline-block;
+  border-bottom: 2px solid currentColor;
+  color: transparent;
+}
+
+/* EditFlashcardModal card info box (replaces inline styles) */
+.card-info-box {
+  background: var(--background-secondary);
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+.card-info-lines {
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+/* Empty-state box (replaces inline styles in ContentList) */
+.empty-state-box {
+  padding: 20px;
+  text-align: center;
+}
+.empty-state-icon {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+.empty-state-main { color: var(--text-muted); }
+.empty-state-hint {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 8px;
+}
+
 /* Mindmap container fill its leaf (replaces inline width/height styles) */
 .learning-system-mindmap-container {
   width: 100%;

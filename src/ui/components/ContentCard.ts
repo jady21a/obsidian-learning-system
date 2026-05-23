@@ -173,7 +173,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
 
     const tools = header.createDiv({ cls: 'grid-card-tools' });
     const moreBtn = tools.createDiv({ cls: 'tool-btn-grid' });
-    moreBtn.innerHTML = '⋮';
+    moreBtn.setText('⋮');
     moreBtn.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -258,7 +258,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
   
     if (!this.state.batchMode) {
       const flashcardBtn = tools.createDiv({ cls: 'tool-btn flashcard-btn' });
-      flashcardBtn.innerHTML = '⚡';
+      flashcardBtn.setText('⚡');
       flashcardBtn.setAttribute('aria-label', 'Generate flashcards');
       flashcardBtn.addEventListener('mousedown', (e) => {
         e.stopPropagation();
@@ -267,7 +267,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     }
   
     const moreBtn = tools.createDiv({ cls: 'tool-btn more-btn' });
-    moreBtn.innerHTML = '⋮';
+    moreBtn.setText('⋮');
     moreBtn.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       this.callbacks.onShowContextMenu(e, unit);
@@ -280,33 +280,65 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     if (this.isTableContent(unit.fullContext || unit.content)) {
       this.renderMarkdownContent(noteText, unit);
     } else {
-      let displayHTML = this.formatContent(unit);
-      noteText.innerHTML = displayHTML;
+      this.formatInto(noteText, unit);
     }
-  
+
     // ⭐ 只设置样式,不绑定事件
     setCssProps(noteText, { cursor: 'pointer' });
   }
-  
 
-  private formatContent(unit: ContentUnit): string {
+
+  /**
+   * 把 unit 的内容渲染到目标元素(用 DOM API,不走 innerHTML 拼接,避免 XSS 风险)。
+   * - QA:question / :: / answer 三段 span;
+   * - cloze:把 ==X== 包裹的片段渲染为 .cloze-highlight 高亮 span;
+   * - 手工提取的内容保留换行(转 <br>)。
+   */
+  private formatInto(el: HTMLElement, unit: ContentUnit): void {
+    el.empty();
     const isManual = unit.extractRule?.extractedBy === 'manual';
-    const nl2br = (str: string) => {
-      const escaped = str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      return isManual ? escaped.replace(/\n/g, '<br>') : escaped;
+
+    const appendWithBreaks = (parent: HTMLElement, text: string) => {
+      if (!isManual) { parent.appendText(text); return; }
+      const lines = text.split('\n');
+      lines.forEach((line, i) => {
+        parent.appendText(line);
+        if (i < lines.length - 1) parent.createEl('br');
+      });
     };
-    if (unit.type === 'QA' && unit.answer) {
-      return `<span class="qa-question">${nl2br(unit.content)}</span> <span class="qa-separator">::</span> <span class="qa-answer">${nl2br(unit.answer)}</span>`;
-    } else if (unit.type === 'cloze') {
-      if (unit.fullContext) {
-        return nl2br(unit.fullContext).replace(
-          /==([^=]+)==/g,
-          '<span class="cloze-highlight">$1</span>'
-        );
+
+    const appendClozeText = (parent: HTMLElement, text: string) => {
+      const re = /==([^=]+)==/g;
+      let last = 0;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(text)) !== null) {
+        if (m.index > last) appendWithBreaks(parent, text.slice(last, m.index));
+        const span = parent.createSpan({ cls: 'cloze-highlight' });
+        appendWithBreaks(span, m[1]);
+        last = m.index + m[0].length;
       }
-      return nl2br(unit.content).replace(/==/g, '');
+      if (last < text.length) appendWithBreaks(parent, text.slice(last));
+    };
+
+    if (unit.type === 'QA' && unit.answer) {
+      const q = el.createSpan({ cls: 'qa-question' });
+      appendWithBreaks(q, unit.content);
+      el.appendText(' ');
+      el.createSpan({ cls: 'qa-separator', text: '::' });
+      el.appendText(' ');
+      const a = el.createSpan({ cls: 'qa-answer' });
+      appendWithBreaks(a, unit.answer);
+      return;
     }
-    return nl2br(unit.content);
+    if (unit.type === 'cloze') {
+      if (unit.fullContext) {
+        appendClozeText(el, unit.fullContext);
+      } else {
+        appendWithBreaks(el, unit.content.replace(/==/g, ''));
+      }
+      return;
+    }
+    appendWithBreaks(el, unit.content);
   }
   private renderSideLine(meta: HTMLElement, unit: ContentUnit): void {
     meta.createSpan({ text: `L${unit.source.position.line}`, cls: 'line-info' });
@@ -415,7 +447,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
 
     if (!this.state.batchMode) {
       const flashcardBtn = tools.createDiv({ cls: 'tool-btn-grid' });
-      flashcardBtn.innerHTML = '⚡';
+      flashcardBtn.setText('⚡');
       flashcardBtn.setAttribute('aria-label', 'Generate flashcards');
       flashcardBtn.addEventListener('mousedown', (e) => {
         e.stopPropagation();
@@ -425,7 +457,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     }
 
     const moreBtn = tools.createDiv({ cls: 'tool-btn-grid' });
-    moreBtn.innerHTML = '⋮';
+    moreBtn.setText('⋮');
     moreBtn.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -439,7 +471,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     if (this.isTableContent(unit.fullContext || unit.content)) {
       this.renderMarkdownContent(noteText, unit);
     } else {
-      noteText.innerHTML = this.formatContent(unit);
+      this.formatInto(noteText, unit);
     }
     
     // ⭐ 简化事件处理：只保留 click
@@ -459,7 +491,7 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
     const annotationContent = this.callbacks.getAnnotationContent(unit.id);
     if (annotationContent) {
       const annEl = content.createDiv({ cls: 'grid-annotation' });
-      annEl.innerHTML = `💬 ${annotationContent}`;
+      annEl.setText(`💬 ${annotationContent}`);
       
       annEl.addEventListener('mousedown', (e) => {
         e.stopPropagation();
@@ -498,11 +530,13 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
   private renderFlashcardContent(content: HTMLElement, card: Flashcard): void {
     const lang = this.getLanguage();
     const question = content.createDiv({ cls: 'flashcard-question' });
-    question.innerHTML = `<strong>${t('card.question', lang)}：</strong>${card.front}`;
-    
+    question.createEl('strong', { text: `${t('card.question', lang)}：` });
+    question.appendText(card.front);
+
     const answer = content.createDiv({ cls: 'flashcard-answer' });
     const answerText = Array.isArray(card.back) ? card.back.join(', ') : card.back;
-    answer.innerHTML = `<strong>${t('card.answer', lang)}：</strong>${answerText}`;
+    answer.createEl('strong', { text: `${t('card.answer', lang)}：` });
+    answer.appendText(answerText);
   }
 
   private renderFlashcardMeta(meta: HTMLElement, card: Flashcard): void {
@@ -511,18 +545,15 @@ renderGrid(container: HTMLElement, unit: ContentUnit): void {
       cls: 'flashcard-date'
     });
     const reviewInfo = meta.createDiv({ cls: 'flashcard-review-info' });
-  
+
     const dueDate = new Date(card.scheduling.due);
     const now = new Date();
     const isOverdue = dueDate < now;
-    
+
     const timeText = this.formatReviewTime(dueDate, now, isOverdue);
-    
-    reviewInfo.innerHTML = `
-      <span class="review-time ${isOverdue ? 'overdue' : 'upcoming'}">
-        <span class="review-text">${timeText}</span>
-      </span>
-    `;
+
+    const wrap = reviewInfo.createSpan({ cls: `review-time ${isOverdue ? 'overdue' : 'upcoming'}` });
+    wrap.createSpan({ cls: 'review-text', text: timeText });
   }
 
   private formatDate(date: Date): string {
@@ -599,47 +630,41 @@ private renderTableWithHighlights(container: HTMLElement, markdown: string): voi
     .filter(c => c);
   
   
+  // 把单元格文本里的 ==X== 渲染成 .cloze-highlight 高亮 span(DOM 构造,无 innerHTML)
+  const renderCellInto = (parent: HTMLElement, cell: string) => {
+    if (!cell.includes('==')) { parent.setText(cell); return; }
+    const re = /==([^=]+)==/g;
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(cell)) !== null) {
+      if (m.index > last) parent.appendText(cell.slice(last, m.index));
+      parent.createSpan({ cls: 'cloze-highlight', text: m[1] });
+      last = m.index + m[0].length;
+    }
+    if (last < cell.length) parent.appendText(cell.slice(last));
+  };
+
   const thead = table.createEl('thead');
   const headerRow = thead.createEl('tr');
-  headerCells.forEach((cell, index) => {
+  headerCells.forEach((cell) => {
     const th = headerRow.createEl('th');
-    
-    if (cell.includes('==')) {
-      const processed = cell.replace(
-        /==([^=]+)==/g, 
-        '<span style="background-color: rgba(255, 140, 0, 0.25); padding: 2px 4px; border-radius: 3px; font-weight: 500;">$1</span>'
-      );
-      th.innerHTML = processed;
-
-    } else {
-      th.textContent = cell;
-    }
+    renderCellInto(th, cell);
   });
-  
+
   // 解析数据行
   const tbody = table.createEl('tbody');
   for (let i = 2; i < lines.length; i++) {
-    
     const cells = lines[i]
       .split('|')
       .map(c => c.trim())
       .filter(c => c);
-    
+
     if (cells.length === 0) continue;
-    
+
     const row = tbody.createEl('tr');
-    cells.forEach((cell, index) => {
+    cells.forEach((cell) => {
       const td = row.createEl('td');
-      
-      if (cell.includes('==')) {
-        const processed = cell.replace(
-          /==([^=]+)==/g, 
-          '<span style="background-color: rgba(255, 140, 0, 0.25); padding: 2px 4px; border-radius: 3px; font-weight: 500;">$1</span>'
-        );
-        td.innerHTML = processed;
-      } else {
-        td.textContent = cell;
-      }
+      renderCellInto(td, cell);
     });
   }
   
